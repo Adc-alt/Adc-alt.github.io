@@ -283,11 +283,44 @@ Lo que dicen esas cabeceras:
 | Ficheros de código | **1** (`index.html`, 23 líneas) |
 | Tiempo de despliegue | ~25 segundos |
 
+---
+
+## Paso 8 — Verificación visual (renderizado, no solo bytes)
+
+`curl` confirma que el HTML llega. **No confirma que se vea bien.** Para eso hace falta un
+motor de renderizado. Chrome tiene modo *headless*: renderiza sin abrir ventana.
+
+```bash
+chrome --headless --disable-gpu --hide-scrollbars \
+       --window-size=1280,720 \
+       --screenshot=portfolio.png \
+       https://adc-alt.github.io/
+```
+
+```
+8097 bytes written to file C:\tmp\portfolio.png
+```
+
+*(En esta máquina el Chrome que se usa es el de Windows, invocado desde WSL: el Chromium de
+Linux dentro de WSL está roto por dependencias del sistema, y además el de Windows tiene las
+fuentes reales que vería un visitante.)*
+
+Lo que confirma la captura:
+
+- El contenido está **centrado vertical y horizontalmente** → el `display: grid` +
+  `place-items: center` + `min-height: 100vh` funciona.
+- **Sin barra de scroll** → el `margin: 0` cumplió su función.
+- **`Aquí` y `todavía` salen con tilde correcta** → el `charset=UTF-8` está bien puesto.
+- La fuente es la del sistema (Segoe UI en Windows), no Times New Roman → `system-ui` resolvió.
+
+Detalle a notar: el texto está alineado a la izquierda **dentro** de un bloque que sí está
+centrado. `place-items: center` centra la *caja* `<main>`, no el texto de dentro. Para centrar
+también el texto haría falta `text-align: center`. No es un fallo, es cómo funciona.
+
 ## Lo que queda pendiente y hay que comprobar a mano
 
-- [ ] **Abrirlo en un navegador de verdad.** `curl` confirma que el HTML llega; no confirma que
-      se vea centrado ni que la fuente del sistema cargue. Eso solo lo ve un ojo.
-- [ ] **Verlo en móvil.** Es donde el `<meta viewport>` importa, y aquí nadie lo ha probado aún.
+- [ ] **Verlo en móvil de verdad.** Es donde el `<meta viewport>` importa, y un headless a
+      1280×720 no prueba nada de eso. Abrir https://adc-alt.github.io/ en el teléfono.
 
 ## El ciclo de trabajo a partir de ahora
 
