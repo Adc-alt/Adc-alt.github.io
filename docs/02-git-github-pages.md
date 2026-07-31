@@ -94,6 +94,10 @@ Elegí **sitio de usuario** (`Adc-alt.github.io`) por dos razones:
 slot del sitio de usuario. Pero el slot solo se usa una vez y esto es justo la web que merece
 la URL buena. Si algún día hace falta cambiar, renombrar el repo en GitHub es un botón.
 
+**Efecto secundario que descubrí al hacerlo:** si el repo se llama `<usuario>.github.io`,
+GitHub **activa Pages solo**, sin que se lo pidas. Mi intento de activarlo por API devolvió
+`409 GitHub Pages is already enabled`. Con un repo de proyecto sí hay que encenderlo a mano.
+
 ### Detalles que conviene saber
 
 - **HTTPS gratis y automático.** GitHub emite el certificado (Let's Encrypt). No hay que hacer nada.
