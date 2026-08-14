@@ -1,0 +1,55 @@
+---
+import { NAV, SITE } from "../consts";
+
+const path = Astro.url.pathname;
+/** '/proyectos/' está activo también en '/proyectos/lo-que-sea/'. */
+const isActive = (href: string) =>
+  href === "/" ? path === "/" : path.startsWith(href);
+---
+
+<header
+  class="sticky top-0 z-50 border-b border-[var(--edge)] bg-void/80 backdrop-blur-md"
+>
+  <nav
+    aria-label="Principal"
+    class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-3"
+  >
+    <a href="/" class="group flex shrink-0 items-center gap-2.5" aria-label="Inicio">
+      <span
+        class="grid h-7 w-7 shrink-0 place-items-center border border-neon-cyan/60 font-display text-[0.6rem] text-neon-cyan transition-colors group-hover:bg-neon-cyan group-hover:text-void"
+        aria-hidden="true">A</span
+      >
+      {/* El nombre no cabe junto al menú en móvil; queda el badge. */}
+      <span class="hidden font-display text-[0.62rem] tracking-widest text-ink sm:inline">
+        {SITE.handle}
+      </span>
+    </a>
+
+    <ul class="flex items-center">
+      {
+        NAV.map((item) => (
+          <li>
+            <a
+              href={item.href}
+              aria-current={isActive(item.href) ? "page" : undefined}
+              class:list={[
+                "group relative block px-2 py-2 font-display text-[0.5rem] tracking-wider uppercase transition-colors sm:px-3 sm:text-[0.55rem] sm:tracking-widest",
+                isActive(item.href)
+                  ? "text-neon-cyan"
+                  : "text-dim hover:text-ink",
+              ]}
+            >
+              <span
+                aria-hidden="true"
+                class:list={[
+                  "mr-1.5 transition-opacity",
+                  isActive(item.href) ? "opacity-100" : "opacity-0 group-hover:opacity-60",
+                ]}>&gt;</span
+              >{item.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+</header>

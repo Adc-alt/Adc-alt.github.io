@@ -1,5 +1,14 @@
 # Aprendizaje
 
+> **📦 Archivo histórico (fase 1).** Estos documentos describen la primera versión
+> del sitio: un `index.html` de 23 líneas sin dependencias, hecho para entender la
+> web por debajo. **Ese fichero ya no existe**: en agosto de 2026 el sitio se rehízo
+> con Astro + Tailwind y estética de recreativa. Lo de aquí sigue siendo correcto
+> sobre HTTP, git y GitHub Pages, pero **no describe el sitio actual**. Para eso,
+> el [README](../README.md) de la raíz.
+>
+> Se conservan a propósito. Bórralos si estorban: están en el historial.
+
 Documentación de **cómo se construyó este sitio**, paso a paso, con el porqué de cada decisión.
 
 No es documentación de referencia (para eso está MDN). Es el registro de lo que hice yo,

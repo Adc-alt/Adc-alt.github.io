@@ -1,0 +1,85 @@
+---
+import Base from "../layouts/Base.astro";
+import SectionTitle from "../components/SectionTitle.astro";
+import { SOCIAL } from "../consts";
+
+// TODO(antonio): reescribe la bio y recorta el loadout a lo que de verdad usas.
+// Está deliberadamente corto: un portfolio se lee en diagonal.
+// Los `group` van en tipografía display → ASCII, sin acentos (ver consts.ts).
+const loadout = [
+  { group: "Lenguajes", items: ["TypeScript", "JavaScript", "Python", "Kotlin", "SQL"] },
+  { group: "Frontend", items: ["Vue", "Nuxt", "Astro", "Jetpack Compose", "Tailwind"] },
+  { group: "Backend y datos", items: ["Node", "SQLite", "PostgreSQL", "Cloudflare Workers"] },
+  { group: "Apps nativas", items: ["Electron", "Android"] },
+  { group: "Herramientas", items: ["Git", "GitHub Actions", "Vitest", "Playwright"] },
+];
+---
+
+<Base
+  title="Perfil"
+  description="Ingeniero de software. Producto de principio a fin: escritorio, móvil y web."
+>
+  <section class="px-5 pt-16">
+    <div class="mx-auto max-w-3xl">
+      <SectionTitle kicker="Player profile" title="Perfil" />
+
+      <div class="space-y-5 text-base text-dim">
+        <p>
+          Soy ingeniero de software. Trabajo en producto de principio a fin:
+          escritorio, móvil y web, y todo lo aburrido que hay en medio —
+          migraciones de esquema, CI, y los bugs que solo salen a las doce de la
+          noche.
+        </p>
+        <p>
+          Me interesa el software que alguien usa todos los días más que el que
+          se enseña una vez en una demo. Eso significa preocuparse por cosas poco
+          fotogénicas: que los datos no se pierdan, que el build sea reproducible
+          y que el error diga lo que ha pasado.
+        </p>
+      </div>
+
+      {/* ---------------- LOADOUT ---------------- */}
+      <div class="mt-16">
+        <SectionTitle kicker="Equipment" title="Loadout" as="h2" />
+
+        <div class="space-y-px overflow-hidden border border-[var(--edge)]">
+          {
+            loadout.map((row) => (
+              <div class="grid gap-3 bg-panel p-4 sm:grid-cols-[10rem_1fr] sm:items-baseline">
+                <p class="hud-label">{row.group}</p>
+                <ul class="flex flex-wrap gap-1.5">
+                  {row.items.map((item) => (
+                    <li class="border border-[var(--edge)] px-2 py-0.5 text-[0.7rem] text-ink">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+
+      {/* ---------------- CONTACTO ---------------- */}
+      <div class="mt-16">
+        <SectionTitle kicker="Continue?" title="Hablamos" as="h2" />
+        <p class="mb-6 text-base text-dim">
+          Si algo de aquí te encaja, escríbeme. Respondo a todo.
+        </p>
+        <div class="flex flex-wrap gap-3">
+          {
+            SOCIAL.map((s, i) => (
+              <a
+                href={s.href}
+                class={i === 0 ? "btn-arcade" : "btn-ghost"}
+                rel={s.href.startsWith("http") ? "me noopener" : undefined}
+              >
+                {s.label}
+              </a>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
