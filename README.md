@@ -110,22 +110,51 @@ parpadear. Si quieres el temporizador de vuelta, pon los milisegundos en
 
 Para cambiar el texto, toca solo `HEAD`, `SPECS`, `DEVICES` y `TAIL` del
 frontmatter: las columnas y los tiempos se calculan a partir de ahí.
-**Máximo 40 caracteres por línea** o desborda en un móvil de 390 px.
+**Etiqueta máximo 20 caracteres, veredicto máximo 16**: la rejilla es
+`20ch / 4ch / resto`, y una etiqueta más larga empuja la columna del veredicto
+y descuadra todas las filas.
 
-Tipografía **IBM VGA 8x16**, la de los PC de la época, en `public/fonts/` con
-su licencia al lado. Es de [VileR](https://int10h.org/oldschool-pc-fonts/),
-CC BY-SA 4.0 — el crédito que exige la licencia está en el pie del sitio.
+### Está calcada de `senna.social`
 
-Es una fuente de mapa de bits de celda 8x16: **solo se ve nítida en 16 px (1x)
-y 32 px (2x)**. Nada de `clamp()` ni de 20 o 24 px. A 32 px un carácter mide
-16, y la línea más larga son 40 caracteres = 640 px, por eso el salto a 2x
-espera a los 900 px de ancho.
+Los valores de abajo salieron de medir la referencia con el inspector, no de
+gusto. Si tocas uno, deja de parecerse. Están todos comentados en el fichero.
 
-La paleta no es monocroma a propósito: etiqueta en cian, valor en blanco y
-veredicto en verde/ámbar/magenta según lo bien que haya ido. Los POST de
-verdad tampoco eran de un solo color. Y no lleva scanlines ni viñeteado: la
-referencia (`senna.social`) no tiene ninguno y es lo primero que convierte el
-homenaje en parodia.
+| | Valor |
+|---|---|
+| Tipografía | **AcPlus** IBM VGA 8x16 |
+| Tamaño | 24 px, `line-height: 1.3`, uno solo (16 px por debajo de 700 px) |
+| Color | `#dedede` sobre `#060606`. **Monocromo** |
+| Aparición | fundido de 0,5 s, cada elemento a su hora |
+| Duración | 4,3 s, **con una pausa muerta de 1,1 s** antes de los chequeos |
+| Columnas | `min-width` de 20ch / 4ch, flex con `gap` |
+| Prompt | parpadeo en vídeo inverso, `steps(1, start)` |
+
+Tres detalles que cuestan de ver y son los que sostienen el parecido:
+
+- **Tiene que ser la variante `AcPlus`** (aspect-corrected), no `Web`/`WebPlus`.
+  La 8x16 original se veía en una VGA de 720x400 estirada a una pantalla 4:3,
+  o sea con el píxel más alto que ancho. AcPlus lleva ese estirón dentro: el
+  avance es 0,4167em (10 px a 24 px) en vez de 0,5em. Con WebPlus las letras
+  salen cuadradas y anchas, y eso solo ya rompe el parecido por mucho que
+  cuadre todo lo demás.
+- **La pausa de 1,1 s no es un descuido.** Es lo que hace que parezca una
+  máquina probándose a sí misma en vez de texto apareciendo. Y el último
+  chequeo tarda 450 ms más que los otros, como si le costara.
+- **Las columnas van en `ch`, no en píxeles.** A 24 px un `ch` de esta fuente
+  mide 9,99 px, así que 20ch son los 200 px de la referencia clavados — pero
+  además encogen solos cuando el móvil baja la fuente a 16 px.
+
+La fuente es de [VileR](https://int10h.org/oldschool-pc-fonts/), CC BY-SA 4.0.
+Vive en `public/fonts/` con su licencia al lado y el crédito que exige está en
+el pie del sitio. El `.woff2` se sacó del pack `_win` (los `Ac` no vienen en el
+pack web) convirtiendo el TTF con `fonttools`.
+
+Lo que NO se copió es el texto: los chequeos son propios. La maqueta de un POST
+es convención de los PC de los 90, pero los chistes concretos de la referencia
+son suyos.
+
+Tampoco lleva scanlines ni viñeteado: la referencia no tiene ninguno y es lo
+primero que convierte el homenaje en parodia.
 
 Tres cosas que parecen detalles y no lo son:
 
