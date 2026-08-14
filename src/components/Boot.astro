@@ -1,0 +1,350 @@
+---
+/**
+ * Pantalla de arranque tipo POST de BIOS. Cortina, no laberinto.
+ *
+ * ─── CÓMO CAMBIAR EL TEXTO ──────────────────────────────────────────────
+ * Toca solo `HEADER` y `CHECKS` de aquí abajo. La animación se calcula sola
+ * a partir del número de líneas (`STAGGER` ms entre cada una), así que puedes
+ * añadir o quitar sin tocar el CSS ni el JS. Mantén entre 6 y 9 chequeos: con
+ * más, la secuencia se pasa de los 2,5 s y la gente cierra la pestaña.
+ *
+ * Las columnas se alinean solas con puntos. Escribe en MAYÚSCULAS y SIN
+ * acentos: un POST real es ASCII, y así la línea no cambia de ancho.
+ *
+ * ⚠️ Límite de ancho: ~62 caracteres por línea ya montada (k + v + s). Es lo
+ * que cabe en un móvil de 390 px sin barra horizontal. La más larga de ahora
+ * mide 61 y llega justo, así que si alargas una, acorta otra.
+ * ────────────────────────────────────────────────────────────────────────
+ *
+ * Cómo se comporta, por si hay que depurarlo:
+ *  - Solo se monta en `/`. `/work/` pinta lo mismo sin este componente.
+ *  - Todo el JS es `is:inline` y síncrono. Si el navegador no ejecuta JS, el
+ *    overlay se queda en `display:none` y el portfolio funciona igual. Por eso
+ *    se ENSEÑA desde el script en vez de esconderse desde el script: al revés,
+ *    un fallo de JS dejaría el sitio tapado con una pantalla negra.
+ *  - El primer script va ANTES del markup: así el que ya lo vio no ve ni un
+ *    parpadeo de la pantalla de arranque.
+ */
+
+const YEAR = 2026;
+const STAGGER = 150; // ms entre línea y línea
+
+const HEADER = [
+  "DELGADOSOFT BIOS v95.0",
+  `(C) 1995-${YEAR} DELGADOSOFT. NINGUN DERECHO RESERVADO.`,
+];
+
+/** k = componente · v = qué es · s = veredicto (opcional) */
+const CHECKS = [
+  { k: "CPU", v: "ANTONIO DELGADO", s: "1 NUCLEO, SIN TURBO" },
+  { k: "MEMORIA", v: "EXTERNALIZADA A OBSIDIAN", s: "OK" },
+  { k: "DISCO 0", v: "TYPESCRIPT, KOTLIN, SWIFT", s: "OK" },
+  { k: "DISCO 1", v: "ELECTRON Y MODULOS NATIVOS", s: "ABI INCOMPATIBLE" },
+  { k: "SUBSISTEMA", v: "WSL2 SOBRE WINDOWS", s: "CASI SIEMPRE" },
+  { k: "GUARDIA", v: "MEDIA GUARDIA", s: "ACTIVA" },
+  { k: "PERIFERICO", v: "MAQUINA RECREATIVA", s: "VER MAS ABAJO" },
+  { k: "RED", v: "GITHUB PAGES", s: "EN LINEA" },
+];
+
+// Rellenos calculados aquí para que las columnas cuadren solas.
+const wK = Math.max(...CHECKS.map((c) => c.k.length)) + 3;
+const wV = Math.max(...CHECKS.map((c) => c.v.length)) + 3;
+const lines = [
+  ...HEADER,
+  "",
+  ...CHECKS.map((c) => `${c.k.padEnd(wK, ".")} ${c.v.padEnd(wV, ".")} ${c.s}`),
+  "",
+];
+---
+
+{/* 1. Antipestañeo. Va antes del markup a propósito: decide si la pantalla
+      llega a existir, así el visitante que repite no ve ni un frame. */}
+<script is:inline>
+  (function () {
+    try {
+      if (location.pathname !== "/") return;
+      if (localStorage.getItem("boot_seen")) return;
+    } catch (e) {
+      /* modo privado: que arranque igual */
+      if (location.pathname !== "/") return;
+    }
+    document.documentElement.setAttribute("data-boot", "on");
+  })();
+</script>
+
+{/* `data-seq` es el puente al script inline: un `is:inline` no ve las
+    variables del frontmatter, así que el dato viaja por el DOM. */}
+<div id="boot" data-stagger={STAGGER} data-seq={(lines.length + 1) * STAGGER}>
+  <div class="boot-inner">
+    <pre id="boot-lines" aria-hidden="true">{
+      lines.map((l) => <span class="boot-line">{l || " "}</span>)
+    }</pre>
+
+    {/* La última línea es un botón de verdad: se puede tocar, se puede tabular
+        y un lector de pantalla lo anuncia. El overlay no atrapa a nadie. */}
+    <button id="boot-enter" type="button" autofocus>
+      {/* Tres variantes y gana la que encaje. La que se ve por defecto es la
+          que vale para todos: si el navegador no se moja sobre qué tipo de
+          puntero tiene, más vale decir de más que mandar a alguien a tocar una
+          pantalla que no es táctil. */}
+      <span class="boot-any">[ PULSA UNA TECLA O TOCA LA PANTALLA ]</span>
+      <span class="boot-key">[ PULSA CUALQUIER TECLA ]</span>
+      <span class="boot-tap">[ TOCA LA PANTALLA ]</span>
+      <span class="boot-cursor" aria-hidden="true">▮</span>
+    </button>
+  </div>
+</div>
+
+{/* 2. Comportamiento. Inline y síncrono, sin imports: el mismo script que
+      enseña la pantalla es el que sabe quitarla. */}
+<script is:inline>
+  (function () {
+    var el = document.getElementById("boot");
+    if (!el) return;
+    if (document.documentElement.getAttribute("data-boot") !== "on") {
+      el.remove(); // no toca arrancar: fuera del DOM y a otra cosa
+      return;
+    }
+
+    var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var done = false;
+    // Fin de la secuencia + 1 s de cortesía. Con movimiento reducido no hay
+    // secuencia que esperar, pero sigue habiendo un momento para leerla.
+    var seq = Number(el.getAttribute("data-seq")) || 1700;
+    var timer = setTimeout(enter, reduce ? 1800 : seq + 1000);
+
+    // El tipeo va en JS y no en CSS a propósito. La pantalla SOLO existe si
+    // este script corre, así que no se gana nada haciéndolo en CSS, y con
+    // `animation-delay` encadenado las líneas de más de 1 s no llegaban a
+    // pintarse (la animación acababa `finished` pero el fill no aplicaba).
+    var nodes = el.querySelectorAll(".boot-line");
+    var btn = document.getElementById("boot-enter");
+    var stagger = Number(el.getAttribute("data-stagger")) || 150;
+    var iv = 0;
+
+    if (reduce) {
+      for (var n = 0; n < nodes.length; n++) nodes[n].classList.add("on");
+      if (btn) btn.classList.add("on");
+    } else {
+      var i = 0;
+      iv = setInterval(function () {
+        if (i >= nodes.length) {
+          clearInterval(iv);
+          if (nodes.length) nodes[nodes.length - 1].classList.remove("cur");
+          if (btn) btn.classList.add("on");
+          return;
+        }
+        // El cursor de bloque va siempre en la línea que acaba de salir.
+        if (i > 0) nodes[i - 1].classList.remove("cur");
+        nodes[i].classList.add("on", "cur");
+        i++;
+      }, stagger);
+    }
+
+    function onTouch(e) {
+      e.preventDefault(); // sin esto, el toque deja un clic fantasma en el enlace de debajo
+      enter();
+    }
+
+    function enter() {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      clearInterval(iv);
+      // Los listeners se quitan SIEMPRE: el de touchstart lleva
+      // preventDefault y dejarlo puesto mata el scroll táctil del sitio entero.
+      removeEventListener("keydown", enter, true);
+      removeEventListener("pointerdown", enter, true);
+      removeEventListener("touchstart", onTouch, true);
+
+      try { localStorage.setItem("boot_seen", "1"); } catch (e) { /* modo privado */ }
+
+      // "off" en vez de quitar el atributo: devuelve el scroll pero mantiene
+      // la pantalla visible mientras se apaga.
+      document.documentElement.setAttribute("data-boot", "off");
+
+      var fin = function () {
+        el.remove();
+        document.documentElement.removeAttribute("data-boot");
+        var main = document.getElementById("contenido");
+        if (main) { main.setAttribute("tabindex", "-1"); main.focus({ preventScroll: true }); }
+      };
+      if (reduce) return fin();
+      el.classList.add("is-off");
+      setTimeout(fin, 300);
+    }
+
+    // Saltable desde el primer frame, por cualquier vía.
+    addEventListener("keydown", enter, true);
+    addEventListener("pointerdown", enter, true);
+    addEventListener("touchstart", onTouch, { capture: true, passive: false });
+
+    if (btn) { btn.addEventListener("click", enter); try { btn.focus(); } catch (e) {} }
+  })();
+</script>
+
+<style>
+  /* Por defecto NO existe. Solo el script inline la enciende: si el JS falla,
+     el visitante ve el portfolio y no una pantalla negra sin salida. */
+  #boot {
+    display: none;
+  }
+  :global(html[data-boot="on"]) #boot,
+  :global(html[data-boot="off"]) #boot {
+    display: block;
+    position: fixed;
+    inset: 0;
+    /* Por encima de todo, incluidas las capas de CRT del sitio (z 58-60) y el
+       enlace de saltar al contenido (z 100). */
+    z-index: 200;
+    background: #000;
+    overflow: hidden;
+  }
+  /* Nada de scroll por detrás mientras arranca. */
+  :global(html[data-boot="on"] body) {
+    overflow: hidden;
+  }
+
+  .boot-inner {
+    /* Terminal de verdad: todo a la izquierda, con margen. Nada centrado. */
+    padding: clamp(1rem, 5vh, 3.5rem) clamp(0.9rem, 5vw, 4rem);
+    max-width: 72rem;
+    max-height: 100dvh;
+    overflow: auto;
+  }
+
+  #boot-lines,
+  #boot-enter {
+    /* Un solo color sobre negro: ambar de fosforo. */
+    color: #ffb000;
+    font-family: var(--font-mono);
+    font-size: clamp(0.5rem, 2.35vw, 0.82rem);
+    line-height: 1.85;
+    letter-spacing: 0.02em;
+    text-align: left;
+  }
+
+  #boot-lines {
+    margin: 0;
+    white-space: pre;
+  }
+
+  /* Aparecer es un interruptor, no una transición: lo enciende el script
+     línea a línea. Un POST no hace fundidos. */
+  .boot-line,
+  #boot-enter {
+    opacity: 0;
+  }
+  .boot-line.on,
+  #boot-enter.on {
+    opacity: 1;
+  }
+
+  .boot-line {
+    display: block;
+  }
+  /* Cursor de bloque en la línea activa; el script lo va moviendo. */
+  .boot-line.cur::after {
+    content: "▮";
+    margin-left: 0.5ch;
+  }
+
+  #boot-enter {
+    display: block;
+    margin-top: 1.6em;
+    padding: 0;
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+  #boot-enter:focus-visible {
+    outline: 2px solid #ffb000;
+    outline-offset: 4px;
+  }
+
+  /* Puro CSS, sin sniffing de user-agent. El display:none saca al span de la
+     accesibilidad, así que un lector de pantalla lee solo el que toca. */
+  .boot-key,
+  .boot-tap {
+    display: none;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .boot-any { display: none; }
+    .boot-key { display: inline; }
+  }
+  @media (hover: none) and (pointer: coarse) {
+    .boot-any { display: none; }
+    .boot-tap { display: inline; }
+  }
+
+  .boot-cursor {
+    margin-left: 0.5ch;
+    animation: boot-blink 1s steps(1) infinite;
+  }
+
+  @keyframes boot-blink {
+    0%,
+    49% {
+      opacity: 1;
+    }
+    50%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  /* El UNICO efecto de CRT de esta pantalla: scanlines muy flojas.
+     Ni viñeteado ni aberración: dos ya es parodia. */
+  :global(html[data-boot="on"]) #boot::after,
+  :global(html[data-boot="off"]) #boot::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgb(0 0 0 / 0.22) 0 1px,
+      transparent 1px 3px
+    );
+  }
+
+  /* Apagado de tubo: se cierra a una raya, destella y desaparece. */
+  #boot.is-off {
+    animation: crt-off 300ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  @keyframes crt-off {
+    0% {
+      transform: scaleY(1) scaleX(1);
+      filter: brightness(1);
+    }
+    55% {
+      transform: scaleY(0.008) scaleX(1);
+      filter: brightness(3.5);
+    }
+    100% {
+      transform: scaleY(0.008) scaleX(0);
+      filter: brightness(6);
+      opacity: 0;
+    }
+  }
+
+  /* Sin movimiento: el texto entero de golpe, sin tipeo, sin apagado, sin
+     rayas. Se sigue viendo y se sigue saliendo con cualquier tecla. */
+  @media (prefers-reduced-motion: reduce) {
+    /* El script ya las enciende todas de golpe; aquí solo se quita el parpadeo
+       y el cursor que va saltando de línea. */
+    .boot-cursor {
+      animation: none;
+    }
+    .boot-line.cur::after {
+      content: none;
+    }
+    :global(html[data-boot="on"]) #boot::after,
+    :global(html[data-boot="off"]) #boot::after {
+      display: none;
+    }
+    #boot.is-off {
+      animation: none;
+    }
+  }
+</style>

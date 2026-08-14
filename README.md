@@ -3,8 +3,21 @@
 Portfolio personal con estética de máquina recreativa.
 En vivo: **https://adc-alt.github.io/**
 
-Sitio estático generado con Astro. **Cero JavaScript** en el bundle salvo un
-easter egg de ~20 líneas que va inlineado en el HTML.
+Sitio estático generado con Astro. El HTML de todas las páginas se genera en el
+build; el único JavaScript del sitio es el comecocos de la portada (~10 KB), la
+pantalla de arranque (inline) y un easter egg de 20 líneas. Las demás páginas no
+cargan nada.
+
+## Rutas
+
+| Ruta | Qué es |
+|---|---|
+| `/` | Portada. **Con pantalla de arranque** la primera visita |
+| `/work/` | La misma portada **sin arranque, siempre**. Es la URL del CV |
+| `/proyectos/`, `/proyectos/<id>/`, `/perfil/` | El resto |
+
+`/work/` lleva `noindex` y canonical a `/`, y está fuera del sitemap: es el
+mismo contenido y no debe competir consigo mismo en Google.
 
 ## Arrancar
 
@@ -84,6 +97,28 @@ no se commitea.
 - Foco visible siempre (`:focus-visible` en ámbar, nunca `outline: none`).
 - Enlace de «saltar al contenido» como primer elemento tabulable.
 - Las capas de CRT son `aria-hidden` y `pointer-events: none`.
+
+## Pantalla de arranque
+
+`src/components/Boot.astro`. POST de BIOS falso que tapa la portada la primera
+vez. Se salta con cualquier tecla, clic o toque, y entra sola a los ~3 s.
+
+Para cambiar el texto, toca solo `HEADER` y `CHECKS` del frontmatter: las
+columnas y los tiempos se calculan a partir de ahí. Máximo ~62 caracteres por
+línea o desborda en móvil.
+
+Tres cosas que parecen detalles y no lo son:
+
+- Todo su JS es `is:inline` y **la pantalla se enseña desde el script**, no se
+  esconde desde él. Si el JS falla, el visitante ve el portfolio; al revés
+  vería una pantalla negra sin salida.
+- Va en el slot `overlay` del layout, fuera de `<main>`. Dentro no funciona:
+  `<main>` tiene `z-10` y un `position:fixed` se queda atrapado en ese contexto
+  de apilamiento por muy alto que le pongas el z-index.
+- El portfolio entero está en el HTML detrás del overlay, así que los
+  buscadores y las tarjetas de previsualización ven el sitio, no el arranque.
+
+Para volver a verla: borra `boot_seen` de `localStorage`.
 
 ## Easter egg
 

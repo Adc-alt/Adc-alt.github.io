@@ -11,12 +11,21 @@ import { SITE } from "../consts";
 interface Props {
   title?: string;
   description?: string;
+  /** Para rutas que duplican contenido a propósito, como /work/. */
+  noindex?: boolean;
+  /** Canonical explícita. Por defecto, la URL de la propia página. */
+  canonical?: string;
 }
 
-const { title, description = SITE.tagline } = Astro.props;
+const {
+  title,
+  description = SITE.tagline,
+  noindex = false,
+  canonical: canonicalProp,
+} = Astro.props;
 
 const fullTitle = title ? `${title} — ${SITE.name}` : `${SITE.name} — ${SITE.role}`;
-const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const canonical = canonicalProp ?? new URL(Astro.url.pathname, Astro.site).href;
 ---
 
 <!doctype html>
@@ -27,6 +36,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site).href;
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex, follow" />}
     <link rel="sitemap" href="/sitemap-index.xml" />
     <meta name="generator" content={Astro.generator} />
     <meta name="theme-color" content="#05060b" />
@@ -43,6 +53,12 @@ const canonical = new URL(Astro.url.pathname, Astro.site).href;
   </head>
 
   <body>
+    {/* Hueco para capas a pantalla completa (la pantalla de arranque). Va como
+        hijo directo del <body> a propósito: dentro de <main>, que tiene z-10,
+        un `position:fixed` se queda atrapado en ese contexto de apilamiento y
+        el nav se le pone por encima por muy alto que le pongas el z-index. */}
+    <slot name="overlay" />
+
     <a
       href="#contenido"
       class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-100 focus:bg-neon-amber focus:text-void focus:px-4 focus:py-2 focus:font-display focus:text-[0.6rem]"

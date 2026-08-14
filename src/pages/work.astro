@@ -1,0 +1,17 @@
+---
+/**
+ * La puerta de servicio: el portfolio limpio, sin pantalla de arranque, pase lo
+ * que pase y diga lo que diga el localStorage. Es la URL que va en el CV.
+ *
+ * Pinta exactamente lo mismo que `/` porque comparte <HomeContent />. Va con
+ * canonical a la raíz y noindex para no competir consigo misma en Google, y
+ * está excluida del sitemap en astro.config.mjs.
+ */
+import Base from "../layouts/Base.astro";
+import HomeContent from "../components/HomeContent.astro";
+import { SITE } from "../consts";
+---
+
+<Base noindex canonical={SITE.url + "/"}>
+  <HomeContent />
+</Base>
