@@ -110,12 +110,16 @@ parpadear. Si quieres el temporizador de vuelta, pon los milisegundos en
 
 Para cambiar el texto, toca solo `HEAD`, `SPECS`, `DEVICES` y `TAIL` del
 frontmatter: las columnas y los tiempos se calculan a partir de ahí.
-**Máximo 44 caracteres por línea** o desborda en un móvil de 390 px.
+**Máximo 40 caracteres por línea** o desborda en un móvil de 390 px.
 
-Tipografía **VT323** (`@fontsource/vt323`), que se importa dentro del propio
-componente y por eso solo se descarga en `/`. Es una fuente de mapa de bits:
-los tamaños van en píxeles enteros (16 en móvil, 20 a partir de 640 px) y sin
-`clamp()`, o se ve sucia.
+Tipografía **IBM VGA 8x16**, la de los PC de la época, en `public/fonts/` con
+su licencia al lado. Es de [VileR](https://int10h.org/oldschool-pc-fonts/),
+CC BY-SA 4.0 — el crédito que exige la licencia está en el pie del sitio.
+
+Es una fuente de mapa de bits de celda 8x16: **solo se ve nítida en 16 px (1x)
+y 32 px (2x)**. Nada de `clamp()` ni de 20 o 24 px. A 32 px un carácter mide
+16, y la línea más larga son 40 caracteres = 640 px, por eso el salto a 2x
+espera a los 900 px de ancho.
 
 La paleta no es monocroma a propósito: etiqueta en cian, valor en blanco y
 veredicto en verde/ámbar/magenta según lo bien que haya ido. Los POST de
