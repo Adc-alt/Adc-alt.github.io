@@ -690,6 +690,21 @@ import {
     min-width: 4ch;
     text-align: center;
   }
+  /* El contador de memoria no es un punto, es un numero: la referencia
+     declara `.number{width:20px;text-align:right}`, pero el
+     `min-width:40px` de la regla de arriba SUBE ese ancho a 40 — un
+     min-width por encima de un width mas pequeño gana. Esos 40px (no los 20
+     que pone `.number` a secas) son los que ponen `KB` en x=340, que es el
+     numero medido contra la referencia. Por eso aqui va `4ch` y no los `2ch`
+     que `.number` declara literalmente. Su `text-align:right` sigue
+     perdiendo contra el `text-align:center` de esa misma regla de arriba
+     (0,2,1 contra 0,2,0 del `.number`), y esa declaracion muerta se copia
+     tambien: por eso aqui NO se le anade el selector de tipo `span`, que
+     empataria la especificidad y le haria ganar por orden. */
+  .aligned-section > .number {
+    width: 4ch;
+    text-align: right;
+  }
   .aligned-section > span:last-child {
     text-align: left;
   }
@@ -1088,6 +1103,17 @@ Sin huecos.
 
 **2. Placeholders.** Ninguno: todos los pasos llevan el código o el comando exacto.
 
-**3. Consistencia de tipos.** Los nombres que exporta `boot-data.mjs` en la Task 1 (`HEAD`, `LOADING`, `SPECS`, `COUNT`, `DEVICES`, `TAIL`, `PROMPT`, `T`, `AUTO_MS`) son exactamente los que importa el frontmatter de la Task 2. Las clases CSS que pinta el marcado (`.r`, `.aligned-section`, `.aligned-section--wide`, `.number`, `.unit`, `.boot-gap`, `.boot-container`, `.boot-icon`, `.text-container`, `.boot-logo`, `.boot-mark`, `.blinking`, `.boot-text`, `.boot-inner`, `.boot-screen`) están todas definidas en el bloque `<style>` del mismo paso. Los `data-*` que lee el script (`data-auto`, `data-d`, `data-numbers`, `data-intervals`) los escribe el mismo marcado.
+**3. Consistencia de tipos.** Los nombres que exporta `boot-data.mjs` en la Task 1 (`HEAD`, `LOADING`, `SPECS`, `COUNT`, `DEVICES`, `TAIL`, `PROMPT`, `T`, `AUTO_MS`) son exactamente los que importa el frontmatter de la Task 2. Las clases CSS que pinta el marcado (`.r`, `.aligned-section`, `.aligned-section--wide`, `.number`, `.unit`, `.boot-gap`, `.boot-container`, `.boot-icon`, `.text-container`, `.boot-logo`, `.boot-mark`, `.blinking`, `.boot-text`, `.boot-inner`, `.boot-screen`) están todas definidas en el bloque `<style>` del mismo paso.
+
+⚠️ Esta afirmación era falsa cuando se escribió: el bloque CSS del Step 1, tal
+como se publicó, nunca llegó a incluir una regla `.number` — se detectó al
+correr el script de paridad en la Task 2 y se añadió ahí (y ya está reflejada
+arriba, en el propio Step 1). Y desde la ronda de arreglo del whole-branch
+review, `.boot-screen` tampoco tiene ya declaración propia: su único uso era
+`position: relative`, que resultó inerte (medido contra la referencia) y se
+borró; el nombre de clase se queda en el marcado por claridad, pero sin regla
+en `<style>`.
+
+Los `data-*` que lee el script (`data-auto`, `data-d`, `data-numbers`, `data-intervals`) los escribe el mismo marcado.
 
 **Riesgo conocido:** el script de medición de la Task 2 indexa `.aligned-section` por posición (`sec[0]` specs, `sec[2]` la del contador, `sec[3]` el primer chequeo). Si cambia el número de specs, hay que ajustar esos índices.

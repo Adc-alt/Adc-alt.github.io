@@ -91,7 +91,9 @@ intervals = [275, 30, 30, 30, 30, 30, 30, 50, 50, 50]
 ```
 
 Despacio al principio (275 ms), disparado en medio (30 ms), y frenando al final
-(50 ms). Dura unos 830 ms desde que aparece.
+(50 ms). Los diez intervalos suman 605 ms, pero el último nunca se llega a
+esperar (`contar()` corta el bucle justo después de pintar el valor final, sin
+programar su espera): la escalera dura **555 ms efectivos** desde que aparece.
 
 > La implementación de la referencia tiene un fallo: pinta el primer valor dos
 > veces (una al montar y otra en el primer `setTimeout`). Como el valor es el
@@ -151,6 +153,9 @@ Tomadas con CDP sobre la referencia a 1280x900.
 | Primera línea | top 20,6 / left 77,6 (el icono ocupa los primeros 57 px) |
 | Icono | 42x58, arriba a la izquierda, `margin-right: 15px` |
 | Logo | 266x168, `position:absolute; right:0; top:10%` |
+| Logo, top absoluto (viewport) | **26,86 px** |
+| Logo, top dentro de su ancla | **6,23 px** (`.boot-container` es `position:relative` y mide 62,38 px de alto; `top:10%` de eso da esos 6,23) |
+| Verde de la leyenda del logo | **`rgb(113,246,98)` = `#71f662`** (muestreado del PNG del logo, 1452 píxeles opacos de ese valor exacto — no elegido a ojo) |
 | Prompt | top 556 |
 | Alto del documento | 1096 (`#container { height: 1080px }`, `body { overflow-y: hidden }`) |
 

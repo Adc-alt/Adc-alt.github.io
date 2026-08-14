@@ -106,8 +106,8 @@ que tapa la portada la primera vez. Se salta con cualquier tecla, clic o toque.
 **Es un homenaje calcado a la pantalla de arranque de
 [senna.social](https://senna.social/).** La maqueta, los colores, los tiempos y
 el texto son suyos; aquí solo cambia la identidad (el nombre, ADCSOFT y un
-pingüino en lugar de su logo). No se copia ningún fichero suyo: los dibujos son
-SVG propios.
+sello y un pingüino dibujados aquí en lugar de sus dos imágenes). No se copia
+ningún fichero suyo: los dibujos son SVG propios.
 
 Las medidas, con capturas y el porqué de cada número, están en
 `docs/superpowers/specs/2026-08-14-arranque-paridad-senna.md`.

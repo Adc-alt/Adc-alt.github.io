@@ -168,8 +168,8 @@ import {
   </div>
 </div>
 
-{/* 2. Comportamiento. Inline y síncrono, sin imports: el mismo script que
-      enseña la pantalla es el que sabe quitarla. */}
+{/* 2. Comportamiento. Inline y síncrono, sin imports: este es el que la
+      QUITA — el que la enseña es el script 1, arriba del marcado. */}
 <script is:inline>
   (function () {
     var el = document.getElementById("boot");
@@ -184,9 +184,20 @@ import {
     // 0 = se queda esperando, como la referencia. Ver AUTO_MS en boot-data.mjs.
     var auto = Number(el.getAttribute("data-auto")) || 0;
     var timers = [];
-    if (auto > 0) timers.push(setTimeout(enter, auto));
 
     var btn = document.getElementById("boot-enter");
+    // Los listeners de salida van los primeros, antes de nada que pueda
+    // fallar mas abajo: el script 1 ya encendio la pantalla, y si una edicion
+    // futura rompe la sintaxis de algo posterior, sin esto la portada se
+    // queda negra, sin scroll y sin forma de salir para siempre (tampoco
+    // llegaria a ponerse boot_seen). `enter` es `function`, va hoisted: es
+    // seguro referenciarla aqui aunque se declare mas abajo.
+    addEventListener("keydown", enter, true);
+    addEventListener("pointerdown", enter, true);
+    if (btn) btn.addEventListener("click", enter);
+
+    if (auto > 0) timers.push(setTimeout(enter, auto));
+
     var nodes = el.querySelectorAll(".r");
 
     // Cada elemento sale a SU hora, no en cadena. Los tiempos vienen del
@@ -223,20 +234,29 @@ import {
       })();
     }
 
-    function onTouch(e) {
-      e.preventDefault(); // sin esto, el toque deja un clic fantasma en el enlace de debajo
-      enter();
-    }
+    // `pointerdown` se dispara antes que `touchstart`/`click` en todo
+    // navegador con Pointer Events: para cuando llega el clic de
+    // compatibilidad de un toque (50-150ms mas tarde), `enter()` ya corrio y
+    // `#boot` lleva ese tiempo encogiendose (`crt-off`, `scaleY(0.008)`), que
+    // colapsa tambien su caja de impacto. Sin tragarnos ese clic, aterriza en
+    // lo que haya debajo del punto tocado (enlaces del menu, tarjetas). Por
+    // eso no hace falta un listener de `touchstart` aparte: `pointerdown` ya
+    // cubre el toque, y lo unico que falta es tragarse ese clic tardio.
+    var eat = function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    };
 
     function enter() {
       if (done) return;
       done = true;
       for (var i = 0; i < timers.length; i++) clearTimeout(timers[i]);
-      // Los listeners se quitan SIEMPRE: el de touchstart lleva preventDefault
-      // y dejarlo puesto mata el scroll tactil del sitio entero.
       removeEventListener("keydown", enter, true);
       removeEventListener("pointerdown", enter, true);
-      removeEventListener("touchstart", onTouch, true);
+      // Instalado AQUI, dentro de enter(): el clic del propio boton ya llego
+      // a su listener antes de esto, asi que seguir pulsando con raton no se
+      // ve afectado.
+      addEventListener("click", eat, true);
 
       try {
         localStorage.setItem("boot_seen", "1");
@@ -251,6 +271,7 @@ import {
       var fin = function () {
         el.remove();
         document.documentElement.removeAttribute("data-boot");
+        removeEventListener("click", eat, true);
         var main = document.getElementById("contenido");
         if (main) {
           main.setAttribute("tabindex", "-1");
@@ -260,18 +281,6 @@ import {
       if (reduce) return fin();
       el.classList.add("is-off");
       setTimeout(fin, 300);
-    }
-
-    // Saltable desde el primer frame, por cualquier via.
-    addEventListener("keydown", enter, true);
-    addEventListener("pointerdown", enter, true);
-    addEventListener("touchstart", onTouch, { capture: true, passive: false });
-
-    if (btn) {
-      btn.addEventListener("click", enter);
-      try {
-        btn.focus();
-      } catch (e) {}
     }
   })();
 </script>
@@ -320,9 +329,12 @@ import {
   /* ── Base ────────────────────────────────────────────────────────────────
      Referencia: body{background:#060606;color:#b3b3b3}
                  span{color:#dedede;font-size:24px;line-height:1.3}
-     Y NADA de color. Un POST de VGA en modo texto era gris sobre negro. En
-     cuanto metes tres colores deja de parecer una BIOS y parece un tema de
-     terminal. */
+     El CUERPO del POST es monocromo: gris sobre negro, como un modo texto de
+     VGA de verdad. El único color que se sale de eso es el verde de
+     `.boot-mark` (§ Cabecera, más abajo), y va aparte a propósito: es la
+     marca del fabricante, no el texto del POST — en la referencia también
+     vive fuera de este monocromo. Cualquier OTRO color sí rompería el
+     parecido y lo convertiría en un tema de terminal. */
   #boot {
     background: #060606;
     color: #b3b3b3;
@@ -345,10 +357,6 @@ import {
     height: 100dvh;
     overflow: hidden;
   }
-  .boot-screen {
-    position: relative;
-  }
-
   #boot span {
     display: inline-block;
     color: #dedede;
@@ -378,7 +386,10 @@ import {
   }
 
   /* Los <br><br> de la referencia van fuera de los spans, o sea a la altura de
-     línea de su body (16px), no a la de 24px del texto. Medido: 32px. */
+     línea de su body (16px), no a la de 24px del texto: 32px en la
+     referencia. Aquí se expresa en `em` de la fuente del arranque (24px, o
+     16px bajo los 700px de móvil) y no en px fijos, así que el hueco encoge
+     con ella igual que el resto de la rejilla. */
   .boot-gap {
     height: 1.3em;
   }
@@ -409,16 +420,17 @@ import {
     min-width: 4ch;
     text-align: center;
   }
-  /* El contador de memoria no es un punto, es un numero: la referencia le
-     pone `.number{width:20px;text-align:right}`. Sin ancho fijo, el ultimo
-     valor (91021, 5 cifras) crece mas alla de los 4ch y desplaza la unidad.
-     Pero OJO: en la referencia ese `width` gana (nadie mas lo disputa, y el
-     `min-width:40px` de la regla de arriba solo actua de suelo), mientras que
-     su `text-align:right` PIERDE contra el `text-align:center` de esa misma
-     regla de arriba (0,2,1 contra 0,1,0 del `.number`). Por eso aqui NO se le
-     anade el selector de tipo `span`: con solo la clase (0,2,0) el ancho
-     entra igual y el centrado de arriba sigue ganando, calcando ese empate
-     de la referencia — incluida su declaracion muerta. */
+  /* El contador de memoria no es un punto, es un numero: la referencia
+     declara `.number{width:20px;text-align:right}`, pero el
+     `min-width:40px` de la regla de arriba SUBE ese ancho a 40 — un
+     min-width por encima de un width mas pequeño gana. Esos 40px (no los 20
+     que pone `.number` a secas) son los que ponen `KB` en x=340, que es el
+     numero medido contra la referencia. Por eso aqui va `4ch` y no los `2ch`
+     que `.number` declara literalmente. Su `text-align:right` sigue
+     perdiendo contra el `text-align:center` de esa misma regla de arriba
+     (0,2,1 contra 0,2,0 del `.number`), y esa declaracion muerta se copia
+     tambien: por eso aqui NO se le anade el selector de tipo `span`, que
+     empataria la especificidad y le haria ganar por orden. */
   .aligned-section > .number {
     width: 4ch;
     text-align: right;
@@ -450,17 +462,24 @@ import {
     display: flex;
     flex-direction: column;
   }
+  /* Ancla: `.boot-container`, que es el `position: relative` mas cercano (no
+     `.boot-screen`, que no aporta nada aqui). Igual que en la referencia, y
+     con el mismo alto de caja (62,38px medidos en ambas): el `top: 10%`
+     resuelve a los mismos 6,23px. */
   .boot-logo {
     position: absolute;
     right: 0;
     top: 10%;
     text-align: center;
   }
-  .boot-mark {
+  /* #71f662: muestreado del PNG del logo de la referencia (1452 píxeles
+     opacos de ese valor exacto), no elegido a ojo. Con `#boot .boot-mark`
+     (1,1,0) ya gana a `#boot span` (1,0,1) sin necesidad de `!important`. */
+  #boot .boot-mark {
     display: block;
     padding-top: 4px;
-    border-top: 2px solid #6ee27a;
-    color: #6ee27a !important;
+    border-top: 2px solid #71f662;
+    color: #71f662;
     white-space: nowrap;
     font-size: 0.8em;
   }
