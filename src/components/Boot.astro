@@ -84,12 +84,15 @@ const rows: Row[] = [
       llega a existir, así el visitante que repite no ve ni un frame. */}
 <script is:inline>
   (function () {
+    // La raiz tiene dos direcciones: GitHub Pages sirve la misma pagina en "/"
+    // y en "/index.html", y comparando solo con "/" el arranque no salia por
+    // la segunda. Cualquier otra ruta (enlaces profundos, /work/) no arranca.
+    var p = location.pathname;
+    if (p !== "/" && p !== "/index.html") return;
     try {
-      if (location.pathname !== "/") return;
       if (localStorage.getItem("boot_seen")) return;
     } catch (e) {
       /* modo privado: que arranque igual */
-      if (location.pathname !== "/") return;
     }
     document.documentElement.setAttribute("data-boot", "on");
   })();
