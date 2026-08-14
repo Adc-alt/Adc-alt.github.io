@@ -3,17 +3,16 @@
  * Pantalla de arranque tipo POST de BIOS. Cortina, no laberinto.
  *
  * ─── CÓMO CAMBIAR EL TEXTO ──────────────────────────────────────────────
- * Toca solo `HEADER` y `CHECKS` de aquí abajo. La animación se calcula sola
- * a partir del número de líneas (`STAGGER` ms entre cada una), así que puedes
- * añadir o quitar sin tocar el CSS ni el JS. Mantén entre 6 y 9 chequeos: con
- * más, la secuencia se pasa de los 2,5 s y la gente cierra la pestaña.
+ * Toca solo `HEAD`, `SPECS`, `DEVICES` y `TAIL` de aquí abajo. El ritmo se
+ * calcula solo (`STAGGER` ms entre líneas), así que puedes añadir o quitar
+ * sin tocar el CSS ni el JS.
  *
- * Las columnas se alinean solas con puntos. Escribe en MAYÚSCULAS y SIN
- * acentos: un POST real es ASCII, y así la línea no cambia de ancho.
+ * ⚠️ MÁXIMO 44 CARACTERES POR LÍNEA. Es lo que cabe en un móvil de 390 px
+ * con la VT323 a 16 px sin barra horizontal. Cuenta la línea entera ya
+ * montada, columnas incluidas.
  *
- * ⚠️ Límite de ancho: ~62 caracteres por línea ya montada (k + v + s). Es lo
- * que cabe en un móvil de 390 px sin barra horizontal. La más larga de ahora
- * mide 61 y llega justo, así que si alargas una, acorta otra.
+ * MAYÚSCULAS y SIN acentos en las etiquetas: un POST real es ASCII.
+ * Deja entre 6 y 9 chequeos; con más, la secuencia se pasa de 2,5 s.
  * ────────────────────────────────────────────────────────────────────────
  *
  * Cómo se comporta, por si hay que depurarlo:
@@ -25,35 +24,59 @@
  *  - El primer script va ANTES del markup: así el que ya lo vio no ve ni un
  *    parpadeo de la pantalla de arranque.
  */
+import "@fontsource/vt323";
 
-const YEAR = 2026;
-const STAGGER = 150; // ms entre línea y línea
+const STAGGER = 110; // ms entre línea y línea
 
-const HEADER = [
-  "DELGADOSOFT BIOS v95.0",
-  `(C) 1995-${YEAR} DELGADOSOFT. NINGUN DERECHO RESERVADO.`,
+const HEAD = {
+  title: "Adc-alt [Version 95.0.2026a]",
+  copy: "Copyright (c) 1995-2026 DELGADOSOFT Corp.",
+  mark: "ADC:MODO RECREATIVA",
+};
+
+/** Bloque de arriba: etiqueta, dos puntos y valor. */
+const SPECS = [
+  { k: "PROCESADOR", v: "ANTONIO-D1-SW" },
+  { k: "MEMORIA", v: "EXTERNALIZADA A OBSIDIAN" },
+  { k: "CAFES EN COLA", v: "91021  KB" },
 ];
 
-/** k = componente · v = qué es · s = veredicto (opcional) */
-const CHECKS = [
-  { k: "CPU", v: "ANTONIO DELGADO", s: "1 NUCLEO, SIN TURBO" },
-  { k: "MEMORIA", v: "EXTERNALIZADA A OBSIDIAN", s: "OK" },
-  { k: "DISCO 0", v: "TYPESCRIPT, KOTLIN, SWIFT", s: "OK" },
-  { k: "DISCO 1", v: "ELECTRON Y MODULOS NATIVOS", s: "ABI INCOMPATIBLE" },
-  { k: "SUBSISTEMA", v: "WSL2 SOBRE WINDOWS", s: "CASI SIEMPRE" },
-  { k: "GUARDIA", v: "MEDIA GUARDIA", s: "ACTIVA" },
-  { k: "PERIFERICO", v: "MAQUINA RECREATIVA", s: "VER MAS ABAJO" },
-  { k: "RED", v: "GITHUB PAGES", s: "EN LINEA" },
+/** Bloque de chequeos: dispositivo, puntos y veredicto. */
+const DEVICES = [
+  { k: "Teclado y raton", s: "CONECTADOS", t: "ok" },
+  { k: "Monitores CRT", s: "QUEJANDOSE", t: "warn" },
+  { k: "Modulos nativos [3]", s: "ABI INCOMPATIBLE", t: "bad" },
+  { k: "WSL2 sobre Windows", s: "CASI SIEMPRE", t: "warn" },
+  { k: "Media guardia", s: "ACTIVA", t: "ok" },
+  { k: "GitHub Pages", s: "EN LINEA", t: "ok" },
 ];
 
-// Rellenos calculados aquí para que las columnas cuadren solas.
-const wK = Math.max(...CHECKS.map((c) => c.k.length)) + 3;
-const wV = Math.max(...CHECKS.map((c) => c.v.length)) + 3;
-const lines = [
-  ...HEADER,
-  "",
-  ...CHECKS.map((c) => `${c.k.padEnd(wK, ".")} ${c.v.padEnd(wV, ".")} ${c.s}`),
-  "",
+const TAIL = "CD-ROM insertado : comecocos.pcm";
+
+// Anchos calculados aquí para que las columnas cuadren solas.
+const wSpec = Math.max(...SPECS.map((s) => s.k.length));
+const wDev = Math.max(...DEVICES.map((d) => d.k.length));
+
+// Orden de aparición. Cada entrada es una línea; el script las va encendiendo.
+// El tipo explícito es lo que deja que TypeScript estreche por `kind` más
+// abajo; sin él infiere `kind: string` y no distingue las variantes.
+type Row =
+  | { kind: "head" }
+  | { kind: "gap" }
+  | { kind: "raw"; text: string }
+  | { kind: "spec"; pad: string; v: string }
+  | { kind: "dev"; pad: string; s: string; t: string };
+
+const rows: Row[] = [
+  { kind: "head" },
+  { kind: "gap" },
+  { kind: "raw", text: "Loading..." },
+  { kind: "gap" },
+  ...SPECS.map((s): Row => ({ kind: "spec", pad: s.k.padEnd(wSpec), v: s.v })),
+  { kind: "gap" },
+  ...DEVICES.map((d): Row => ({ kind: "dev", pad: d.k.padEnd(wDev), s: d.s, t: d.t })),
+  { kind: "gap" },
+  { kind: "raw", text: TAIL },
 ];
 ---
 
@@ -72,26 +95,105 @@ const lines = [
   })();
 </script>
 
-{/* `data-seq` es el puente al script inline: un `is:inline` no ve las
+{/* `data-*` es el puente al script inline: un `is:inline` no ve las
     variables del frontmatter, así que el dato viaja por el DOM. */}
-<div id="boot" data-stagger={STAGGER} data-seq={(lines.length + 1) * STAGGER}>
+<div id="boot" data-stagger={STAGGER} data-seq={(rows.length + 2) * STAGGER}>
   <div class="boot-inner">
-    <pre id="boot-lines" aria-hidden="true">{
-      lines.map((l) => <span class="boot-line">{l || " "}</span>)
-    }</pre>
+    {/* Ojo: el aria-hidden va en el <pre> y en la marca, NO en este envoltorio.
+        Un aria-hidden en el padre también esconde al botón, y un
+        aria-hidden="false" en el hijo no lo rescata: el overlay se volvería
+        una trampa sin salida para un lector de pantalla. */}
+    <div class="boot-screen">
+      {/* Marca arriba a la derecha, en el hueco donde un PC de 1998 ponía el
+          logo del fabricante. SVG en línea: sin peticiones ni ficheros. */}
+      <div class="boot-mark" aria-hidden="true">
+        <svg viewBox="0 0 44 40" width="88" height="80" role="presentation">
+          {/* Fantasma en píxeles, dibujado con rectángulos de 4 px */}
+          <g fill="currentColor">
+            <rect x="12" y="4" width="20" height="4"></rect>
+            <rect x="8" y="8" width="28" height="4"></rect>
+            <rect x="4" y="12" width="36" height="20"></rect>
+            <rect x="4" y="32" width="4" height="4"></rect>
+            <rect x="12" y="32" width="4" height="4"></rect>
+            <rect x="20" y="32" width="4" height="4"></rect>
+            <rect x="28" y="32" width="4" height="4"></rect>
+            <rect x="36" y="32" width="4" height="4"></rect>
+          </g>
+          <g fill="#05060b">
+            <rect x="12" y="16" width="8" height="10"></rect>
+            <rect x="26" y="16" width="8" height="10"></rect>
+          </g>
+        </svg>
+        <span class="boot-mark-txt">{HEAD.mark}</span>
+      </div>
 
-    {/* La última línea es un botón de verdad: se puede tocar, se puede tabular
-        y un lector de pantalla lo anuncia. El overlay no atrapa a nadie. */}
-    <button id="boot-enter" type="button" autofocus>
-      {/* Tres variantes y gana la que encaje. La que se ve por defecto es la
-          que vale para todos: si el navegador no se moja sobre qué tipo de
-          puntero tiene, más vale decir de más que mandar a alguien a tocar una
-          pantalla que no es táctil. */}
-      <span class="boot-any">[ PULSA UNA TECLA O TOCA LA PANTALLA ]</span>
-      <span class="boot-key">[ PULSA CUALQUIER TECLA ]</span>
-      <span class="boot-tap">[ TOCA LA PANTALLA ]</span>
-      <span class="boot-cursor" aria-hidden="true">▮</span>
-    </button>
+      {/* Un <div> y no un <pre>: dentro de un <pre> la indentación del propio
+          template se convierte en saltos de línea de verdad y descuadra todo.
+          El `white-space: pre` vive en cada línea, que es donde hace falta. */}
+      <div id="boot-lines" aria-hidden="true">{
+        rows.map((r) => {
+          if (r.kind === "gap") return <span class="boot-line"> </span>;
+
+          if (r.kind === "head") {
+            return (
+              <span class="boot-line boot-head">
+                <svg class="boot-icon" viewBox="0 0 24 32" width="24" height="32" role="presentation">
+                  {/* Comecocos en píxeles, donde iba la pegatina de Energy Star */}
+                  <g fill="currentColor">
+                    <rect x="6" y="2" width="12" height="4"></rect>
+                    <rect x="2" y="6" width="20" height="4"></rect>
+                    <rect x="2" y="10" width="14" height="4"></rect>
+                    <rect x="2" y="14" width="10" height="4"></rect>
+                    <rect x="2" y="18" width="14" height="4"></rect>
+                    <rect x="2" y="22" width="20" height="4"></rect>
+                    <rect x="6" y="26" width="12" height="4"></rect>
+                  </g>
+                </svg>
+                <span class="boot-head-txt">
+                  <span class="l-ink">{HEAD.title}</span>
+                  <span class="l-dim">{HEAD.copy}</span>
+                </span>
+              </span>
+            );
+          }
+
+          if (r.kind === "raw") {
+            return <span class="boot-line l-dim">{r.text}</span>;
+          }
+
+          if (r.kind === "spec") {
+            return (
+              <span class="boot-line">
+                <span class="l-key">{r.pad}</span>
+                <span class="l-dim"> : </span>
+                <span class="l-ink">{r.v}</span>
+              </span>
+            );
+          }
+
+          return (
+            <span class="boot-line">
+              <span class="l-key">{r.pad}</span>
+              <span class="l-dim"> ... </span>
+              <span class={`l-${r.t}`}>{r.s}</span>
+            </span>
+          );
+        })
+      }</div>
+
+      {/* La última línea es un botón de verdad: se puede tocar, se puede tabular
+          y un lector de pantalla lo anuncia. El overlay no atrapa a nadie. */}
+      <button id="boot-enter" type="button" autofocus>
+        {/* Tres variantes y gana la que encaje. La de por defecto es la que
+            vale para todos: si el navegador no se moja sobre qué puntero
+            tiene, más vale decir de más que mandar a alguien a tocar una
+            pantalla que no es táctil. */}
+        <span class="boot-any">[PULSA UNA TECLA O TOCA LA PANTALLA]</span>
+        <span class="boot-key">[PULSA CUALQUIER TECLA PARA CONTINUAR]</span>
+        <span class="boot-tap">[TOCA LA PANTALLA PARA CONTINUAR]</span>
+        <span class="boot-cursor">▮</span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -108,24 +210,24 @@ const lines = [
 
     var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
     var done = false;
-    // Fin de la secuencia + 1 s de cortesía. Con movimiento reducido no hay
-    // secuencia que esperar, pero sigue habiendo un momento para leerla.
     var seq = Number(el.getAttribute("data-seq")) || 1700;
+    var stagger = Number(el.getAttribute("data-stagger")) || 110;
     var timer = setTimeout(enter, reduce ? 1800 : seq + 1000);
+
+    var nodes = el.querySelectorAll(".boot-line");
+    var btn = document.getElementById("boot-enter");
+    var iv = 0;
 
     // El tipeo va en JS y no en CSS a propósito. La pantalla SOLO existe si
     // este script corre, así que no se gana nada haciéndolo en CSS, y con
     // `animation-delay` encadenado las líneas de más de 1 s no llegaban a
     // pintarse (la animación acababa `finished` pero el fill no aplicaba).
-    var nodes = el.querySelectorAll(".boot-line");
-    var btn = document.getElementById("boot-enter");
-    var stagger = Number(el.getAttribute("data-stagger")) || 150;
-    var iv = 0;
-
-    if (reduce) {
-      for (var n = 0; n < nodes.length; n++) nodes[n].classList.add("on");
-      if (btn) btn.classList.add("on");
-    } else {
+    function revelar() {
+      if (reduce) {
+        for (var n = 0; n < nodes.length; n++) nodes[n].classList.add("on");
+        if (btn) btn.classList.add("on");
+        return;
+      }
       var i = 0;
       iv = setInterval(function () {
         if (i >= nodes.length) {
@@ -139,6 +241,18 @@ const lines = [
         nodes[i].classList.add("on", "cur");
         i++;
       }, stagger);
+    }
+
+    // Esperar a la VT323 antes de empezar: si no, se ven dos líneas en la
+    // fuente de reserva y luego saltan de sitio al cambiar de tipografía.
+    // Con tope, que una fuente que no carga no puede colgar la portada.
+    var arrancado = false;
+    var arrancar = function () { if (!arrancado) { arrancado = true; revelar(); } };
+    setTimeout(arrancar, 300);
+    if (document.fonts && document.fonts.load) {
+      document.fonts.load('16px "VT323"').then(arrancar, arrancar);
+    } else {
+      arrancar();
     }
 
     function onTouch(e) {
@@ -197,7 +311,7 @@ const lines = [
     /* Por encima de todo, incluidas las capas de CRT del sitio (z 58-60) y el
        enlace de saltar al contenido (z 100). */
     z-index: 200;
-    background: #000;
+    background: var(--color-void);
     overflow: hidden;
   }
   /* Nada de scroll por detrás mientras arranca. */
@@ -207,27 +321,53 @@ const lines = [
 
   .boot-inner {
     /* Terminal de verdad: todo a la izquierda, con margen. Nada centrado. */
-    padding: clamp(1rem, 5vh, 3.5rem) clamp(0.9rem, 5vw, 4rem);
-    max-width: 72rem;
+    padding: 24px 20px;
     max-height: 100dvh;
     overflow: auto;
   }
+  @media (min-width: 640px) {
+    .boot-inner {
+      padding: 48px 56px;
+    }
+  }
 
+  .boot-screen {
+    position: relative;
+    max-width: 60rem;
+  }
+
+  /* VT323 es una fuente de mapa de bits: en tamaños fraccionarios se ve sucia.
+     Por eso px enteros y nada de clamp(). */
   #boot-lines,
-  #boot-enter {
-    /* Un solo color sobre negro: ambar de fosforo. */
-    color: #ffb000;
-    font-family: var(--font-mono);
-    font-size: clamp(0.5rem, 2.35vw, 0.82rem);
-    line-height: 1.85;
-    letter-spacing: 0.02em;
-    text-align: left;
+  #boot-enter,
+  .boot-mark-txt {
+    font-family: "VT323", var(--font-mono), monospace;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0;
+  }
+  @media (min-width: 640px) {
+    #boot-lines,
+    #boot-enter,
+    .boot-mark-txt {
+      font-size: 20px;
+      line-height: 28px;
+    }
   }
 
   #boot-lines {
     margin: 0;
-    white-space: pre;
+    color: var(--color-dim);
   }
+
+  /* Paleta de POST: la etiqueta en cian, el valor en blanco y el veredicto
+     según lo bien que haya ido. Un BIOS de verdad tampoco era monocromo. */
+  .l-key { color: var(--color-neon-cyan); }
+  .l-ink { color: var(--color-ink); }
+  .l-dim { color: var(--color-faint); }
+  .l-ok { color: var(--color-neon-lime); }
+  .l-warn { color: var(--color-neon-amber); }
+  .l-bad { color: var(--color-neon-magenta); }
 
   /* Aparecer es un interruptor, no una transición: lo enciende el script
      línea a línea. Un POST no hace fundidos. */
@@ -242,23 +382,69 @@ const lines = [
 
   .boot-line {
     display: block;
+    /* Aquí y no en el contenedor: así se respetan los espacios que alinean las
+       columnas, pero la indentación del template entre líneas no cuenta. */
+    white-space: pre;
   }
   /* Cursor de bloque en la línea activa; el script lo va moviendo. */
   .boot-line.cur::after {
     content: "▮";
     margin-left: 0.5ch;
+    color: var(--color-ink);
+  }
+
+  /* Cabecera: el icono a la izquierda y dos líneas al lado, como el logo de
+     Energy Star de los PC de la época. */
+  .boot-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 4px;
+    /* Sin `pre` aquí: en un contenedor flex los espacios en blanco del template
+       se convertirían en items flex y abrirían huecos falsos. */
+    white-space: normal;
+  }
+  .boot-icon {
+    flex: none;
+    color: var(--color-neon-amber);
+    margin-top: 2px;
+  }
+  .boot-head-txt > span {
+    display: block;
+  }
+
+  .boot-mark {
+    position: absolute;
+    top: 0;
+    right: 0;
+    text-align: center;
+    color: var(--color-neon-magenta);
+  }
+  .boot-mark-txt {
+    display: block;
+    margin-top: 4px;
+    color: var(--color-neon-lime);
+    white-space: nowrap;
+  }
+  /* En móvil no hay sitio: el texto manda. */
+  @media (max-width: 639px) {
+    .boot-mark {
+      display: none;
+    }
   }
 
   #boot-enter {
     display: block;
-    margin-top: 1.6em;
+    margin-top: 28px;
     padding: 0;
     background: none;
     border: 0;
+    color: var(--color-ink);
     cursor: pointer;
+    text-align: left;
   }
   #boot-enter:focus-visible {
-    outline: 2px solid #ffb000;
+    outline: 2px solid var(--color-neon-amber);
     outline-offset: 4px;
   }
 
@@ -281,32 +467,14 @@ const lines = [
     margin-left: 0.5ch;
     animation: boot-blink 1s steps(1) infinite;
   }
-
   @keyframes boot-blink {
-    0%,
-    49% {
-      opacity: 1;
-    }
-    50%,
-    100% {
-      opacity: 0;
-    }
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
   }
 
-  /* El UNICO efecto de CRT de esta pantalla: scanlines muy flojas.
-     Ni viñeteado ni aberración: dos ya es parodia. */
-  :global(html[data-boot="on"]) #boot::after,
-  :global(html[data-boot="off"]) #boot::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: repeating-linear-gradient(
-      to bottom,
-      rgb(0 0 0 / 0.22) 0 1px,
-      transparent 1px 3px
-    );
-  }
+  /* Sin efectos de CRT aquí a propósito: la referencia no lleva ninguno y es
+     lo primero que convierte el homenaje en parodia. Las capas del sitio
+     quedan por debajo (z 58-60 contra el z 200 de esta pantalla). */
 
   /* Apagado de tubo: se cierra a una raya, destella y desaparece. */
   #boot.is-off {
@@ -328,20 +496,13 @@ const lines = [
     }
   }
 
-  /* Sin movimiento: el texto entero de golpe, sin tipeo, sin apagado, sin
-     rayas. Se sigue viendo y se sigue saliendo con cualquier tecla. */
+  /* Sin movimiento: el texto entero de golpe, sin tipeo, sin apagado. */
   @media (prefers-reduced-motion: reduce) {
-    /* El script ya las enciende todas de golpe; aquí solo se quita el parpadeo
-       y el cursor que va saltando de línea. */
     .boot-cursor {
       animation: none;
     }
     .boot-line.cur::after {
       content: none;
-    }
-    :global(html[data-boot="on"]) #boot::after,
-    :global(html[data-boot="off"]) #boot::after {
-      display: none;
     }
     #boot.is-off {
       animation: none;

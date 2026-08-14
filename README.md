@@ -103,9 +103,20 @@ no se commitea.
 `src/components/Boot.astro`. POST de BIOS falso que tapa la portada la primera
 vez. Se salta con cualquier tecla, clic o toque, y entra sola a los ~3 s.
 
-Para cambiar el texto, toca solo `HEADER` y `CHECKS` del frontmatter: las
-columnas y los tiempos se calculan a partir de ahí. Máximo ~62 caracteres por
-línea o desborda en móvil.
+Para cambiar el texto, toca solo `HEAD`, `SPECS`, `DEVICES` y `TAIL` del
+frontmatter: las columnas y los tiempos se calculan a partir de ahí.
+**Máximo 44 caracteres por línea** o desborda en un móvil de 390 px.
+
+Tipografía **VT323** (`@fontsource/vt323`), que se importa dentro del propio
+componente y por eso solo se descarga en `/`. Es una fuente de mapa de bits:
+los tamaños van en píxeles enteros (16 en móvil, 20 a partir de 640 px) y sin
+`clamp()`, o se ve sucia.
+
+La paleta no es monocroma a propósito: etiqueta en cian, valor en blanco y
+veredicto en verde/ámbar/magenta según lo bien que haya ido. Los POST de
+verdad tampoco eran de un solo color. Y no lleva scanlines ni viñeteado: la
+referencia (`senna.social`) no tiene ninguno y es lo primero que convierte el
+homenaje en parodia.
 
 Tres cosas que parecen detalles y no lo son:
 
