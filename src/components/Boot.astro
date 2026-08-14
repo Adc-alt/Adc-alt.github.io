@@ -28,6 +28,16 @@ import "@fontsource/vt323";
 
 const STAGGER = 110; // ms entre línea y línea
 
+/**
+ * Milisegundos hasta entrar solo al portfolio. **0 = no entra sola, espera.**
+ *
+ * Espera a propósito, como la referencia: senna.social sigue en el arranque a
+ * los 25 s si no tocas nada. Con temporizador la pantalla se iba a los 3 s y
+ * te la perdías al parpadear, que es justo lo contrario de lo que se busca.
+ * Si algún día quieres que entre sola, pon aquí los ms y ya está.
+ */
+const AUTO_MS = 0;
+
 const HEAD = {
   title: "Adc-alt [Version 95.0.2026a]",
   copy: "Copyright (c) 1995-2026 DELGADOSOFT Corp.",
@@ -100,7 +110,7 @@ const rows: Row[] = [
 
 {/* `data-*` es el puente al script inline: un `is:inline` no ve las
     variables del frontmatter, así que el dato viaja por el DOM. */}
-<div id="boot" data-stagger={STAGGER} data-seq={(rows.length + 2) * STAGGER}>
+<div id="boot" data-stagger={STAGGER} data-auto={AUTO_MS}>
   <div class="boot-inner">
     {/* Ojo: el aria-hidden va en el <pre> y en la marca, NO en este envoltorio.
         Un aria-hidden en el padre también esconde al botón, y un
@@ -213,9 +223,10 @@ const rows: Row[] = [
 
     var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
     var done = false;
-    var seq = Number(el.getAttribute("data-seq")) || 1700;
     var stagger = Number(el.getAttribute("data-stagger")) || 110;
-    var timer = setTimeout(enter, reduce ? 1800 : seq + 1000);
+    // 0 = se queda esperando, como la referencia. Ver AUTO_MS arriba.
+    var auto = Number(el.getAttribute("data-auto")) || 0;
+    var timer = auto > 0 ? setTimeout(enter, auto) : 0;
 
     var nodes = el.querySelectorAll(".boot-line");
     var btn = document.getElementById("boot-enter");

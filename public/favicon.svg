@@ -1,4 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
-  <rect width="16" height="16" fill="#05060b"/>
-  <path fill="#35e7f5" d="M5 3h6v2H5zM3 5h2v8H3zM11 5h2v8h-2zM5 8h6v2H5z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Osciloscopio">
+  <title>Osciloscopio</title>
+
+  <!-- Fondo propio: la pestaña puede ser clara u oscura, así que el icono no
+       depende del tema del navegador. -->
+  <rect width="32" height="32" rx="4" fill="#05060b"/>
+
+  <!-- Carcasa del aparato -->
+  <rect x="2.5" y="6.5" width="27" height="19" rx="2.5"
+        fill="#0a0d18" stroke="#35e7f5" stroke-width="1.6"/>
+
+  <!-- Pantalla -->
+  <rect x="5" y="9" width="16" height="14" rx="1" fill="#02040a"/>
+
+  <!-- Retícula. Muy tenue: a 16 px no debe competir con la traza. -->
+  <g stroke="#35e7f5" stroke-width="0.5" opacity="0.28">
+    <path d="M13 9v14M5 16h16"/>
+  </g>
+
+  <!-- La traza. Es lo único que tiene que leerse a tamaño de pestaña, así que
+       va gruesa, en verde de fósforo y con brillo por debajo. -->
+  <path d="M5.5 16 C7 10.5 8.8 10.5 10.2 16 C11.6 21.5 13.4 21.5 14.8 16 C16.2 10.5 18 10.5 19.4 16"
+        fill="none" stroke="#7cff6b" stroke-width="3.4" stroke-linecap="round"
+        stroke-linejoin="round" opacity="0.28"/>
+  <path d="M5.5 16 C7 10.5 8.8 10.5 10.2 16 C11.6 21.5 13.4 21.5 14.8 16 C16.2 10.5 18 10.5 19.4 16"
+        fill="none" stroke="#7cff6b" stroke-width="1.7" stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <!-- Mandos -->
+  <circle cx="25.2" cy="12.5" r="2" fill="#0a0d18" stroke="#ffc53d" stroke-width="1.2"/>
+  <circle cx="25.2" cy="20" r="2" fill="#0a0d18" stroke="#ffc53d" stroke-width="1.2"/>
+
+  <!-- Patas -->
+  <path d="M8 25.5v2M24 25.5v2" stroke="#35e7f5" stroke-width="1.6" stroke-linecap="round"/>
 </svg>

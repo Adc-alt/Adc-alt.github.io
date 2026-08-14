@@ -101,7 +101,12 @@ no se commitea.
 ## Pantalla de arranque
 
 `src/components/Boot.astro`. POST de BIOS falso que tapa la portada la primera
-vez. Se salta con cualquier tecla, clic o toque, y entra sola a los ~3 s.
+vez. Se salta con cualquier tecla, clic o toque.
+
+**No entra sola: espera.** Como la referencia, que a los 25 s sigue en el
+arranque si no tocas nada. Antes entraba sola a los 3 s y te la perdías al
+parpadear. Si quieres el temporizador de vuelta, pon los milisegundos en
+`AUTO_MS` del frontmatter (`0` = esperar).
 
 Para cambiar el texto, toca solo `HEAD`, `SPECS`, `DEVICES` y `TAIL` del
 frontmatter: las columnas y los tiempos se calculan a partir de ahí.
