@@ -409,12 +409,17 @@ import {
     min-width: 4ch;
     text-align: center;
   }
-  /* El contador de memoria no es un punto, es un numero: referencia lo pone
-     `.number{width:20px;text-align:right}`, encima del `nth-child(2)` de
-     arriba (por eso lleva tambien el selector de tipo, para empatar su
-     especificidad y ganar por orden). Sin ancho fijo, el ultimo valor
-     (91021, 5 cifras) crece mas alla de los 4ch y desplaza la unidad. */
-  .aligned-section > span.number {
+  /* El contador de memoria no es un punto, es un numero: la referencia le
+     pone `.number{width:20px;text-align:right}`. Sin ancho fijo, el ultimo
+     valor (91021, 5 cifras) crece mas alla de los 4ch y desplaza la unidad.
+     Pero OJO: en la referencia ese `width` gana (nadie mas lo disputa, y el
+     `min-width:40px` de la regla de arriba solo actua de suelo), mientras que
+     su `text-align:right` PIERDE contra el `text-align:center` de esa misma
+     regla de arriba (0,2,1 contra 0,1,0 del `.number`). Por eso aqui NO se le
+     anade el selector de tipo `span`: con solo la clase (0,2,0) el ancho
+     entra igual y el centrado de arriba sigue ganando, calcando ese empate
+     de la referencia — incluida su declaracion muerta. */
+  .aligned-section > .number {
     width: 4ch;
     text-align: right;
   }
