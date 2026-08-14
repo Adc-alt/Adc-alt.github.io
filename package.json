@@ -13,7 +13,8 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro check && astro build",
+    "test": "node --test \"src/**/*.test.mjs\"",
+    "build": "pnpm test && astro check && astro build",
     "preview": "astro preview",
     "check": "astro check",
     "astro": "astro"

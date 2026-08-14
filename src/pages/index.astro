@@ -3,6 +3,7 @@ import { getCollection } from "astro:content";
 import Base from "../layouts/Base.astro";
 import SectionTitle from "../components/SectionTitle.astro";
 import ProjectCard from "../components/ProjectCard.astro";
+import Comecocos from "../components/Comecocos.astro";
 import { SITE } from "../consts";
 
 const all = await getCollection("proyectos", ({ data }) =>
@@ -97,6 +98,19 @@ const stats = [
           ))
         }
       </dl>
+    </div>
+  </section>
+
+  {/* ================= LA RECREATIVA ================= */}
+  <section class="relative px-5 pt-24">
+    <div class="mx-auto max-w-5xl">
+      <SectionTitle kicker="Bonus stage" title="Comecocos" />
+      <p class="mb-8 max-w-xl text-sm text-dim">
+        Escrito a mano en canvas, sin librerías. Los cuatro fantasmas tienen la
+        personalidad del original: uno te persigue, otro te corta el paso, otro
+        va a por donde vas a estar y el último se raja cuando te acercas.
+      </p>
+      <Comecocos />
     </div>
   </section>
 
