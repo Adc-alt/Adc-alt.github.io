@@ -100,74 +100,57 @@ no se commitea.
 
 ## Pantalla de arranque
 
-`src/components/Boot.astro`. POST de BIOS falso que tapa la portada la primera
-vez. Se salta con cualquier tecla, clic o toque.
+`src/components/Boot.astro` + `src/components/boot-data.mjs`. POST de BIOS falso
+que tapa la portada la primera vez. Se salta con cualquier tecla, clic o toque.
 
-**No entra sola: espera.** Como la referencia, que a los 25 s sigue en el
-arranque si no tocas nada. Antes entraba sola a los 3 s y te la perdías al
-parpadear. Si quieres el temporizador de vuelta, pon los milisegundos en
-`AUTO_MS` del frontmatter (`0` = esperar).
+**Es un homenaje calcado a la pantalla de arranque de
+[senna.social](https://senna.social/).** La maqueta, los colores, los tiempos y
+el texto son suyos; aquí solo cambia la identidad (el nombre, ADCSOFT y un
+pingüino en lugar de su logo). No se copia ningún fichero suyo: los dibujos son
+SVG propios.
 
-Para cambiar el texto, toca solo `HEAD`, `SPECS`, `DEVICES` y `TAIL` del
-frontmatter: las columnas y los tiempos se calculan a partir de ahí.
-**Etiqueta máximo 20 caracteres, veredicto máximo 16**: la rejilla es
-`20ch / 4ch / resto`, y una etiqueta más larga empuja la columna del veredicto
-y descuadra todas las filas.
+Las medidas, con capturas y el porqué de cada número, están en
+`docs/superpowers/specs/2026-08-14-arranque-paridad-senna.md`.
 
-### Está calcada de `senna.social`
+Para cambiar el texto o los tiempos, `boot-data.mjs` — pero **`boot-data.test.mjs`
+te va a parar**, porque comprueba los valores contra la tabla de la referencia.
+Es a propósito: si cambias un número, que sea sabiendo que dejas de copiarla.
 
-Los valores de abajo salieron de medir la referencia con el inspector, no de
-gusto. Si tocas uno, deja de parecerse. Están todos comentados en el fichero.
+Cuatro cosas que parecen detalles y sostienen todo lo demás:
 
-| | Valor |
-|---|---|
-| Tipografía | **AcPlus** IBM VGA 8x16 |
-| Tamaño | 24 px, `line-height: 1.3`, uno solo (16 px por debajo de 700 px) |
-| Color | `#dedede` sobre `#060606`. **Monocromo** |
-| Aparición | fundido de 0,5 s, cada elemento a su hora |
-| Duración | 4,3 s, **con una pausa muerta de 1,1 s** antes de los chequeos |
-| Columnas | `min-width` de 20ch / 4ch, flex con `gap` |
-| Prompt | parpadeo en vídeo inverso, `steps(1, start)` |
-
-Tres detalles que cuestan de ver y son los que sostienen el parecido:
-
-- **Tiene que ser la variante `AcPlus`** (aspect-corrected), no `Web`/`WebPlus`.
-  La 8x16 original se veía en una VGA de 720x400 estirada a una pantalla 4:3,
-  o sea con el píxel más alto que ancho. AcPlus lleva ese estirón dentro: el
-  avance es 0,4167em (10 px a 24 px) en vez de 0,5em. Con WebPlus las letras
-  salen cuadradas y anchas, y eso solo ya rompe el parecido por mucho que
-  cuadre todo lo demás.
-- **La pausa de 1,1 s no es un descuido.** Es lo que hace que parezca una
-  máquina probándose a sí misma en vez de texto apareciendo. Y el último
-  chequeo tarda 450 ms más que los otros, como si le costara.
+- **La tipografía tiene que ser la variante `AcPlus`** (aspect-corrected), no
+  `Web437` ni `WebPlus`. La IBM VGA 8x16 se veía en una VGA de 720x400 estirada
+  a una pantalla 4:3, o sea con el píxel más alto que ancho; `AcPlus` lleva ese
+  estirón dentro (avance 0,4167em en vez de 0,5em). Con `WebPlus` las letras
+  salen cuadradas y anchas y el parecido se rompe aunque cuadre todo lo demás.
+- **No hay fundido.** El `transition: visibility 0s .5s` mantiene cada línea
+  escondida mientras su opacidad sube, así que aparece de golpe y 500 ms más
+  tarde de lo que dice la tabla. Es un fallo de la referencia, pero se ve, y se
+  copia. No lo "arregles".
+- **La pausa de 1,1 s antes de los chequeos no es un descuido.** Es lo que hace
+  que parezca una máquina probándose a sí misma en vez de texto apareciendo. El
+  último chequeo, además, tarda 450 ms más que los otros.
 - **Las columnas van en `ch`, no en píxeles.** A 24 px un `ch` de esta fuente
-  mide 9,99 px, así que 20ch son los 200 px de la referencia clavados — pero
+  mide 9,99 px, así que `20ch` son los 200 px de la referencia clavados, y
   además encogen solos cuando el móvil baja la fuente a 16 px.
 
-La fuente es de [VileR](https://int10h.org/oldschool-pc-fonts/), CC BY-SA 4.0.
-Vive en `public/fonts/` con su licencia al lado y el crédito que exige está en
-el pie del sitio. El `.woff2` se sacó del pack `_win` (los `Ac` no vienen en el
-pack web) convirtiendo el TTF con `fonttools`.
+Va en el slot `overlay` del layout, fuera de `<main>`: dentro no funciona,
+porque `<main>` tiene `z-10` y un `position:fixed` se queda atrapado en ese
+contexto de apilamiento por muy alto que le pongas el z-index. El portfolio
+entero está en el HTML detrás, así que los buscadores y las tarjetas de
+previsualización ven el sitio y no el arranque.
 
-Lo que NO se copió es el texto: los chequeos son propios. La maqueta de un POST
-es convención de los PC de los 90, pero los chistes concretos de la referencia
-son suyos.
-
-Tampoco lleva scanlines ni viñeteado: la referencia no tiene ninguno y es lo
-primero que convierte el homenaje en parodia.
-
-Tres cosas que parecen detalles y no lo son:
-
-- Todo su JS es `is:inline` y **la pantalla se enseña desde el script**, no se
-  esconde desde él. Si el JS falla, el visitante ve el portfolio; al revés
-  vería una pantalla negra sin salida.
-- Va en el slot `overlay` del layout, fuera de `<main>`. Dentro no funciona:
-  `<main>` tiene `z-10` y un `position:fixed` se queda atrapado en ese contexto
-  de apilamiento por muy alto que le pongas el z-index.
-- El portfolio entero está en el HTML detrás del overlay, así que los
-  buscadores y las tarjetas de previsualización ven el sitio, no el arranque.
+Todo su JS es `is:inline` y **la pantalla se enseña desde el script**, no se
+esconde desde él: si el JS falla, el visitante ve el portfolio; al revés vería
+una pantalla negra sin salida.
 
 Para volver a verla: borra `boot_seen` de `localStorage`.
+
+Tipografía **AcPlus IBM VGA 8x16** de
+[VileR](https://int10h.org/oldschool-pc-fonts/), CC BY-SA 4.0, en
+`public/fonts/` con su licencia al lado. El crédito que exige está en el pie del
+sitio. El `.woff2` se sacó del pack `_win` (los `Ac` no vienen en el pack web)
+convirtiendo el TTF con `fonttools`.
 
 ## Easter egg
 
