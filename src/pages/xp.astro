@@ -2,17 +2,18 @@
 /**
  * El escritorio de Windows XP.
  *
- * Fase 1: fondo y barra, y nada más. Sin iconos, sin menú Inicio y sin
- * ventanas — eso es la fase 2.
+ * Fondo, barra de tareas y una ventana con el blog. Todavía sin iconos ni
+ * menú Inicio.
  *
- * Vive en /xp/ y no en / a propósito (§5.1): un escritorio sin ventanas es un
- * callejón sin salida, y la portada es la herramienta de búsqueda de trabajo.
- * La raíz pasa a ser esto el día que existan las ventanas.
+ * Vive en /xp/ y no en / a propósito (§5.1): la portada es la herramienta de
+ * búsqueda de trabajo y no se toca hasta que esto la sustituya de verdad.
  *
  * Spec: docs/superpowers/specs/2026-08-15-escritorio-xp-fase1-design.md
  */
 import XP from "../layouts/XP.astro";
 import Boot from "../components/Boot.astro";
+import Window from "../components/xp/Window.astro";
+import Blog from "../components/xp/Blog.astro";
 ---
 
 <XP>
@@ -24,4 +25,8 @@ import Boot from "../components/Boot.astro";
     paths={["/xp/", "/xp", "/xp/index.html"]}
     seenKey="boot_seen_xp"
   />
+
+  <Window id="ventana-blog" title="Welcome to my page" width={760} height={540}>
+    <Blog />
+  </Window>
 </XP>

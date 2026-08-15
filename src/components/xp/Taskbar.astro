@@ -47,8 +47,9 @@ const trayEdge = hex(TRAY_EDGE);
     start
   </button>
 
-  {/* Zona de ventanas. Vacía en fase 1 y sin dibujar: existe solo para empujar
-      la bandeja contra el borde derecho. La fase 2 mete aquí los botones. */}
+  {/* Zona de ventanas. Vacía en el HTML: los botones los crea el script de
+      Window.astro al arrancar, porque un botón que restaura una ventana
+      minimizada no tiene sentido si no hay JavaScript para minimizarla. */}
   <div class="xp-tasks"></div>
 
   <div class="xp-tray">
@@ -155,6 +156,48 @@ const trayEdge = hex(TRAY_EDGE);
   .xp-tasks {
     flex: 1 1 auto;
     min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 0 4px 0 6px;
+    overflow: hidden;
+  }
+
+  /* `:global` porque estos botones los crea el script de Window.astro y por
+     tanto no llevan el atributo de ámbito de este componente. Van anidados
+     bajo `.xp-tasks`, que sí es nuestro, así que la regla no se escapa fuera
+     de la barra. */
+  .xp-tasks :global(.xp-task) {
+    flex: 0 1 168px;
+    min-width: 0;
+    height: 30px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 3px;
+    /* Más claro que la barra y con un filo interior claro arriba: es un botón
+       levantado. El activo de abajo hace justo lo contrario. */
+    background: linear-gradient(to bottom, #4a91ef 0, #3a80e8 45%, #2c6fd8 100%);
+    box-shadow:
+      inset 1px 1px 0 rgba(255, 255, 255, 0.35),
+      inset -1px -1px 0 rgba(0, 0, 0, 0.2);
+    color: #ffffff;
+    font: 13px/1 Tahoma, "DejaVu Sans", Verdana, sans-serif;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    cursor: default;
+  }
+  .xp-tasks :global(.xp-task-active) {
+    /* Hundido: degradado invertido y sombra interior. Es el estado de la
+       ventana que está abierta y a la vista. */
+    background: linear-gradient(to bottom, #1f56b8 0, #2b6ad0 55%, #3f86e4 100%);
+    box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.45);
+    font-weight: bold;
+  }
+  .xp-tasks :global(.xp-task:focus-visible) {
+    outline: 2px solid #ffffff;
+    outline-offset: -3px;
   }
 
   /* ── La bandeja ──────────────────────────────────────────────────────────
