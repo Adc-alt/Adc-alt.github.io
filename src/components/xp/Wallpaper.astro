@@ -1,62 +1,31 @@
 ---
 /**
- * El fondo del escritorio.
+ * El fondo del escritorio: Bliss, el fondo de pantalla de Windows XP.
  *
- * DIBUJADO AQUÍ. El fondo de Windows XP es una fotografía con dueño y no se
- * copia ni se enlaza (§3 de la spec); esto lo evoca, no lo reproduce. Tampoco
- * se descarga el bg.jpg de winbows.
+ * PROCEDENCIA. Es la fotografía de Charles O'Rear, propiedad de Microsoft. El
+ * fichero sale del bg.jpg de winbows.neocities.org (un remaster a 3840x2160),
+ * reescalado aquí a 2560x1440 y recodificado a WebP q72: 1008 KB -> 225 KB.
+ * Esto contradice el §3 de la spec, que decía dibujarlo para no tocar obra
+ * ajena; se cambió a petición expresa del dueño del repo, que quería el fondo
+ * de verdad. El crédito está en el README, junto a la salvedad de licencia.
  *
- * Va en línea y no como fichero: sin petición HTTP y sin el destello de fondo
- * liso mientras carga la imagen, que es justo lo que rompería la escena que
- * empieza en la pantalla de arranque.
+ * Como fichero y no en línea: 225 KB en base64 dentro del HTML serían 300 KB
+ * de HTML no cacheable en cada visita. El destello mientras carga lo tapa el
+ * degradado de reserva de abajo, y en la primera visita lo tapa entero la
+ * pantalla de arranque.
  */
 ---
 
-<svg
+<img
   class="xp-wallpaper"
-  viewBox="0 0 1600 1000"
-  preserveAspectRatio="xMidYMid slice"
+  src="/xp/bliss.webp"
+  width="2560"
+  height="1440"
+  alt=""
   aria-hidden="true"
-  focusable="false"
->
-  <defs>
-    <linearGradient id="xp-sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#1e5fa8"></stop>
-      <stop offset="0.45" stop-color="#4b9ada"></stop>
-      <stop offset="0.78" stop-color="#a8d6f0"></stop>
-    </linearGradient>
-    <linearGradient id="xp-hill" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#8dc63f"></stop>
-      <stop offset="1" stop-color="#4f8f1f"></stop>
-    </linearGradient>
-  </defs>
-
-  <rect width="1600" height="1000" fill="url(#xp-sky)"></rect>
-
-  {/* Nubes: elipses solapadas y sin filtro. Un feGaussianBlur a pantalla
-      completa cuesta caro en un portátil y no se nota sobre un cielo así. */}
-  <g fill="#ffffff" opacity="0.85">
-    <ellipse cx="300" cy="230" rx="150" ry="42"></ellipse>
-    <ellipse cx="380" cy="205" rx="95" ry="52"></ellipse>
-    <ellipse cx="235" cy="215" rx="80" ry="38"></ellipse>
-  </g>
-  <g fill="#ffffff" opacity="0.6">
-    <ellipse cx="1180" cy="330" rx="185" ry="38"></ellipse>
-    <ellipse cx="1250" cy="308" rx="105" ry="45"></ellipse>
-  </g>
-
-  {/* La colina: UNA curva ancha. Con dos lomas simétricas deja de parecer un
-      paisaje y empieza a parecer un logotipo. */}
-  <path
-    d="M0 1000 L0 720 C 260 640, 520 600, 860 660 C 1140 710, 1380 700, 1600 640 L1600 1000 Z"
-    fill="url(#xp-hill)"></path>
-
-  {/* Cresta más clara donde le da el sol. */}
-  <path
-    d="M0 720 C 260 640, 520 600, 860 660 C 1140 710, 1380 700, 1600 640 L1600 672 C 1380 732, 1140 742, 860 692 C 520 632, 260 672, 0 752 Z"
-    fill="#a5d84a"
-    opacity="0.55"></path>
-</svg>
+  fetchpriority="high"
+  decoding="async"
+/>
 
 <style>
   .xp-wallpaper {
@@ -65,8 +34,14 @@
     display: block;
     width: 100%;
     height: 100%;
-    /* `slice` en el preserveAspectRatio hace que recorte en vez de deformar,
-       como un fondo de pantalla de verdad (§6). */
+    /* `cover` recorta en vez de deformar, como un fondo de pantalla de verdad
+       (§6). El width/height del atributo son los del fichero y solo sirven
+       para que el navegador reserve la caja; el CSS manda. */
+    object-fit: cover;
+    /* Reserva por si la imagen no llega: cielo arriba, hierba abajo, partido
+       por donde cae el horizonte. Un fallo se ve como un paisaje pobre, no
+       como una pantalla en blanco. */
+    background: linear-gradient(#4b8fd4 0 50%, #6aa32b 50%, #4e7409);
     z-index: 0;
   }
 </style>
