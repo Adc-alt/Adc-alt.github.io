@@ -8,6 +8,7 @@ import {
   STOPS,
   hex,
   tint,
+  startHighlight,
   gradient,
   checkProfile,
   contrastWithWhite,
@@ -32,6 +33,18 @@ test("una fila que no esta en la tira es cuerpo", () => {
   assert.deepEqual(tint(12), BODY);
 });
 
+test("el brillo del boton de Inicio es mas claro que su cuerpo", () => {
+  // Retenido igual que las filas de la tira: el multiplicador sale de una
+  // captura cuyo verde no es el nuestro. Menos contraste contra blanco =
+  // color mas claro. Es una banda de 3px arriba del todo y el texto no cae
+  // encima, asi que no cambia el contraste real de «start».
+  assert.equal(hex(startHighlight()), "#6dc76d");
+  assert.ok(
+    contrastWithWhite(startHighlight()) < contrastWithWhite(START_BODY),
+    "el brillo tiene que ser mas claro que el cuerpo",
+  );
+});
+
 test("nuestra barra tiene el perfil de §4.1", () => {
   assert.deepEqual(checkProfile(STOPS), []);
 });
@@ -43,7 +56,7 @@ test("nuestra barra tiene el perfil de §4.1", () => {
 test("la sonda rechaza una barra plana", () => {
   const plana = [
     { px: 0, rgb: BODY },
-    { px: 30, rgb: BODY },
+    { px: HEIGHT, rgb: BODY },
   ];
   assert.ok(checkProfile(plana).length > 0, "una barra plana deberia fallar");
 });
@@ -51,7 +64,7 @@ test("la sonda rechaza una barra plana", () => {
 test("la sonda rechaza un degradado de dos paradas", () => {
   const dos = [
     { px: 0, rgb: tint(4) },
-    { px: 30, rgb: tint(23) },
+    { px: HEIGHT, rgb: tint(23) },
   ];
   assert.ok(checkProfile(dos).length > 0, "dos paradas deberian fallar");
 });
@@ -62,19 +75,25 @@ test("la sonda rechaza un degradado suave de arriba abajo", () => {
   const suave = [
     { px: 0, rgb: tint(1) },
     { px: 3, rgb: tint(4) },
-    { px: 15, rgb: BODY },
-    { px: 26, rgb: tint(21) },
-    { px: 27, rgb: tint(22) },
-    { px: 28, rgb: tint(23) },
-    { px: 30, rgb: tint(23) },
+    { px: Math.round(HEIGHT / 2), rgb: BODY },
+    { px: HEIGHT - 4, rgb: tint(21) },
+    { px: HEIGHT - 3, rgb: tint(22) },
+    { px: HEIGHT - 2, rgb: tint(23) },
+    { px: HEIGHT, rgb: tint(23) },
   ];
   assert.ok(checkProfile(suave).length > 0, "el cuerpo no esta plano y deberia fallar");
 });
 
 test("la sonda rechaza una sombra que no oscurece en orden", () => {
+  // HEIGHT-3 es la segunda de las tres filas oscuras del final. Va derivado y
+  // no escrito a mano: con el 27 literal de cuando la barra medía 30, subir
+  // HEIGHT dejaba este caso sin tocar ninguna parada y el test aprobaba STOPS
+  // tal cual, o sea dejaba de comprobar nada.
+  const fila = HEIGHT - 3;
   const desordenada = STOPS.map((s) =>
-    s.px === 27 ? { px: 27, rgb: tint(4) } : s,
+    s.px === fila ? { px: fila, rgb: tint(4) } : s,
   );
+  assert.notDeepEqual(desordenada, STOPS, "el caso tiene que cambiar alguna parada");
   assert.ok(checkProfile(desordenada).length > 0, "la sombra al reves deberia fallar");
 });
 
@@ -84,7 +103,17 @@ test("el degradado sale como CSS con paradas en pixeles", () => {
   const css = gradient();
   assert.match(css, /^linear-gradient\(to bottom,/);
   assert.ok(css.includes("#245edc 6px"), css);
-  assert.ok(css.includes("#103198 30px"), css);
+  assert.ok(css.includes(`#103198 ${HEIGHT}px`), css);
+});
+
+test("el filo y la sombra no escalan con HEIGHT, el cuerpo si", () => {
+  // Lo que hace que la barra siga pareciendo XP al cambiarle el alto: los
+  // 6px de filo claro y los 4 de sombra son fijos, y lo que se estira es el
+  // tramo plano de en medio.
+  const px = (i) => STOPS[i].px;
+  assert.equal(px(4), 6, "el filo claro termina en 6px pase lo que pase");
+  assert.equal(px(5), HEIGHT - 4, "el cuerpo plano llega hasta HEIGHT-4");
+  assert.equal(px(STOPS.length - 1), HEIGHT);
 });
 
 test("la ultima parada del degradado esta en HEIGHT", () => {
