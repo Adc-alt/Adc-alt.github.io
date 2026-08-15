@@ -30,4 +30,23 @@ const proyectos = defineCollection({
   }),
 });
 
-export const collections = { proyectos };
+/**
+ * Cada entrada del blog es un .md en src/content/blog/.
+ *
+ * De momento no hay URL por entrada: se pintan todas seguidas dentro de la
+ * ventana del escritorio, que es un feed. El día que haya suficientes, el
+ * `id` del fichero ya sirve de slug sin tocar nada de aquí.
+ */
+const blog = defineCollection({
+  loader: glob({ base: "./src/content/blog", pattern: "**/*.md" }),
+  schema: z.object({
+    title: z.string(),
+    /** Fecha de publicación. Ordena el feed: la más reciente arriba. */
+    date: z.date(),
+    /** Una frase de entradilla. Que quepa en la ventana sin scroll. */
+    summary: z.string().max(200),
+    draft: z.boolean().default(false),
+  }),
+});
+
+export const collections = { proyectos, blog };

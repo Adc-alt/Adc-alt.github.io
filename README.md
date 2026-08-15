@@ -5,8 +5,9 @@ En vivo: **https://adc-alt.github.io/**
 
 Sitio estático generado con Astro. El HTML de todas las páginas se genera en el
 build; el único JavaScript del sitio es el comecocos de la portada (~10 KB), la
-pantalla de arranque (inline), un easter egg de 20 líneas y el reloj de la
-bandeja de `/xp/`. Las demás páginas no cargan nada.
+pantalla de arranque (inline), un easter egg de 20 líneas y, en `/xp/`, el
+reloj de la bandeja y el arrastre de la ventana. Las demás páginas no cargan
+nada.
 
 ## Rutas
 
@@ -15,7 +16,7 @@ bandeja de `/xp/`. Las demás páginas no cargan nada.
 | `/` | Portada. **Con pantalla de arranque** la primera visita |
 | `/work/` | La misma portada **sin arranque, siempre**. Es la URL del CV |
 | `/proyectos/`, `/proyectos/<id>/`, `/perfil/` | El resto |
-| `/xp/` | **Escritorio de Windows XP.** En obras: fondo y barra, sin ventanas |
+| `/xp/` | **Escritorio de Windows XP.** En obras: fondo, barra y una ventana con el blog |
 
 `/work/` lleva `noindex` y canonical a `/`, y está fuera del sitemap: es el
 mismo contenido y no debe competir consigo mismo en Google.
@@ -158,8 +159,8 @@ convirtiendo el TTF con `fonttools`.
 
 ## Escritorio XP
 
-`/xp/` es un mock de Windows XP: el fondo de pantalla y la barra de tareas del
-tema Luna, y nada más. Sin iconos, sin menú Inicio y sin ventanas.
+`/xp/` es un mock de Windows XP: el fondo de pantalla, la barra de tareas del
+tema Luna y una ventana con el blog. Todavía sin iconos ni menú Inicio.
 
 Existe porque el plan es que **el escritorio acabe sustituyendo al sitio**: el
 portfolio pasará a vivir dentro de ventanas XP y la estética arcade
@@ -167,9 +168,41 @@ desaparecerá. `src/layouts/XP.astro` es el layout definitivo de eso, no un
 andamio, y por eso no importa `global.css` ni las fuentes arcade. En esas
 páginas no hay Tailwind.
 
-Vive en `/xp/` y no en `/` porque un escritorio sin ventanas es un callejón sin
-salida y la portada es la URL que va en el CV. La raíz se muda el día que
-existan las ventanas.
+Vive en `/xp/` y no en `/` porque la portada es la URL que va en el CV. La raíz
+se muda cuando el escritorio tenga suficiente dentro.
+
+### La ventana
+
+`src/components/xp/Window.astro`. El contenido va en el HTML del build; el
+JavaScript solo arrastra, minimiza, maximiza y cierra. **Sin JS la ventana
+sigue ahí, abierta y legible** — por eso la posición inicial la calcula el
+servidor y no el script, y por eso el botón de la barra de tareas sí lo crea el
+script: un botón que restaura no sirve de nada si no se puede minimizar.
+
+Dos cosas que se rompen solas si no se cuidan:
+
+- **La posición pasa siempre por `clampPosition`** (`windows.mjs`, con test).
+  El fallo clásico de un gestor de ventanas casero es dejar arrastrar la
+  ventana hasta que la barra de título queda fuera de la pantalla: a partir de
+  ahí no hay forma de recuperarla. `KEEP_VISIBLE` son 110px y no 60 porque los
+  tres botones ocupan ~70 en el extremo derecho de la barra: con 60, lo que
+  asoma al empujarla a la izquierda son solo botones.
+- **La ventana entra 900 ms después de la tecla**, o sea después de la barra
+  (400+400). Es una transición sobre el estado visible, no una `@keyframes`
+  con retardo: una animación contaría desde que carga la página y la ventana
+  se abriría detrás del arranque. Medido: barra a los 700-1100 ms, ventana a
+  los 1100-1600.
+
+⚠️ **Los colores de la ventana NO están medidos**, a diferencia de los de la
+barra. Son la aproximación pública de Luna que circula por ahí, puestas a ojo
+contra el recuerdo. Está avisado en la cabecera del componente.
+
+### El blog
+
+`src/content/blog/*.md`, colección tipada igual que la de proyectos. Se pintan
+todas las entradas seguidas dentro de la ventana: **no hay URL por entrada
+todavía**. Con dos entradas serían dos páginas de un párrafo; el nombre del
+fichero ya sirve de slug el día que haga falta.
 
 **El fondo es Bliss, la foto de Windows XP** (Charles O'Rear, propiedad de
 Microsoft). `public/xp/bliss.webp` sale del `bg.jpg` de

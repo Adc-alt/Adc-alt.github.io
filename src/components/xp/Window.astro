@@ -1,0 +1,335 @@
+---
+/**
+ * Una ventana de Windows XP, tema Luna.
+ *
+ * ⚠️ AVISO DE PROCEDENCIA, distinto al del resto de este directorio: los
+ * colores de la barra de tareas están MEDIDOS sobre capturas (§4 de la spec).
+ * Los de aquí NO. Son la aproximación pública de Luna que circula en la web
+ * (la de xp.css y compañía), porque no tengo una captura nativa de una ventana
+ * que muestrear. Están puestos a ojo contra el recuerdo. Si algún día aparece
+ * una captura, esto se mide y se sube a un módulo con test, como los otros.
+ *
+ * El contenido va en HTML del build. El JavaScript solo arrastra, minimiza,
+ * maximiza y cierra: sin él la ventana sigue ahí, abierta y legible, que es
+ * la razón de que la posición inicial venga en el `style` del servidor y no
+ * la ponga el script.
+ */
+import { initialPosition } from "./windows.mjs";
+import { HEIGHT as BAR_H } from "./taskbar-colors.mjs";
+
+interface Props {
+  /** Título de la barra y del botón de la barra de tareas. */
+  title: string;
+  /** Identificador único: lo usa el botón de la barra de tareas. */
+  id: string;
+  width?: number;
+  height?: number;
+}
+
+const { title, id, width = 720, height = 520 } = Astro.props;
+
+/* Posición del servidor, calculada contra un escritorio de referencia de
+   1440x900. Con JS el script la recalcula contra la pantalla real en cuanto
+   carga; sin JS, ésta es la que se ve, y por eso pasa por el mismo clamp. */
+const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: BAR_H });
+---
+
+<section
+  class="xp-window"
+  id={id}
+  style={`--x:${pos.x}px;--y:${pos.y}px;--w:${width}px;--h:${height}px;--bar-h:${BAR_H}px`}
+  aria-labelledby={`${id}-title`}
+>
+  <div class="xp-titlebar">
+    <img class="xp-titleicon" src="/xp/win-flag.png" width="52" height="48" alt="" />
+    <h2 class="xp-titletext" id={`${id}-title`}>{title}</h2>
+
+    {/* Los tres botones son <button> de verdad. Minimizar y maximizar cambian
+        estado y por eso llevan aria-pressed; cerrar no vuelve, y por eso no. */}
+    <div class="xp-winbtns">
+      <button class="xp-winbtn xp-min" type="button" aria-pressed="false" aria-label="Minimizar"
+        ><span aria-hidden="true">─</span></button
+      >
+      <button class="xp-winbtn xp-max" type="button" aria-pressed="false" aria-label="Maximizar"
+        ><span aria-hidden="true">□</span></button
+      >
+      <button class="xp-winbtn xp-close" type="button" aria-label="Cerrar"
+        ><span aria-hidden="true">✕</span></button
+      >
+    </div>
+  </div>
+
+  <div class="xp-winbody">
+    <slot />
+  </div>
+</section>
+
+<script>
+  import { clampPosition, initialPosition } from "./windows.mjs";
+
+  /** El alto real de la barra de tareas, medido en el DOM y no repetido aquí. */
+  const barHeight = () =>
+    document.querySelector(".xp-taskbar")?.getBoundingClientRect().height ?? 0;
+
+  document.querySelectorAll<HTMLElement>(".xp-window").forEach((win) => {
+    const titlebar = win.querySelector<HTMLElement>(".xp-titlebar");
+    const btnMin = win.querySelector<HTMLButtonElement>(".xp-min");
+    const btnMax = win.querySelector<HTMLButtonElement>(".xp-max");
+    const btnClose = win.querySelector<HTMLButtonElement>(".xp-close");
+    const titleText = win.querySelector<HTMLElement>(".xp-titletext");
+    if (!titlebar || !btnMin || !btnMax || !btnClose || !titleText) return;
+
+    const px = (name: string) =>
+      parseFloat(getComputedStyle(win).getPropertyValue(name)) || 0;
+    const desk = () => ({ vw: innerWidth, vh: innerHeight, barH: barHeight() });
+    const size = () => ({ w: win.offsetWidth, h: win.offsetHeight });
+    const move = (p: { x: number; y: number }) => {
+      win.style.setProperty("--x", `${p.x}px`);
+      win.style.setProperty("--y", `${p.y}px`);
+    };
+    const reclamp = () => move(clampPosition({ ...size(), x: px("--x"), y: px("--y") }, desk()));
+
+    // Recolocar contra la pantalla real. El servidor la centró contra un
+    // escritorio de referencia; aquí ya sabemos el de verdad.
+    move(initialPosition(size(), desk()));
+
+    // ── El botón de la barra de tareas ────────────────────────────────────
+    // Lo crea el script y no el HTML: sin JS no se puede minimizar, así que
+    // un botón que restaura no tendría nada que hacer.
+    const task = document.createElement("button");
+    task.type = "button";
+    task.className = "xp-task xp-task-active";
+    task.textContent = titleText.textContent;
+    document.querySelector(".xp-tasks")?.appendChild(task);
+
+    const setMinimized = (on: boolean) => {
+      win.classList.toggle("is-min", on);
+      btnMin.setAttribute("aria-pressed", String(on));
+      task.classList.toggle("xp-task-active", !on);
+      // `inert` saca del tabulador todo lo que hay dentro: una ventana
+      // minimizada no debe seguir siendo alcanzable con el teclado.
+      win.inert = on;
+    };
+
+    task.addEventListener("click", () => {
+      const estaba = win.classList.contains("is-min");
+      setMinimized(!estaba);
+      if (estaba) btnClose.focus();
+    });
+
+    // ── Los tres botones ──────────────────────────────────────────────────
+    btnMin.addEventListener("click", () => {
+      setMinimized(true);
+      task.focus();
+    });
+
+    btnMax.addEventListener("click", () => {
+      const on = !win.classList.contains("is-max");
+      win.classList.toggle("is-max", on);
+      btnMax.setAttribute("aria-pressed", String(on));
+      // Al restaurar, la posición guardada puede haber quedado fuera si la
+      // pantalla cambió mientras estaba maximizada.
+      if (!on) reclamp();
+    });
+
+    btnClose.addEventListener("click", () => {
+      win.remove();
+      task.remove();
+    });
+
+    // ── Arrastrar ─────────────────────────────────────────────────────────
+    // Punteros y no ratón: el mismo código vale para dedo y lápiz. La captura
+    // es lo que hace que un arrastre rápido no se pierda cuando el cursor
+    // adelanta a la ventana.
+    let from: { px: number; py: number; x: number; y: number } | null = null;
+
+    titlebar.addEventListener("pointerdown", (e) => {
+      const sobreBoton = (e.target as HTMLElement).closest(".xp-winbtn");
+      if (sobreBoton || win.classList.contains("is-max")) return;
+      from = { px: e.clientX, py: e.clientY, x: px("--x"), y: px("--y") };
+      titlebar.setPointerCapture(e.pointerId);
+    });
+
+    titlebar.addEventListener("pointermove", (e) => {
+      if (!from) return;
+      e.preventDefault();
+      move(
+        clampPosition(
+          { ...size(), x: from.x + (e.clientX - from.px), y: from.y + (e.clientY - from.py) },
+          desk(),
+        ),
+      );
+    });
+
+    const endDrag = () => {
+      from = null;
+    };
+    titlebar.addEventListener("pointerup", endDrag);
+    titlebar.addEventListener("pointercancel", endDrag);
+
+    // Al cambiar el tamaño de la pantalla la ventana puede quedarse fuera.
+    addEventListener("resize", reclamp);
+  });
+</script>
+
+<style>
+  .xp-window {
+    position: absolute;
+    top: var(--y);
+    left: var(--x);
+    z-index: 5;
+    width: var(--w);
+    /* Nunca más ancha que la pantalla ni más alta que el hueco sobre la barra:
+       en un móvil la ventana se encoge en vez de salirse. */
+    max-width: calc(100vw - 16px);
+    height: var(--h);
+    max-height: calc(100dvh - var(--bar-h, 40px) - 16px);
+    display: flex;
+    flex-direction: column;
+    /* El marco de Luna: 3px de azul a los lados y abajo, esquinas de arriba
+       redondeadas y las de abajo no. */
+    background: #0831d9;
+    border-radius: 8px 8px 0 0;
+    padding: 0 3px 3px;
+    box-shadow: 2px 3px 12px rgba(0, 0, 0, 0.45);
+    font-family: Tahoma, "DejaVu Sans", Verdana, sans-serif;
+  }
+
+  /* ── La barra de título ───────────────────────────────────────────────── */
+  .xp-titlebar {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: 30px;
+    padding: 0 3px 0 5px;
+    border-radius: 6px 6px 0 0;
+    background: linear-gradient(
+      to bottom,
+      #0997ff 0,
+      #0053ee 8%,
+      #0050ee 40%,
+      #0066ff 88%,
+      #005bff 95%,
+      #003dd7 96%,
+      #003dd7 100%
+    );
+    /* La barra de título es el asa: el cursor de texto aquí sobra. */
+    cursor: default;
+    user-select: none;
+    touch-action: none;
+  }
+  .xp-titleicon {
+    height: 16px;
+    width: auto;
+    display: block;
+  }
+  .xp-titletext {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: #ffffff;
+    font: bold 13px/1 Tahoma, "DejaVu Sans", Verdana, sans-serif;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
+  }
+
+  .xp-winbtns {
+    flex: none;
+    display: flex;
+    gap: 2px;
+  }
+  .xp-winbtn {
+    width: 21px;
+    height: 21px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    border-radius: 3px;
+    background: linear-gradient(to bottom, #2f8ef5 0, #1b60d8 50%, #0a44b5 100%);
+    color: #ffffff;
+    font-size: 12px;
+    line-height: 1;
+    cursor: default;
+  }
+  .xp-close {
+    background: linear-gradient(to bottom, #f18f6a 0, #d9542a 45%, #b32d13 100%);
+  }
+  .xp-winbtn:hover {
+    filter: brightness(1.18);
+  }
+  .xp-winbtn:active {
+    filter: brightness(0.85);
+  }
+  .xp-winbtn:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: -3px;
+  }
+
+  /* ── El cuerpo ────────────────────────────────────────────────────────── */
+  .xp-winbody {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: #ece9d8;
+    color: #000000;
+    padding: 18px 22px 24px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  /* ── Estados ──────────────────────────────────────────────────────────── */
+  .xp-window.is-max {
+    top: 0;
+    left: 0;
+    width: 100vw;
+    max-width: 100vw;
+    height: calc(100dvh - var(--bar-h, 40px));
+    max-height: none;
+    border-radius: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .xp-window.is-max .xp-titlebar {
+    border-radius: 0;
+  }
+  .xp-window.is-min {
+    display: none;
+  }
+
+  /* ── La apertura ──────────────────────────────────────────────────────── */
+  /* Misma mecánica que la barra de tareas y por la misma razón: se declara el
+     estado VISIBLE con su transición, y el escondido con `transition: none`.
+     El navegador lee la transición del estado de DESTINO, así que la ventana
+     anima cuando `Boot.astro` quita el atributo y no en la primera pintura.
+
+     Una @keyframes con delay NO valdría: contaría desde que carga la página,
+     así que la ventana se abriría detrás del arranque y aparecería ya abierta.
+     Aquí el reloj lo arranca el final del arranque, que es lo que se quiere.
+
+     Los 900ms son a propósito más que los 800 de la barra (400 de espera +
+     400 de subida): primero el escritorio, luego la barra, y solo entonces la
+     ventana. Si van a la vez parece una imagen y no un arranque. */
+  .xp-window {
+    transform-origin: 50% 100%;
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 260ms ease 900ms,
+      transform 260ms cubic-bezier(0.16, 1, 0.3, 1) 900ms;
+  }
+  :global(html[data-boot]) .xp-window {
+    opacity: 0;
+    transform: scale(0.92) translateY(12px);
+    transition: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .xp-window {
+      transition: none;
+    }
+  }
+</style>
