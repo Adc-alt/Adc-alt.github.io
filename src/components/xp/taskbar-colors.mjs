@@ -12,6 +12,14 @@
  * la derivación queda a la vista en vez de aplicada a mano.
  */
 
+/**
+ * Alto de la barra, en px. Valor medido en captura nativa a 96 ppp (§4.2).
+ * `Taskbar.astro` lo recibe como `--bar-h` y las paradas de `STOPS` de aquí
+ * abajo se calculan a partir de este número: los dos derivan del mismo sitio
+ * y no pueden desalinearse en silencio si algún día cambia.
+ */
+export const HEIGHT = 30;
+
 /** Cuerpo de la barra. Captura de escritorio 640x480, §4.2. #245edc */
 export const BODY = [36, 94, 220];
 
@@ -56,30 +64,40 @@ export function tint(row, body = BODY) {
   return src.map((c, i) => (c / STRIP_BODY[i]) * body[i]);
 }
 
+/** Ancho del filo claro superior de la tira, fijo (§4.1). */
+const HIGHLIGHT_PX = 6;
+/** Ancho de la sombra final de la tira, fijo (§4.1). */
+const SHADOW_PX = 4;
+/** Píxel donde el cuerpo plano termina y empieza la sombra final. */
+const SHADOW_START = HEIGHT - SHADOW_PX;
+
 /**
- * Paradas del degradado para una barra de 30 px.
+ * Paradas del degradado para una barra de HEIGHT px.
  *
- * Reparto: la tira tiene 23 filas útiles — 4 de filo claro, 16 de cuerpo, 3 de
- * sombra (17 % / 70 % / 13 %). A 30 px salen 5 / 21 / 4.
+ * Reparto real: filo claro 0→6px, cuerpo plano 6→26px, sombra final 26→30px
+ * (6 / 20 / 4 de HEIGHT). La tira de referencia tiene 23 filas útiles, pero
+ * este reparto es el medido en §4.1 y no una regla de tres literal sobre esas
+ * 23 filas — no lo "arregles" moviendo {px: 6} a {px: 5} para que cuadre con
+ * la proporción de la tira: cambiarías el degradado que ya está en producción.
  *
  * Las paradas van en PÍXELES y no en porcentajes: la barra tiene alto fijo, y
  * así el filo de 1 px mide 1 px de verdad en cualquier pantalla. Las paradas
- * repetidas (26, 27, 28) son cortes duros a propósito: en XP esas tres filas
- * oscurecen de golpe, no en rampa.
+ * repetidas (SHADOW_START, +1, +2) son cortes duros a propósito: en XP esas
+ * tres filas oscurecen de golpe, no en rampa.
  */
 export const STOPS = [
   { px: 0, rgb: tint(1) },
   { px: 1, rgb: tint(1) },
   { px: 1, rgb: tint(3) },
   { px: 3, rgb: tint(4) },
-  { px: 6, rgb: BODY },
-  { px: 26, rgb: BODY },
-  { px: 26, rgb: tint(21) },
-  { px: 27, rgb: tint(21) },
-  { px: 27, rgb: tint(22) },
-  { px: 28, rgb: tint(22) },
-  { px: 28, rgb: tint(23) },
-  { px: 30, rgb: tint(23) },
+  { px: HIGHLIGHT_PX, rgb: BODY },
+  { px: SHADOW_START, rgb: BODY },
+  { px: SHADOW_START, rgb: tint(21) },
+  { px: SHADOW_START + 1, rgb: tint(21) },
+  { px: SHADOW_START + 1, rgb: tint(22) },
+  { px: SHADOW_START + 2, rgb: tint(22) },
+  { px: SHADOW_START + 2, rgb: tint(23) },
+  { px: HEIGHT, rgb: tint(23) },
 ];
 
 export const gradient = (stops = STOPS) =>
@@ -120,11 +138,11 @@ export function checkProfile(stops) {
   if (!alto) errs.push("no hay banda alta en 3px");
   else if (luminance(alto) <= body) errs.push("la banda alta no es mas clara que el cuerpo");
 
-  if (stops.some((s) => s.px > 6 && s.px < 26)) {
-    errs.push("el cuerpo no esta plano entre 6px y 26px");
+  if (stops.some((s) => s.px > HIGHLIGHT_PX && s.px < SHADOW_START)) {
+    errs.push(`el cuerpo no esta plano entre ${HIGHLIGHT_PX}px y ${SHADOW_START}px`);
   }
 
-  const sombra = [at(26), at(27), at(28)];
+  const sombra = [at(SHADOW_START), at(SHADOW_START + 1), at(SHADOW_START + 2)];
   if (sombra.some((c) => !c)) {
     errs.push("faltan las tres filas oscuras del final");
   } else {
@@ -133,7 +151,7 @@ export function checkProfile(stops) {
     }
     for (let i = 1; i < sombra.length; i++) {
       if (luminance(sombra[i]) >= luminance(sombra[i - 1])) {
-        errs.push(`la fila ${26 + i} no oscurece respecto a la anterior`);
+        errs.push(`la fila ${SHADOW_START + i} no oscurece respecto a la anterior`);
       }
     }
   }

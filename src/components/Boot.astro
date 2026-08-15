@@ -281,7 +281,13 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
 
       try {
         // Del DOM y no del frontmatter: este script no lleva `define:vars`.
-        localStorage.setItem(el.getAttribute("data-seen-key") || "boot_seen", "1");
+        // Sin fallback a proposito: si `seenKey=""` se leyera aqui como
+        // "boot_seen", el script 1 (que si lee `seenKey` del frontmatter via
+        // `define:vars`) seguiria comprobando la llave vacia y el arranque no
+        // dejaria de repetirse nunca, ademas de pisar la llave de la portada.
+        // Sin el fallback, `seenKey=""` es rara pero consistente entre los
+        // dos scripts.
+        localStorage.setItem(el.getAttribute("data-seen-key"), "1");
       } catch (e) {
         /* modo privado */
       }
