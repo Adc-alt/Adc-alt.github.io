@@ -1,23 +1,23 @@
 ---
 /**
- * La página que sirve GitHub Pages cuando la ruta no existe. Sin arranque: a
- * un 404 se llega por accidente, y no es momento de una animación.
+ * The page GitHub Pages serves when the route does not exist. No boot screen:
+ * you reach a 404 by accident, and that is no moment for an animation.
  */
 import XP from "../layouts/XP.astro";
 import Window from "../components/xp/Window.astro";
 ---
 
-<XP title="No se encuentra la página" noindex>
-  <Window id="ventana-404" title="Error" width={480} height={260} open>
+<XP title="Page not found" noindex>
+  <Window id="window-404" title="Error" width={480} height={260} open>
     <div class="xp-doc">
-      <h1>No se encuentra la página</h1>
+      <h1>Page not found</h1>
       <p>
-        La dirección que has pedido no existe en este sitio. Puede que fuera de
-        la versión anterior: el portfolio se rehizo entero y varias rutas
-        desaparecieron.
+        The address you asked for does not exist on this site. It may be from the
+        previous version: the portfolio was rebuilt from scratch and several
+        routes went away.
       </p>
-      <p class="fila">
-        <a href="/">Ir al escritorio</a>
+      <p class="row">
+        <a href="/">Go to the desktop</a>
       </p>
     </div>
   </Window>

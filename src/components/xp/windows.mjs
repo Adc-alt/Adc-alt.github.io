@@ -1,48 +1,48 @@
 /**
- * La aritmética de arrastrar una ventana. Sin DOM a propósito: el manejo de
- * eventos vive en el <script> de Window.astro, y aquí solo está lo que se
- * puede equivocar en silencio y por tanto merece test.
+ * The arithmetic of dragging a window. No DOM on purpose: event handling lives
+ * in the <script> of Window.astro, and what is here is only what can go wrong
+ * silently and therefore deserves a test.
  */
 
 /**
- * Cuánto de la ventana tiene que quedar SIEMPRE dentro del escritorio, en px.
+ * How much of the window must ALWAYS stay inside the desktop, in px.
  *
- * No es un margen estético: es lo que impide que la barra de título se vaya
- * detrás de la barra de tareas o fuera de la pantalla y la ventana se quede
- * inarrastrable para siempre, que es el fallo clásico de un gestor de
- * ventanas casero. Windows hace lo mismo.
+ * It is not a cosmetic margin: it is what stops the title bar disappearing
+ * behind the taskbar or off the screen, leaving the window undraggable for
+ * ever, which is the classic failure of a homemade window manager. Windows does
+ * the same.
  *
- * Por qué 110 y no 60, que es lo que parece suficiente: los tres botones
- * (minimizar, maximizar, cerrar) ocupan unos 70px en el extremo DERECHO de la
- * barra de título. Al empujar la ventana hacia la izquierda, lo que queda
- * asomando es ese extremo — o sea, solo botones. Con 60 el asa que queda no
- * es un asa: es un botón de cerrar. Con 110 quedan unos 40px de barra de
- * título de verdad, que sí se puede agarrar.
+ * Why 110 and not 60, which looks like enough: the three buttons (minimise,
+ * maximise, close) take about 70px at the RIGHT end of the title bar. When you
+ * push the window left, that end is what stays poking out — that is, buttons
+ * only. With 60 the handle you are left with is not a handle: it is a close
+ * button. With 110 there are about 40px of actual title bar left, which you can
+ * grab.
  */
 export const KEEP_VISIBLE = 110;
 
 /**
- * Encaja una posición propuesta dentro del escritorio.
+ * Fits a proposed position inside the desktop.
  *
- * @param {{x:number,y:number,w:number,h:number}} win  posición propuesta y tamaño
- * @param {{vw:number,vh:number,barH:number}} desk     hueco disponible
- * @returns {{x:number,y:number}} la posición ya corregida
+ * @param {{x:number,y:number,w:number,h:number}} win  proposed position and size
+ * @param {{vw:number,vh:number,barH:number}} desk     the available well
+ * @returns {{x:number,y:number}} the corrected position
  */
 export function clampPosition(win, desk) {
   const { x, y, w } = win;
   const { vw, vh, barH } = desk;
 
-  // El alto útil termina donde empieza la barra de tareas.
+  // The usable height ends where the taskbar starts.
   const bottom = vh - barH;
 
-  // A la izquierda puede salirse casi entera, pero no del todo: si el borde
-  // derecho cruza KEEP_VISIBLE queda un asa para traerla de vuelta.
+  // On the left it can go almost all the way out, but not entirely: if the
+  // right edge crosses KEEP_VISIBLE there is a handle left to pull it back.
   const minX = KEEP_VISIBLE - w;
   const maxX = vw - KEEP_VISIBLE;
 
-  // Arriba no se sale nada: en Windows la barra de título no pasa del borde
-  // superior. Abajo el tope es la barra de tareas, no el alto de la ventana:
-  // una ventana más alta que la pantalla se arrastra igual.
+  // At the top nothing goes out: in Windows the title bar never passes the top
+  // edge. At the bottom the limit is the taskbar and not the window height: a
+  // window taller than the screen still drags.
   const maxY = bottom - KEEP_VISIBLE;
 
   return {
@@ -52,9 +52,9 @@ export function clampPosition(win, desk) {
 }
 
 /**
- * Posición inicial: centrada en horizontal y algo por encima del centro en
- * vertical, que es donde Windows abre una ventana nueva. Pasa por el mismo
- * clamp que el arrastre, así que en una pantalla pequeña ya sale encajada.
+ * Initial position: centred horizontally and a little above centre vertically,
+ * which is where Windows opens a new window. It goes through the same clamp as
+ * dragging, so on a small screen it comes out already fitted.
  */
 export function initialPosition(win, desk) {
   const bottom = desk.vh - desk.barH;
@@ -68,29 +68,29 @@ export function initialPosition(win, desk) {
   );
 }
 
-/** Desplazamiento entre una ventana y la siguiente, en px. */
+/** Offset between one window and the next, in px. */
 export const CASCADE_STEP = 28;
 
 /**
- * Cada cuántas ventanas vuelve la cascada al principio.
+ * How many windows before the cascade wraps back to the start.
  *
- * Sin esto la sexta ventana caería fuera, el clamp la traería de vuelta y
- * todas las siguientes se apilarían EXACTAMENTE en el mismo sitio, que es
- * peor que no cascadear: parecen una sola ventana.
+ * Without this the sixth window would land outside, the clamp would pull it
+ * back, and every window after that would stack at EXACTLY the same spot —
+ * which is worse than not cascading at all: they look like a single window.
  */
 export const CASCADE_WRAP = 5;
 
 /**
- * Dónde se abre la ventana número `abiertas`, contando las que ya están
- * abiertas. La primera cae en `initialPosition` y cada siguiente baja y se
- * desplaza a la derecha, como en Windows.
+ * Where window number `openCount` opens, counting the ones already open. The
+ * first lands on `initialPosition` and each next one steps down and to the
+ * right, as in Windows.
  *
- * @param {number} abiertas  cuántas ventanas hay ya abiertas
+ * @param {number} openCount  how many windows are open already
  * @param {{w:number,h:number}} win
  * @param {{vw:number,vh:number,barH:number}} desk
  */
-export function cascadePosition(abiertas, win, desk) {
+export function cascadePosition(openCount, win, desk) {
   const base = initialPosition(win, desk);
-  const paso = CASCADE_STEP * (abiertas % CASCADE_WRAP);
-  return clampPosition({ ...win, x: base.x + paso, y: base.y + paso }, desk);
+  const step = CASCADE_STEP * (openCount % CASCADE_WRAP);
+  return clampPosition({ ...win, x: base.x + step, y: base.y + step }, desk);
 }

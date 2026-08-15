@@ -1,18 +1,19 @@
 ---
 /**
- * El fondo del escritorio: Bliss, el fondo de pantalla de Windows XP.
+ * The desktop wallpaper: Bliss, the Windows XP one.
  *
- * PROCEDENCIA. Es la fotografía de Charles O'Rear, propiedad de Microsoft. El
- * fichero sale del bg.jpg de winbows.neocities.org (un remaster a 3840x2160),
- * reescalado aquí a 2560x1440 y recodificado a WebP q72: 1008 KB -> 225 KB.
- * Esto contradice el §3 de la spec, que decía dibujarlo para no tocar obra
- * ajena; se cambió a petición expresa del dueño del repo, que quería el fondo
- * de verdad. El crédito está en el README, junto a la salvedad de licencia.
+ * PROVENANCE. It is Charles O'Rear's photograph, owned by Microsoft. The file
+ * comes from the bg.jpg of winbows.neocities.org (a 3840x2160 remaster),
+ * rescaled here to 2560x1440 and re-encoded to WebP q72: 1008 KB -> 225 KB.
+ * This contradicts §3 of the spec, which said to draw it so as not to touch
+ * anyone else's work; it was changed at the express request of the repo's
+ * owner, who wanted the real wallpaper. The credit is in the README, next to
+ * the licensing caveat.
  *
- * Como fichero y no en línea: 225 KB en base64 dentro del HTML serían 300 KB
- * de HTML no cacheable en cada visita. El destello mientras carga lo tapa el
- * degradado de reserva de abajo, y en la primera visita lo tapa entero la
- * pantalla de arranque.
+ * As a file and not inline: 225 KB of base64 inside the HTML would be 300 KB of
+ * uncacheable HTML on every visit. The flash while it loads is covered by the
+ * fallback gradient below, and on a first visit the boot screen covers all of
+ * it.
  */
 ---
 
@@ -34,13 +35,13 @@
     display: block;
     width: 100%;
     height: 100%;
-    /* `cover` recorta en vez de deformar, como un fondo de pantalla de verdad
-       (§6). El width/height del atributo son los del fichero y solo sirven
-       para que el navegador reserve la caja; el CSS manda. */
+    /* `cover` crops instead of distorting, like a real wallpaper (§6). The
+       width/height attributes are the file's own and only exist so the browser
+       reserves the box; the CSS decides. */
     object-fit: cover;
-    /* Reserva por si la imagen no llega: cielo arriba, hierba abajo, partido
-       por donde cae el horizonte. Un fallo se ve como un paisaje pobre, no
-       como una pantalla en blanco. */
+    /* A reserve in case the image never arrives: sky at the top, grass at the
+       bottom, split where the horizon falls. A failure looks like a poor
+       landscape, not like a blank screen. */
     background: linear-gradient(#4b8fd4 0 50%, #6aa32b 50%, #4e7409);
     z-index: 0;
   }

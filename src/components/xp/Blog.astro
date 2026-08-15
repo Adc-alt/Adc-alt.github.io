@@ -1,13 +1,13 @@
 ---
 /**
- * El feed del blog: todas las entradas seguidas, sin URL propia por entrada.
+ * The blog feed: every entry one after another, with no per-entry URL.
  *
- * Con dos entradas, una página por post serían dos páginas de un párrafo y un
- * enlace de vuelta; el feed se lee de un tirón y la ventana ya tiene su propio
- * scroll. Cuando haya suficientes, el nombre del fichero ya sirve de slug.
+ * With two entries, a page per post would be two pages of one paragraph and a
+ * link back; the feed reads in one go and the window already has its own
+ * scroll. Once there are enough of them, the filename already works as a slug.
  *
- * Los estilos del documento están en `src/styles/xp-doc.css`, compartidos con
- * las otras cuatro ventanas.
+ * The document styles live in `src/styles/xp-doc.css`, shared with the other
+ * four windows.
  */
 import { getCollection, render } from "astro:content";
 
@@ -15,11 +15,11 @@ const posts = (
   await getCollection("blog", ({ data }) => (import.meta.env.PROD ? !data.draft : true))
 ).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
-const entradas = await Promise.all(
+const entries = await Promise.all(
   posts.map(async (post) => ({ ...post, Content: (await render(post)).Content })),
 );
 
-const fecha = new Intl.DateTimeFormat("es-ES", {
+const date = new Intl.DateTimeFormat("en-GB", {
   day: "numeric",
   month: "long",
   year: "numeric",
@@ -29,18 +29,16 @@ const fecha = new Intl.DateTimeFormat("es-ES", {
 <div class="xp-doc">
   <h1>Blog</h1>
 
-  <p class="lede">
-    Lo que voy construyendo y los fallos que me cuestan una tarde entera.
-  </p>
+  <p class="lede">What I am building, and the bugs that cost me a whole afternoon.</p>
 
   <hr />
 
   {
-    entradas.map(({ id, data, Content }) => (
-      <article class="entrada">
+    entries.map(({ id, data, Content }) => (
+      <article class="entry">
         <h2 id={id}>{data.title}</h2>
-        <p class="apunte">
-          <time datetime={data.date.toISOString().slice(0, 10)}>{fecha.format(data.date)}</time>
+        <p class="note">
+          <time datetime={data.date.toISOString().slice(0, 10)}>{date.format(data.date)}</time>
         </p>
         <Content />
       </article>
@@ -49,13 +47,13 @@ const fecha = new Intl.DateTimeFormat("es-ES", {
 </div>
 
 <style>
-  .entrada {
+  .entry {
     margin: 0 0 2.4rem;
   }
-  .entrada h2 {
+  .entry h2 {
     margin-bottom: 0.2rem;
   }
-  .entrada:last-child {
+  .entry:last-child {
     margin-bottom: 0;
   }
 </style>

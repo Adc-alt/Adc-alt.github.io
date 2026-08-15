@@ -1,259 +1,269 @@
 # Adc-alt.github.io
 
-Portfolio personal. Es un escritorio de Windows XP: el contenido vive dentro de
-ventanas que se arrastran, se minimizan y se cierran.
-En vivo: **https://adc-alt.github.io/**
+Personal portfolio. It is a Windows XP desktop: the content lives inside windows
+that drag, minimise and close.
+Live at: **https://adc-alt.github.io/**
 
-Sitio estático generado con Astro. **Todo el HTML sale del build**, ventanas
-incluidas: el JavaScript solo las abre, las mueve y las cierra. Si no se
-ejecuta, el sitio se lee igual (ver *Dos modos*). Los dos únicos scripts son la
-pantalla de arranque (en línea) y el gestor de ventanas con el reloj de la
-bandeja.
+A static site generated with Astro. **All the HTML comes out of the build**,
+windows included: the JavaScript only opens, moves and closes them. If it does
+not run, the site reads the same (see *Two modes*). The only two scripts are the
+boot screen (inline) and the window manager with the tray clock.
 
-## Rutas
+## Routes
 
-El sitio es **una sola página**.
+The site is **a single page**.
 
-| Ruta | Qué es |
+| Route | What it is |
 |---|---|
-| `/` | El escritorio, con todas las ventanas dentro. **Con pantalla de arranque** la primera visita |
-| `/404` | Ventana de error XP |
-| `/work/`, `/xp/`, `/proyectos/`, `/perfil/` | Redirecciones a `/` |
+| `/` | The desktop, with every window inside it. **With the boot screen** on a first visit |
+| `/404` | XP error window |
+| `/work/`, `/xp/`, `/proyectos/`, `/perfil/` | Redirects to `/` |
 
-Las redirecciones son las rutas de la versión anterior. No son cortesía:
-`/work/` es la URL que está en el CV. En salida estática Astro genera para cada
-una una página con `meta refresh` — GitHub Pages no sabe hacer un 301.
+The redirects are the previous version's routes. They are not a courtesy:
+`/work/` is the URL printed on the CV. On a static build Astro generates a `meta
+refresh` page for each one — GitHub Pages cannot do a 301.
 
-## Arrancar
+## Getting started
 
 ```bash
 pnpm install
 pnpm dev          # http://localhost:4321
 ```
 
-| Comando | Qué hace |
+| Command | What it does |
 |---|---|
-| `pnpm dev` | Servidor de desarrollo con recarga en caliente |
-| `pnpm build` | tests + `astro check` (tipos) + build a `dist/` |
-| `pnpm preview` | Sirve `dist/` como lo hará producción |
-| `pnpm test` | Solo los tests (`node --test`) |
+| `pnpm dev` | Dev server with hot reload |
+| `pnpm build` | tests + `astro check` (types) + build to `dist/` |
+| `pnpm preview` | Serves `dist/` the way production will |
+| `pnpm test` | Just the tests (`node --test`) |
 
-## Estructura
+## Structure
 
 ```
 src/
-├── consts.ts                 nombre, URL y enlaces sociales
-├── content.config.ts         schemas Zod de proyectos y blog
-├── content/proyectos/*.md    un fichero = un proyecto = una ventana
-├── content/blog/*.md         un fichero = una entrada
-├── styles/xp-doc.css         el documento dentro de una ventana
-├── layouts/XP.astro          <head>, fondo y barra de tareas
+├── consts.ts                 name, URL and social links
+├── content.config.ts         Zod schemas for projects and blog
+├── content/projects/*.md     one file = one project = one window
+├── content/blog/*.md         one file = one entry
+├── styles/xp-doc.css         the document inside a window
+├── layouts/XP.astro          <head>, wallpaper and taskbar
 ├── components/
-│   ├── Boot.astro            la pantalla de arranque
+│   ├── Boot.astro            the boot screen
 │   └── xp/
-│       ├── Window.astro      el marco y el gestor de ventanas
-│       ├── windows.mjs       la aritmética de posición (con test)
-│       ├── Taskbar.astro     barra de tareas + reloj
-│       ├── taskbar-colors.mjs  colores medidos (con test)
-│       └── Bienvenida | Proyectos | Proyecto | Perfil | Blog
+│       ├── Window.astro      the frame and the window manager
+│       ├── windows.mjs       the position arithmetic (with tests)
+│       ├── Taskbar.astro     taskbar + clock
+│       ├── taskbar-colors.mjs  measured colours (with tests)
+│       └── Welcome | Projects | Project | About | Blog
 └── pages/
-    ├── index.astro           monta el escritorio y todas las ventanas
+    ├── index.astro           mounts the desktop and every window
     └── 404.astro
 ```
 
-## Añadir contenido
+## Adding content
 
-**Un proyecto:** copia `src/content/proyectos/_plantilla.md`, renómbralo y pon
-`draft: false`. Salen solos su ventana y su enlace en el índice; el nombre del
-fichero es el `id` de la ventana.
+**A project:** copy `src/content/projects/_template.md`, rename it and set
+`draft: false`. Its window and its link in the index appear on their own; the
+filename is the window's `id`.
 
-**Una entrada de blog:** un `.md` en `src/content/blog/`. Se ordenan por fecha,
-la más reciente arriba.
+**A blog entry:** a `.md` in `src/content/blog/`. They are ordered by date,
+newest at the top.
 
-Los dos frontmatter están validados con Zod en `src/content.config.ts`: si falta
-un campo o el `status` no es uno de los tres válidos, **el build falla**.
+Both frontmatters are validated with Zod in `src/content.config.ts`: if a field
+is missing or the `status` is not one of the three valid ones, **the build
+fails**.
 
-Los ficheros con `draft: true` se ven en `pnpm dev` pero **no se publican**.
+Files with `draft: true` show up in `pnpm dev` but are **not published**.
 
-## Dos modos, y el orden importa
+## Two modes, and the order matters
 
-Un escritorio no se maneja con el dedo. Por debajo de **720 px** las ventanas
-dejan de ser absolutas, se apilan en columna con todas abiertas y scrollea la
-página; se esconden los tres botones de la barra de título, y el arrastre se
-apaga.
+You do not drive a desktop with a finger. Below **720px** the windows stop being
+absolute, stack in a column with all of them open and the page scrolls; the three
+title bar buttons are hidden, and dragging is switched off.
 
-**El modo apilado es la base y el escritorio es la mejora.** Las reglas del
-escritorio viven dentro de `@media (min-width: 721px)` y colgando de `html.js`,
-una clase que pone un script en línea del `<head>`. Consecuencia buscada: **sin
-JavaScript el sitio entero cae en el modo apilado**, en cualquier pantalla, y se
-lee. Escrito al revés harían falta dos copias de las mismas reglas y un fallo de
-JS dejaría el sitio en blanco.
+**Stacked is the base and the desktop is the enhancement.** The desktop rules
+live inside `@media (min-width: 721px)` and hang off `html.js`, a class set by an
+inline script in the `<head>`. Intended consequence: **without JavaScript the
+whole site falls back to stacked mode**, on any screen, and it reads. Written the
+other way round it would take two copies of the same rules and a JS failure would
+leave the site blank.
 
-Si tocas CSS de ventanas, mira en qué bloque estás. `touch-action: none` en la
-barra de título es del modo escritorio y **no puede salir de ahí**: en apilado
-bloquearía el scroll de la página al arrastrar el título.
+If you touch window CSS, check which block you are in. `touch-action: none` on
+the title bar belongs to desktop mode and **cannot leave it**: when stacked it
+would block page scrolling as you drag the title.
 
-## Las ventanas
+## The windows
 
-`src/components/xp/Window.astro` — el marco y el gestor entero. Se abren desde
-los enlaces de la ventana de bienvenida, que son `<a href="#id-de-ventana">` de
-verdad: con JS el gestor los intercepta, y sin JS son anclas que saltan a la
-ventana, que está visible. **No hay iconos de escritorio ni menú Inicio**, así
-que la bienvenida es la única navegación del sitio: si se queda sin enlaces, no
-se llega a nada.
+`src/components/xp/Window.astro` — the frame and the whole manager. They open
+from the links in the welcome window, which are real `<a href="#window-id">`:
+with JS the manager intercepts them, and without JS they are anchors that jump to
+the window, which is visible. **There are no desktop icons and no Start menu**,
+so the welcome window is the site's only navigation: if it runs out of links,
+nothing can be reached.
 
-Cuatro cosas que se rompen solas si no se cuidan:
+Four things that break by themselves if left unattended:
 
-- **La posición pasa siempre por `clampPosition`** (`windows.mjs`, con test).
-  El fallo clásico de un gestor casero es dejar arrastrar hasta que la barra de
-  título queda fuera de la pantalla: a partir de ahí no hay forma de
-  recuperarla. `KEEP_VISIBLE` son 110px y no 60 porque los tres botones ocupan
-  ~70 en el extremo derecho de la barra: con 60, lo que asoma al empujarla a la
-  izquierda son solo botones.
-- **Cerrar esconde, no destruye.** Con una sola ventana que no se reabría,
-  `remove()` valía. Con cinco, una ventana destruida no se puede volver a abrir.
-- **La cascada vuelve al principio cada cinco** (`CASCADE_WRAP`). Sin eso, el
-  clamp acaba dejando todas las ventanas a partir de la sexta en píxeles
-  idénticos, que es peor que no cascadear.
-- **La ventana entra 900 ms después de la tecla**, o sea después de la barra
-  (400+400). Es una transición sobre el estado visible, no una `@keyframes` con
-  retardo: una animación contaría desde que carga la página y la ventana se
-  abriría detrás del arranque.
+- **Position always goes through `clampPosition`** (`windows.mjs`, with tests).
+  The classic failure of a homemade manager is letting you drag until the title
+  bar is off the screen: from there it cannot be recovered. `KEEP_VISIBLE` is
+  110px and not 60 because the three buttons take ~70 at the right end of the
+  bar: with 60, what pokes out when you push it left is buttons only.
+- **Closing hides, it does not destroy.** With a single window that never
+  reopened, `remove()` was fine. With five, a destroyed window cannot be opened
+  again.
+- **The cascade wraps every five** (`CASCADE_WRAP`). Without it the clamp ends up
+  leaving every window from the sixth onwards on identical pixels, which is worse
+  than not cascading.
+- **The window arrives 900ms after the keypress**, that is, after the bar
+  (400+400). It is a transition on the visible state, not a `@keyframes` with a
+  delay: an animation would count from page load and the window would open behind
+  the boot screen.
 
-⚠️ **Los colores de la ventana NO están medidos**, a diferencia de los de la
-barra de tareas. Son la aproximación pública de Luna que circula por ahí,
-puestas a ojo contra el recuerdo. Está avisado en la cabecera del componente.
+⚠️ **The window colours are NOT measured**, unlike the taskbar's. They are the
+public Luna approximation that circulates around, eyeballed against memory. The
+component header says so.
 
-El blog no tiene URL por entrada: se pintan todas seguidas dentro de su ventana.
-Con dos entradas serían dos páginas de un párrafo; el nombre del fichero ya
-sirve de slug el día que haga falta.
+The blog has no per-entry URL: they all render one after another inside their
+window. With two entries that would be two pages of one paragraph; the filename
+already works as a slug the day it is needed.
 
 ## Deploy
 
-Push a `main` → GitHub Actions (`.github/workflows/deploy.yml`) hace el build y
-publica. Unos 40-60 segundos. No hay que tocar nada a mano.
+Push to `main` → GitHub Actions (`.github/workflows/deploy.yml`) builds and
+publishes. About 40-60 seconds. Nothing needs doing by hand.
 
-El origen de Pages es **GitHub Actions**, no «deploy from a branch». `dist/` no
-se commitea.
+The Pages source is **GitHub Actions**, not "deploy from a branch". `dist/` is
+not committed.
 
-## Accesibilidad
+## Accessibility
 
-- Todas las animaciones están detrás de `prefers-reduced-motion`.
-- Foco visible siempre; nunca `outline: none` sin sustituto.
-- Los tres botones de cada ventana son `<button>` con `aria-label`, y
-  minimizar/maximizar llevan `aria-pressed`.
-- Al abrir una ventana el foco entra en ella; al cerrarla vuelve al enlace que
-  la abrió.
-- El fondo y los adornos de la barra van con `aria-hidden`.
+- Every animation is behind `prefers-reduced-motion`.
+- Focus is always visible; never `outline: none` without a replacement.
+- The three buttons on each window are `<button>` with an `aria-label`, and
+  minimise/maximise carry `aria-pressed`.
+- Opening a window moves focus into it; closing it returns focus to the link that
+  opened it.
+- The wallpaper and the bar's ornaments carry `aria-hidden`.
 
-Los colores de XP **no llegan a AA de texto normal**: blanco sobre el verde del
-botón de Inicio da 3,50:1 y sobre el azul de la bandeja 3,39:1, contra los 4,5:1
-que pide la norma. Los dos pares sí superan el 3:1 de AA de texto grande, y ese
-umbral exige además que el texto sea grande de verdad (≥24px, o ≥18,66px en
-negrita):
+The XP colours **do not reach AA for body text**: white on the Start button green
+gives 3.50:1 and on the tray blue 3.39:1, against the 4.5:1 the standard asks
+for. Both pairs do clear the 3:1 of AA for large text, and that threshold also
+requires the text to be genuinely large (≥24px, or ≥18.66px bold):
 
-- **«start» sí cumple AA de texto grande.** Va a 19px en negrita, con sus
-  3,50:1.
-- **El reloj no cumple.** 14px sin negrita es texto normal, y 3,39:1 se queda
-  lejos de 4,5:1.
+- **"start" does meet AA for large text.** It is 19px bold, with its 3.50:1.
+- **The clock does not.** 14px non-bold is body text, and 3.39:1 is a long way
+  from 4.5:1.
 
-Es una decisión tomada a sabiendas — bajar los colores hasta cumplir deja de
-parecerse a XP — y para el reloj la mitigación es otra: la hora llega íntegra a
-un lector de pantalla por el `<time datetime>` pase lo que pase con el
-contraste. El test fija el suelo de 3:1 para que no empeore sin que nadie se
-entere.
+It is a decision taken knowingly — dragging the colours down until they comply
+stops it looking like XP — and for the clock the mitigation is different: the
+time reaches a screen reader intact through the `<time datetime>` whatever
+happens to the contrast. The test pins the 3:1 floor so it cannot get worse
+without anyone noticing.
 
-## Pantalla de arranque
+## Boot screen
 
-`src/components/Boot.astro` + `src/components/boot-data.mjs`. POST de BIOS falso
-que tapa el escritorio la primera vez. Se salta con cualquier tecla, clic o
-toque.
+`src/components/Boot.astro` + `src/components/boot-data.mjs`. A fake BIOS POST
+that covers the desktop the first time. Skipped with any key, click or tap.
 
-**Es un homenaje calcado a la pantalla de arranque de
-[senna.social](https://senna.social/).** La maqueta, los colores, los tiempos y
-el texto son suyos; aquí solo cambia la identidad (el nombre, ADCSOFT y un sello
-y un pingüino dibujados aquí en lugar de sus dos imágenes). No se copia ningún
-fichero suyo: los dibujos son SVG propios.
+**It is a homage traced from the boot screen of
+[senna.social](https://senna.social/).** The layout, the colours, the timings and
+the text are theirs; what changes here is the identity (the name, ADCSOFT, and a
+seal and a signature doodle drawn here in place of their two images). Not one of
+their files is copied: the drawings are our own SVG.
 
-Las medidas, con capturas y el porqué de cada número, están en
-`docs/superpowers/specs/2026-08-14-arranque-paridad-senna.md`.
+The measurements, with captures and the reason behind every number, are in
+`docs/superpowers/specs/2026-08-14-boot-screen-senna-parity.md`.
 
-Para cambiar el texto o los tiempos, `boot-data.mjs` — pero
-**`boot-data.test.mjs` te va a parar**, porque comprueba los valores contra la
-tabla de la referencia. Es a propósito: si cambias un número, que sea sabiendo
-que dejas de copiarla.
+To change the text or the timings, `boot-data.mjs` — but
+**`boot-data.test.mjs` will stop you**, because it checks the values against the
+reference's table. That is on purpose: if you change a number, change it knowing
+you have stopped copying it.
 
-Cuatro cosas que parecen detalles y sostienen todo lo demás:
+Four things that look like details and hold up everything else:
 
-- **La tipografía tiene que ser la variante `AcPlus`** (aspect-corrected), no
-  `Web437` ni `WebPlus`. La IBM VGA 8x16 se veía en una VGA de 720x400 estirada
-  a una pantalla 4:3, o sea con el píxel más alto que ancho; `AcPlus` lleva ese
-  estirón dentro (avance 0,4167em en vez de 0,5em). Con `WebPlus` las letras
-  salen cuadradas y anchas y el parecido se rompe aunque cuadre todo lo demás.
-- **No hay fundido.** El `transition: visibility 0s .5s` mantiene cada línea
-  escondida mientras su opacidad sube, así que aparece de golpe y 500 ms más
-  tarde de lo que dice la tabla. Es un fallo de la referencia, pero se ve, y se
-  copia. No lo "arregles".
-- **La pausa de 1,1 s antes de los chequeos no es un descuido.** Es lo que hace
-  que parezca una máquina probándose a sí misma en vez de texto apareciendo. El
-  último chequeo, además, tarda 450 ms más que los otros.
-- **Las columnas van en `ch`, no en píxeles.** A 24 px un `ch` de esta fuente
-  mide 9,99 px, así que `20ch` son los 200 px de la referencia clavados, y
-  además encogen solos cuando el móvil baja la fuente a 16 px.
+- **The typeface has to be the `AcPlus` variant** (aspect-corrected), not
+  `Web437` or `WebPlus`. IBM VGA 8x16 was seen on a 720x400 VGA stretched onto a
+  4:3 screen, that is, with pixels taller than they are wide; `AcPlus` bakes that
+  stretch in (advance 0.4167em instead of 0.5em). With `WebPlus` the letters come
+  out square and wide and the resemblance breaks however well everything else
+  lines up.
+- **There is no fade.** The `transition: visibility 0s .5s` keeps each line
+  hidden while its opacity rises, so it appears all at once and 500ms later than
+  the table says. It is a bug in the reference, but you can see it, so it gets
+  copied. Do not "fix" it.
+- **The 1.1s pause before the checks is not an oversight.** It is what makes it
+  look like a machine testing itself instead of text appearing. The last check
+  also takes 450ms longer than the others.
+- **The columns are in `ch`, not pixels.** At 24px a `ch` of this font is 9.99px,
+  so `20ch` is exactly the reference's 200px, and it also shrinks by itself when
+  a phone drops the font to 16px.
 
-Va en el slot `overlay` del layout, fuera de `<main>`. El sitio entero está en
-el HTML detrás, así que los buscadores y las tarjetas de previsualización ven el
-escritorio y no el arranque.
+It goes in the layout's `overlay` slot, outside `<main>`. The whole site is in
+the HTML behind it, so search engines and preview cards see the desktop and not
+the boot screen.
 
-Todo su JS es `is:inline` y **la pantalla se enseña desde el script**, no se
-esconde desde él: si el JS falla, el visitante ve el sitio; al revés vería una
-pantalla negra sin salida.
+All its JS is `is:inline` and **the script shows the screen**, it does not hide
+it: if the JS fails, the visitor sees the site; the other way round they would
+see a black screen with no way out.
 
-Para volver a verla: borra `boot_seen` de `localStorage`.
+To see it again: delete `boot_seen` from `localStorage`.
 
-Tipografía **AcPlus IBM VGA 8x16** de
-[VileR](https://int10h.org/oldschool-pc-fonts/), CC BY-SA 4.0, en `public/fonts/`
-con su licencia al lado. **El crédito que exige la licencia está en la ventana de
-bienvenida**, que es la que siempre está abierta — vivía en el pie del sitio, que
-desapareció con la estética arcade. El `.woff2` se sacó del pack `_win` (los `Ac`
-no vienen en el pack web) convirtiendo el TTF con `fonttools`.
+The **AcPlus IBM VGA 8x16** typeface is by
+[VileR](https://int10h.org/oldschool-pc-fonts/), CC BY-SA 4.0, in `public/fonts/`
+with its licence next to it. **The credit the licence requires is in the welcome
+window**, which is the one that is always open — it used to live in the site
+footer, which went away with the arcade look. The `.woff2` was taken from the
+`_win` pack (the `Ac` ones are not in the web pack) by converting the TTF with
+`fonttools`.
 
-## La barra de tareas
+## The taskbar
 
-Sus colores **están medidos** sobre capturas de XP, píxel a píxel, y la
-derivación entera vive en `taskbar-colors.mjs` con test. Las medidas, con
-capturas y el porqué de cada número, están en
-`docs/superpowers/specs/2026-08-15-escritorio-xp-fase1-design.md`.
+Its colours **are measured** off XP screenshots, pixel by pixel, and the whole
+derivation lives in `taskbar-colors.mjs` with tests. The measurements, with
+captures and the reason behind every number, are in
+`docs/superpowers/specs/2026-08-15-xp-desktop-phase1-design.md`.
 
-Tres cosas que parecen detalles y sostienen lo demás:
+Three things that look like details and hold up the rest:
 
-- **La barra no es un degradado.** Es un filo claro, un cuerpo casi plano en dos
-  tercios del alto, y tres píxeles que oscurecen de golpe al final. Un
-  `linear-gradient` de dos colores queda mal. `taskbar-colors.test.mjs` rechaza
-  la barra plana, la de dos paradas y la del degradado suave: si tocas los
-  colores, la sonda te lo dice.
-- **La bandeja del reloj es MÁS clara que la barra, no más oscura.** Lo que la
-  hace parecer hundida es el filo oscuro de 1 px de su izquierda. Pintarla más
-  oscura es lo que pide el instinto y es lo que la rompe.
-- **La barra sube 400 ms después de que el arranque descubra el fondo**, y eso
-  es lo que hace que parezca un arranque en vez de una imagen. No lleva
-  JavaScript: `Boot.astro` quita `html[data-boot]` al terminar y la barra
-  reacciona a que el atributo desaparezca.
+- **The bar is not a gradient.** It is a light edge, an almost flat body over two
+  thirds of the height, and three pixels that darken abruptly at the end. A
+  two-colour `linear-gradient` looks wrong. `taskbar-colors.test.mjs` rejects the
+  flat bar, the two-stop one and the smooth gradient: if you touch the colours,
+  the probe tells you.
+- **The clock tray is LIGHTER than the bar, not darker.** What makes it look
+  sunken is the 1px dark edge on its left. Painting it darker is what instinct
+  asks for and it is what breaks it.
+- **The bar rises 400ms after the boot screen reveals the wallpaper**, and that
+  is what makes it look like a machine starting up instead of an image. It
+  carries no JavaScript: `Boot.astro` removes `html[data-boot]` when it finishes
+  and the bar reacts to the attribute going away.
 
-## Ficheros que no son míos
+## Files that are not mine
 
-**El fondo es Bliss, la foto de Windows XP** (Charles O'Rear, propiedad de
-Microsoft). `public/xp/bliss.webp` sale del `bg.jpg` de
-[winbows.neocities.org](https://winbows.neocities.org/), reescalado a 2560x1440 y
-recodificado a WebP: 1008 KB → 225 KB. **No es una imagen libre**: se usa aquí
-como homenaje, igual que hace medio internet, y si algún día molesta se sustituye
-borrando ese fichero — el degradado de reserva de `Wallpaper.astro` deja la
-página en pie sin él.
+**The wallpaper is Bliss, the Windows XP photograph** (Charles O'Rear, owned by
+Microsoft). `public/xp/bliss.webp` comes from the `bg.jpg` of
+[winbows.neocities.org](https://winbows.neocities.org/), rescaled to 2560x1440
+and re-encoded to WebP: 1008 KB → 225 KB. **It is not a free image**: it is used
+here as a homage, the way half the internet does, and if it ever becomes a
+problem it is replaced by deleting that file — the fallback gradient in
+`Wallpaper.astro` keeps the page standing without it.
 
-**El logotipo del botón de Inicio también es de Microsoft.**
-`public/xp/win-flag.png` sale del `win-min.png` de winbows, reducido a 52x48 (se
-pinta a 26px de alto, al doble para que no salga borroso en retina). Misma
-salvedad que el fondo: es una marca registrada y no una imagen libre.
+**The Start button logo is Microsoft's too.** `public/xp/win-flag.png` comes from
+winbows' `win-min.png`, reduced to 52x48 (painted at 26px tall, at double size so
+it is not blurry on retina). Same caveat as the wallpaper: it is a registered
+trademark and not a free image.
 
-De la barra en sí, en cambio, no se ha copiado ningún fichero: solo medidas y
-colores, que son hechos y no obra.
+Of the bar itself, on the other hand, not one file has been copied: only
+measurements and colours, which are facts and not work.
+
+## What is still in Spanish
+
+The three design specs under `docs/superpowers/specs/` — the boot screen and the
+two desktop phases — are translated, because code comments point at them.
+
+Two things stay in Spanish on purpose:
+
+- `docs/01`–`docs/04`, the owner's own learning notes on static web, git and
+  HTML. They are a notebook, not documentation of this site.
+- `docs/superpowers/plans/`, the execution checklists for work that has already
+  shipped. Nothing points at them and nothing will read them again.

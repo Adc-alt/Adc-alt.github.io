@@ -1,51 +1,51 @@
 ---
 /**
- * Una ventana de Windows XP, tema Luna.
+ * A Windows XP window, Luna theme.
  *
- * ⚠️ AVISO DE PROCEDENCIA, distinto al del resto de este directorio: los
- * colores de la barra de tareas están MEDIDOS sobre capturas (§4 de la spec
- * de fase 1). Los de aquí NO. Son la aproximación pública de Luna que circula
- * en la web (la de xp.css y compañía), puesta a ojo contra el recuerdo. Si
- * algún día aparece una captura nativa, esto se mide y se sube a un módulo
- * con test, como los otros.
+ * ⚠️ PROVENANCE WARNING, different from the rest of this directory: the taskbar
+ * colours are MEASURED off screenshots (§4 of the phase 1 spec). These are NOT.
+ * They are the public Luna approximation that circulates on the web (the one
+ * xp.css and friends use), eyeballed against memory. If a native capture ever
+ * turns up, this gets measured and promoted to a module with a test, like the
+ * others.
  *
- * El contenido va en HTML del build. El JavaScript solo abre, cierra,
- * arrastra, minimiza y maximiza.
+ * The content is build-time HTML. The JavaScript only opens, closes, drags,
+ * minimises and maximises.
  *
- * DOS MODOS, y el orden importa (fase 2 §4):
+ * TWO MODES, and the order matters (phase 2 §4):
  *
- *   - **Apilado** es la BASE: las ventanas van en columna, todas visibles, y
- *     scrollea la página. Es lo que se ve en un móvil y lo que se ve sin
- *     JavaScript, en cualquier pantalla.
- *   - **Escritorio** es la MEJORA: absolutas, arrastrables, se abren y se
- *     cierran. Vive dentro de `@media (min-width: 721px)` y colgando de
- *     `html.js`, que pone un script inline del layout.
+ *   - **Stacked** is the BASE: windows in a column, all visible, and the page
+ *     scrolls. It is what a phone gets and what anyone without JavaScript gets,
+ *     on any screen.
+ *   - **Desktop** is the ENHANCEMENT: absolute, draggable, they open and close.
+ *     It lives inside `@media (min-width: 721px)` and hangs off `html.js`,
+ *     which an inline script in the layout sets.
  *
- * Escrito al revés harían falta dos copias de las mismas reglas, y un fallo
- * de JavaScript dejaría el sitio en blanco en vez de en modo lectura.
+ * Written the other way round the same rules would need two copies, and a
+ * JavaScript failure would leave the site blank instead of in reading mode.
  *
- * Esconder es `display: none`, que ya saca del tabulador y del árbol de
- * accesibilidad: no hace falta `inert` encima.
+ * Hiding is `display: none`, which already removes the window from the tab
+ * order and the accessibility tree: no need for `inert` on top.
  */
 import { initialPosition } from "./windows.mjs";
 import { HEIGHT as BAR_H } from "./taskbar-colors.mjs";
 
 interface Props {
-  /** Título de la barra y del botón de la barra de tareas. */
+  /** Title of the title bar and of the taskbar button. */
   title: string;
-  /** Identificador único. Es el destino de los enlaces: `href="#id"`. */
+  /** Unique identifier. It is what links point at: `href="#id"`. */
   id: string;
   width?: number;
   height?: number;
-  /** Si abre sola al cargar. Solo la de bienvenida. */
+  /** Whether it opens by itself on load. Only the welcome window does. */
   open?: boolean;
 }
 
 const { title, id, width = 720, height = 520, open = false } = Astro.props;
 
-/* Posición del servidor, calculada contra un escritorio de referencia de
-   1440x900. En modo escritorio el script la recalcula contra la pantalla real
-   —y en cascada, si ya hay ventanas abiertas—; en modo apilado no se usa. */
+/* Server-side position, computed against a reference desktop of 1440x900. In
+   desktop mode the script recomputes it against the real screen — cascaded, if
+   there are windows open already; in stacked mode it is not used. */
 const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: BAR_H });
 ---
 
@@ -61,17 +61,17 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
     <img class="xp-titleicon" src="/xp/win-flag.png" width="52" height="48" alt="" />
     <h2 class="xp-titletext" id={`${id}-title`}>{title}</h2>
 
-    {/* Los tres botones son <button> de verdad. Minimizar y maximizar cambian
-        estado y por eso llevan aria-pressed; cerrar no vuelve, y por eso no.
-        En modo apilado no se pintan: ahí no significan nada. */}
+    {/* The three buttons are real <button>s. Minimise and maximise change state
+        and so carry aria-pressed; close does not come back, so it does not. In
+        stacked mode they are not drawn: there they mean nothing. */}
     <div class="xp-winbtns">
-      <button class="xp-winbtn xp-min" type="button" aria-pressed="false" aria-label="Minimizar"
+      <button class="xp-winbtn xp-min" type="button" aria-pressed="false" aria-label="Minimise"
         ><span aria-hidden="true">─</span></button
       >
-      <button class="xp-winbtn xp-max" type="button" aria-pressed="false" aria-label="Maximizar"
+      <button class="xp-winbtn xp-max" type="button" aria-pressed="false" aria-label="Maximise"
         ><span aria-hidden="true">□</span></button
       >
-      <button class="xp-winbtn xp-close" type="button" aria-label="Cerrar"
+      <button class="xp-winbtn xp-close" type="button" aria-label="Close"
         ><span aria-hidden="true">✕</span></button
       >
     </div>
@@ -85,20 +85,20 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
 <script>
   import { cascadePosition, clampPosition } from "./windows.mjs";
 
-  /* 721px: por debajo de eso el escritorio se rinde y todo pasa a modo
-     apilado (fase 2 §4). El mismo número está en el CSS de este fichero. */
-  const ESCRITORIO = matchMedia("(min-width: 721px)");
+  /* 721px: below that the desktop gives up and everything goes to stacked mode
+     (phase 2 §4). The same number is in the CSS of this file. */
+  const DESKTOP = matchMedia("(min-width: 721px)");
 
-  /** El alto real de la barra de tareas, medido en el DOM y no repetido aquí. */
+  /** The real height of the taskbar, measured in the DOM and not repeated here. */
   const barHeight = () =>
     document.querySelector(".xp-taskbar")?.getBoundingClientRect().height ?? 0;
 
   const tasks = document.querySelector(".xp-tasks");
 
-  /** id de ventana → cómo abrirla. Lo consulta el manejador de enlaces. */
-  const ventanas = new Map<string, (desde?: HTMLElement | null) => void>();
+  /** window id → how to open it. The link handler looks it up here. */
+  const windows = new Map<string, (trigger?: HTMLElement | null) => void>();
 
-  /** Contador de profundidad. Sube y no baja: la última en pulsarse, al frente. */
+  /** Depth counter. It goes up and never down: last clicked, front-most. */
   let zTop = 5;
 
   document.querySelectorAll<HTMLElement>(".xp-window").forEach((win) => {
@@ -109,79 +109,77 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
     const titleText = win.querySelector<HTMLElement>(".xp-titletext");
     if (!titlebar || !btnMin || !btnMax || !btnClose || !titleText) return;
 
-    const px = (name: string) =>
-      parseFloat(getComputedStyle(win).getPropertyValue(name)) || 0;
+    const px = (name: string) => parseFloat(getComputedStyle(win).getPropertyValue(name)) || 0;
     const desk = () => ({ vw: innerWidth, vh: innerHeight, barH: barHeight() });
     const size = () => ({ w: win.offsetWidth, h: win.offsetHeight });
     const move = (p: { x: number; y: number }) => {
       win.style.setProperty("--x", `${p.x}px`);
       win.style.setProperty("--y", `${p.y}px`);
     };
-    const reclamp = () =>
-      move(clampPosition({ ...size(), x: px("--x"), y: px("--y") }, desk()));
+    const reclamp = () => move(clampPosition({ ...size(), x: px("--x"), y: px("--y") }, desk()));
 
-    // ── El botón de la barra de tareas ────────────────────────────────────
-    // Lo crea el script y no el HTML: sin JS no se puede ni minimizar ni
-    // cerrar, así que un botón que restaura no tendría nada que hacer.
+    // ── The taskbar button ────────────────────────────────────────────────
+    // Created by the script and not by the HTML: without JS nothing can be
+    // minimised or closed, so a button that restores would have nothing to do.
     const task = document.createElement("button");
     task.type = "button";
     task.className = "xp-task";
     task.textContent = titleText.textContent;
 
-    /** Quién abrió la ventana, para devolverle el foco al cerrarla. */
-    let disparador: HTMLElement | null = null;
+    /** Who opened the window, so focus can go back there when it closes. */
+    let opener: HTMLElement | null = null;
 
-    const alFrente = () => {
+    const toFront = () => {
       if (win.classList.contains("is-front")) return;
       win.style.zIndex = String(++zTop);
       document
         .querySelectorAll(".xp-window.is-front")
-        .forEach((otra) => otra.classList.remove("is-front"));
+        .forEach((other) => other.classList.remove("is-front"));
       document
         .querySelectorAll(".xp-task-active")
-        .forEach((otro) => otro.classList.remove("xp-task-active"));
+        .forEach((other) => other.classList.remove("xp-task-active"));
       win.classList.add("is-front");
       task.classList.add("xp-task-active");
     };
 
-    const restaurar = () => {
+    const restore = () => {
       win.classList.remove("is-min");
       btnMin.setAttribute("aria-pressed", "false");
     };
 
-    const abrir = (desde?: HTMLElement | null) => {
-      if (desde) disparador = desde;
+    // The parameter is `trigger` and not `from`: `from` is the drag origin,
+    // declared further down in this same scope.
+    const open = (trigger?: HTMLElement | null) => {
+      if (trigger) opener = trigger;
       if (win.dataset.open !== "true") {
-        // Se cuentan ANTES de abrir esta: la cascada la coloca detrás de las
-        // que ya están. Y `data-open` se pone antes de medir, porque una
-        // ventana en display:none mide 0x0.
-        const abiertas = document.querySelectorAll('.xp-window[data-open="true"]').length;
+        // Counted BEFORE opening this one: the cascade places it behind the
+        // ones already there. And `data-open` is set before measuring, because
+        // a window in display:none measures 0x0.
+        const alreadyOpen = document.querySelectorAll('.xp-window[data-open="true"]').length;
         win.dataset.open = "true";
-        restaurar();
-        if (ESCRITORIO.matches) {
+        restore();
+        if (DESKTOP.matches) {
           tasks?.appendChild(task);
-          move(cascadePosition(abiertas, size(), desk()));
+          move(cascadePosition(alreadyOpen, size(), desk()));
         }
       }
-      alFrente();
+      toFront();
       win.focus();
     };
 
-    const cerrar = () => {
+    const close = () => {
       win.dataset.open = "false";
       win.classList.remove("is-min", "is-front");
       task.remove();
-      // El foco no puede quedarse en un elemento que acaba de desaparecer.
-      // Vuelve a quien la abrió si sigue en la página; si no, al botón de
-      // Inicio, que siempre está.
-      const destino =
-        disparador && disparador.isConnected
-          ? disparador
-          : document.querySelector<HTMLElement>(".xp-start");
-      destino?.focus();
+      // Focus cannot stay on an element that has just disappeared. It goes back
+      // to whoever opened the window if they are still on the page; failing
+      // that, to the Start button, which is always there.
+      const target =
+        opener && opener.isConnected ? opener : document.querySelector<HTMLElement>(".xp-start");
+      target?.focus();
     };
 
-    const minimizar = () => {
+    const minimise = () => {
       win.classList.add("is-min");
       win.classList.remove("is-front");
       btnMin.setAttribute("aria-pressed", "true");
@@ -189,44 +187,44 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
       task.focus();
     };
 
-    // Un clic en el botón de la barra hace lo que hace en Windows: si la
-    // ventana está escondida o detrás, la trae; si ya está delante, la
-    // esconde.
+    // A click on the taskbar button does what it does in Windows: if the window
+    // is hidden or behind, it brings it up; if it is already in front, it hides
+    // it.
     task.addEventListener("click", () => {
       if (win.classList.contains("is-min") || !win.classList.contains("is-front")) {
-        restaurar();
-        alFrente();
+        restore();
+        toFront();
         win.focus();
       } else {
-        minimizar();
+        minimise();
       }
     });
 
-    // ── Los tres botones ──────────────────────────────────────────────────
-    btnMin.addEventListener("click", minimizar);
-    btnClose.addEventListener("click", cerrar);
+    // ── The three buttons ─────────────────────────────────────────────────
+    btnMin.addEventListener("click", minimise);
+    btnClose.addEventListener("click", close);
     btnMax.addEventListener("click", () => {
       const on = !win.classList.contains("is-max");
       win.classList.toggle("is-max", on);
       btnMax.setAttribute("aria-pressed", String(on));
-      // Al restaurar, la posición guardada puede haber quedado fuera si la
-      // pantalla cambió mientras estaba maximizada.
+      // On restore, the stored position may have fallen outside if the screen
+      // changed while the window was maximised.
       if (!on) reclamp();
     });
 
-    // Pulsar en cualquier parte de la ventana la sube al frente, como en
-    // Windows. En captura para que llegue antes que los botones de dentro.
-    win.addEventListener("pointerdown", () => alFrente(), true);
+    // Pressing anywhere in the window brings it to the front, like in Windows.
+    // On capture so it lands before the buttons inside.
+    win.addEventListener("pointerdown", () => toFront(), true);
 
-    // ── Arrastrar ─────────────────────────────────────────────────────────
-    // Punteros y no ratón: el mismo código vale para dedo y lápiz. La captura
-    // es lo que hace que un arrastre rápido no se pierda cuando el cursor
-    // adelanta a la ventana.
+    // ── Dragging ──────────────────────────────────────────────────────────
+    // Pointers and not mouse: the same code covers finger and stylus. The
+    // capture is what stops a fast drag getting lost when the cursor outruns
+    // the window.
     let from: { px: number; py: number; x: number; y: number } | null = null;
 
     titlebar.addEventListener("pointerdown", (e) => {
-      const sobreBoton = (e.target as HTMLElement).closest(".xp-winbtn");
-      if (sobreBoton || win.classList.contains("is-max") || !ESCRITORIO.matches) return;
+      const onButton = (e.target as HTMLElement).closest(".xp-winbtn");
+      if (onButton || win.classList.contains("is-max") || !DESKTOP.matches) return;
       from = { px: e.clientX, py: e.clientY, x: px("--x"), y: px("--y") };
       titlebar.setPointerCapture(e.pointerId);
     });
@@ -248,45 +246,45 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
     titlebar.addEventListener("pointerup", endDrag);
     titlebar.addEventListener("pointercancel", endDrag);
 
-    // Al cambiar el tamaño de la pantalla la ventana puede quedarse fuera.
+    // When the screen is resized the window can end up outside.
     addEventListener("resize", () => {
-      if (ESCRITORIO.matches && win.dataset.open === "true") reclamp();
+      if (DESKTOP.matches && win.dataset.open === "true") reclamp();
     });
 
-    // ── Arranque ──────────────────────────────────────────────────────────
-    ventanas.set(win.id, abrir);
+    // ── Start-up ──────────────────────────────────────────────────────────
+    windows.set(win.id, open);
 
-    if (win.dataset.open === "true" && ESCRITORIO.matches) {
-      // La cascada cuenta las que ya tienen botón en la barra: si algún día
-      // abren dos solas, la segunda no cae encima de la primera.
-      const abiertas = tasks?.children.length ?? 0;
+    if (win.dataset.open === "true" && DESKTOP.matches) {
+      // The cascade counts the ones that already have a taskbar button: if two
+      // windows ever open by themselves, the second will not land on the first.
+      const alreadyOpen = tasks?.children.length ?? 0;
       tasks?.appendChild(task);
-      move(cascadePosition(abiertas, size(), desk()));
-      alFrente();
+      move(cascadePosition(alreadyOpen, size(), desk()));
+      toFront();
     }
   });
 
-  // ── Los enlaces que abren ventanas ──────────────────────────────────────
-  // Delegado en el documento: vale para los enlaces que hay ahora y para los
-  // que vivan dentro de cualquier ventana. En modo apilado NO se intercepta:
-  // ahí el ancla hace su trabajo de siempre, que es saltar a la ventana, que
-  // está visible. Eso es lo que da navegación sin JavaScript.
+  // ── The links that open windows ─────────────────────────────────────────
+  // Delegated on the document: it covers the links that exist now and any that
+  // live inside a window. In stacked mode it does NOT intercept: there the
+  // anchor does its usual job, which is jumping to the window, which is
+  // visible. That is what gives navigation without JavaScript.
   document.addEventListener("click", (e) => {
-    if (!ESCRITORIO.matches) return;
-    const enlace = (e.target as HTMLElement | null)?.closest?.("a[href]");
-    if (!(enlace instanceof HTMLAnchorElement)) return;
-    const href = enlace.getAttribute("href") ?? "";
+    if (!DESKTOP.matches) return;
+    const link = (e.target as HTMLElement | null)?.closest?.("a[href]");
+    if (!(link instanceof HTMLAnchorElement)) return;
+    const href = link.getAttribute("href") ?? "";
     if (!href.startsWith("#")) return;
-    const abrir = ventanas.get(href.slice(1));
-    if (!abrir) return;
+    const open = windows.get(href.slice(1));
+    if (!open) return;
     e.preventDefault();
-    abrir(enlace);
+    open(link);
   });
 </script>
 
 <style>
-  /* ══ MODO APILADO — la base ═══════════════════════════════════════════════
-     Móvil y sin JavaScript. En columna, todas visibles, scrollea la página. */
+  /* ══ STACKED MODE — the base ══════════════════════════════════════════════
+     Phone and no-JavaScript. In a column, all visible, the page scrolls. */
   .xp-window {
     position: relative;
     box-sizing: border-box;
@@ -294,21 +292,21 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
     margin: 0 auto 14px;
     display: flex;
     flex-direction: column;
-    /* El marco de Luna: 3px de azul a los lados y abajo, esquinas de arriba
-       redondeadas y las de abajo no. */
+    /* The Luna frame: 3px of blue at the sides and the bottom, rounded corners
+       at the top and square ones at the bottom. */
     background: #0831d9;
     border-radius: 8px 8px 0 0;
     padding: 0 3px 3px;
     box-shadow: 2px 3px 12px rgba(0, 0, 0, 0.45);
     font-family: Tahoma, "DejaVu Sans", Verdana, sans-serif;
   }
-  /* Sin foco visible propio: es un contenedor con tabindex="-1" al que el
-     script manda el foco al abrir, no algo que se tabule. */
+  /* No focus ring of its own: it is a container with tabindex="-1" that the
+     script focuses on open, not something you tab to. */
   .xp-window:focus {
     outline: none;
   }
 
-  /* ── La barra de título ───────────────────────────────────────────────── */
+  /* ── The title bar ────────────────────────────────────────────────────── */
   .xp-titlebar {
     flex: none;
     display: flex;
@@ -345,8 +343,8 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
     text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
   }
 
-  /* Escondidos en apilado: minimizar, maximizar y cerrar no significan nada
-     en una columna, y un botón que no hace nada es peor que ninguno. */
+  /* Hidden when stacked: minimise, maximise and close mean nothing in a column,
+     and a button that does nothing is worse than no button. */
   .xp-winbtns {
     display: none;
     flex: none;
@@ -380,7 +378,7 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
     outline-offset: -3px;
   }
 
-  /* ── El cuerpo ────────────────────────────────────────────────────────── */
+  /* ── The body ─────────────────────────────────────────────────────────── */
   .xp-winbody {
     flex: 1 1 auto;
     min-height: 0;
@@ -391,9 +389,9 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
     line-height: 1.55;
   }
 
-  /* ══ MODO ESCRITORIO — la mejora ══════════════════════════════════════════
-     `html.js` lo pone un script inline del layout. Sin JavaScript esta media
-     query no se aplica nunca, en ninguna pantalla, y todo se queda apilado. */
+  /* ══ DESKTOP MODE — the enhancement ═══════════════════════════════════════
+     `html.js` is set by an inline script in the layout. Without JavaScript this
+     media query never applies, on any screen, and everything stays stacked. */
   @media (min-width: 721px) {
     :global(html.js) .xp-window {
       position: absolute;
@@ -402,9 +400,8 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
       z-index: 5;
       width: var(--w);
       margin: 0;
-      /* Nunca más ancha que la pantalla ni más alta que el hueco sobre la
-         barra: en una pantalla pequeña la ventana se encoge en vez de
-         salirse. */
+      /* Never wider than the screen nor taller than the well above the taskbar:
+         on a small screen the window shrinks instead of falling off. */
       max-width: calc(100vw - 16px);
       height: var(--h);
       max-height: calc(100dvh - var(--bar-h, 40px) - 16px);
@@ -414,18 +411,19 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
       display: none;
     }
     :global(html.js) .xp-titlebar {
-      /* La barra de título es el asa: el cursor de texto aquí sobra.
-         `touch-action: none` es lo que deja arrastrar con el dedo sin que el
-         navegador se lleve el gesto — y por eso NO puede estar en el modo
-         apilado, donde arrastrar la barra tiene que scrollear la página. */
+      /* The title bar is the handle: a text cursor here is wrong.
+         `touch-action: none` is what allows dragging with a finger without the
+         browser stealing the gesture — and that is exactly why it CANNOT be in
+         stacked mode, where dragging the bar has to scroll the page. */
       cursor: default;
       user-select: none;
       touch-action: none;
     }
-    /* La ventana que no está al frente lleva la barra apagada. Es como se
-       distingue la activa en Windows, y con cinco ventanas hace falta.
-       Un filtro y no otro degradado: no hay captura de la barra inactiva que
-       medir, y aproximar dos veces es peor que aproximar una. */
+    /* The window that is not in front wears a dimmed title bar. It is how you
+       tell the active one apart in Windows, and with five windows you need it.
+       A filter and not a second gradient: there is no capture of the inactive
+       bar to measure, and approximating twice is worse than approximating
+       once. */
     :global(html.js) .xp-window:not(.is-front) .xp-titlebar {
       filter: saturate(0.4) brightness(0.92);
     }
@@ -433,10 +431,10 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
       display: flex;
     }
     :global(html.js) .xp-winbody {
-      /* Aquí sí scrollea la ventana, no la página: el escritorio no tiene
-         scroll. La barra va teñida a mano, y como el resto de los colores de
-         esta ventana es aproximación y no medida: la de XP es un dibujo con
-         relieve que `scrollbar-color` no sabe hacer. */
+      /* Here it is the window that scrolls, not the page: the desktop has no
+         scroll. The scrollbar is tinted by hand, and like the rest of this
+         window's colours it is approximation and not measurement: the XP one is
+         a relief drawing that `scrollbar-color` cannot do. */
       overflow-y: auto;
       overscroll-behavior: contain;
       scrollbar-color: #a7bdd9 #f1efe2;
@@ -457,19 +455,19 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
     }
   }
 
-  /* ── La apertura ──────────────────────────────────────────────────────── */
-  /* Misma mecánica que la barra de tareas y por la misma razón: se declara el
-     estado VISIBLE con su transición, y el escondido con `transition: none`.
-     El navegador lee la transición del estado de DESTINO, así que la ventana
-     anima cuando `Boot.astro` quita el atributo y no en la primera pintura.
+  /* ── The opening ──────────────────────────────────────────────────────── */
+  /* Same mechanism as the taskbar and for the same reason: the VISIBLE state is
+     declared with its transition, and the hidden one with `transition: none`.
+     The browser reads the transition off the DESTINATION state, so the window
+     animates when `Boot.astro` removes the attribute and not on first paint.
 
-     Una @keyframes con delay NO valdría: contaría desde que carga la página,
-     así que la ventana se abriría detrás del arranque y aparecería ya abierta.
-     Aquí el reloj lo arranca el final del arranque, que es lo que se quiere.
+     A @keyframes with a delay would NOT do: it would count from page load, so
+     the window would open behind the boot screen and turn up already open. Here
+     the clock is started by the end of the boot screen, which is the point.
 
-     Los 900ms son a propósito más que los 800 de la barra (400 de espera +
-     400 de subida): primero el escritorio, luego la barra, y solo entonces la
-     ventana. Si van a la vez parece una imagen y no un arranque. */
+     The 900ms are deliberately more than the taskbar's 800 (400 waiting + 400
+     rising): desktop first, then the bar, and only then the window. All at once
+     it looks like an image and not like a machine starting up. */
   .xp-window {
     transform-origin: 50% 100%;
     opacity: 1;

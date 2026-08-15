@@ -1,18 +1,18 @@
 /**
- * Contenido y tiempos de la pantalla de arranque.
+ * The content and timings of the boot screen.
  *
- * Está calcado de la primera página de https://senna.social/. Los tiempos y
- * las frases NO son decisiones de diseño de aquí: son valores copiados. Están
- * en este fichero, y no dentro del .astro, para que `boot-data.test.mjs` pueda
- * comprobarlos contra la tabla de la referencia en cada build.
+ * It is traced from the first page of https://senna.social/. The timings and
+ * the wording are NOT design decisions made here: they are copied values. They
+ * live in this file, and not inside the .astro, so that `boot-data.test.mjs`
+ * can check them against the reference's table on every build.
  *
- * Medidas y razones: docs/superpowers/specs/2026-08-14-arranque-paridad-senna.md
+ * Measurements and reasons: docs/superpowers/specs/2026-08-14-boot-screen-senna-parity.md
  *
- * ⚠️ Antes de tocar nada de aquí, lee el spec. Cada número tiene un porqué y
- * el test te va a parar.
+ * ⚠️ Read the spec before touching anything here. Every number has a reason and
+ * the test will stop you.
  */
 
-/** Lo único que cambia respecto a la referencia: quién es el dueño. */
+/** The only thing that differs from the reference: who it belongs to. */
 export const HEAD = {
   title: "Adc-alt's Portfolio [Version 95.0.218y2k3]",
   copy: "Copyright (c) 2026 ADCSOFT Corporation.",
@@ -22,9 +22,8 @@ export const HEAD = {
 export const LOADING = "Loading...";
 
 /**
- * Bloque de arriba. Los dos puntos van dentro de la etiqueta y con espaciado
- * distinto en cada línea: en la referencia parece tecleado a mano, y así se
- * queda.
+ * The top block. The colons sit inside the label and with different spacing on
+ * each line: in the reference it looks hand-typed, and that is how it stays.
  */
 export const SPECS = [
   { k: "PROCESSOR MODEL :", v: "Micro-D1-NK" },
@@ -33,16 +32,16 @@ export const SPECS = [
 ];
 
 /**
- * El contador de memoria. Despacio al principio (275 ms), disparado en medio
- * (30 ms) y frenando al final (50 ms). Dura unos 830 ms.
- * `intervals[i]` es lo que se espera DESPUÉS de pintar `numbers[i]`.
+ * The memory counter. Slow at the start (275ms), flat out in the middle (30ms)
+ * and braking at the end (50ms). It runs for about 830ms.
+ * `intervals[i]` is the wait AFTER painting `numbers[i]`.
  */
 export const COUNT = {
   numbers: [24, 25, 507, 1337, 5678, 9001, 12345, 42069, 80085, 91021],
   intervals: [275, 30, 30, 30, 30, 30, 30, 50, 50, 50],
 };
 
-/** Bloque de chequeos: dispositivo, puntos y veredicto. */
+/** The check block: device, dots and verdict. */
 export const DEVICES = [
   { k: "Keyboard & Mouse", s: "CONNECTED" },
   { k: "CRT Monitors", s: "PITCHING & WHINING" },
@@ -54,15 +53,15 @@ export const TAIL = { k: "CD-ROM inserted :", v: "lego-island-two.pcm" };
 export const PROMPT = "[PRESS ANY KEY TO CONTINUE]";
 
 /**
- * Retardos en ms desde que carga la página, copiados de su `textloader.js`.
+ * Delays in ms from page load, copied from their `textloader.js`.
  *
- * ⚠️ Lo que se ve en pantalla llega 500 ms MÁS TARDE que estos números. No es
- * un error de esta tabla: es el `transition: visibility 0s .5s` del CSS, que
- * mantiene la línea escondida mientras la opacidad sube. Spec §5.
+ * ⚠️ What you see on screen arrives 500ms LATER than these numbers. That is not
+ * a mistake in this table: it is the `transition: visibility 0s .5s` in the CSS,
+ * which keeps the line hidden while the opacity rises. Spec §5.
  *
- * Los dos silencios son la mitad del carácter de la pantalla:
- *  - 1,1 s enteros entre `count` (1900) y `name[0]` (3000).
- *  - 450 ms de más en el último veredicto (3250 → 3700).
+ * The two silences are half the character of the screen:
+ *  - a full 1.1s between `count` (1900) and `name[0]` (3000).
+ *  - 450ms extra on the last verdict (3250 → 3700).
  */
 export const T = {
   title: 1000,
@@ -80,7 +79,8 @@ export const T = {
 };
 
 /**
- * Milisegundos hasta entrar solo al portfolio. **0 = no entra sola, espera.**
- * La referencia sigue en el arranque a los 25 s si no tocas nada. Verificado.
+ * Milliseconds before it enters the portfolio on its own. **0 = it does not,
+ * it waits.** The reference is still on the boot screen after 25s if you touch
+ * nothing. Verified.
  */
 export const AUTO_MS = 0;
