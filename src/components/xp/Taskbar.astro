@@ -156,4 +156,35 @@ const trayEdge = hex(TRAY_EDGE);
        (§9). */
     letter-spacing: 0.02em;
   }
+
+  /* ── La entrada ──────────────────────────────────────────────────────────
+     Sin JavaScript. El arranque pone html[data-boot] mientras se ve y lo QUITA
+     al terminar (Boot.astro, fin()): la barra solo reacciona a que desaparezca.
+
+     La transición se declara en el estado VISIBLE y no en el escondido a
+     propósito: el navegador lee la `transition` del estado de destino, así que
+     al quitarse el atributo la barra anima, y mientras está puesto no anima.
+
+     Los 400 ms de retardo son lo que vende la escena (§8): si la barra sube a
+     la vez que aparece el fondo, parece una imagen; si sube después, parece un
+     arranque. */
+  .xp-taskbar {
+    transform: translateY(0);
+    transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1) 400ms;
+  }
+  :global(html[data-boot]) .xp-taskbar {
+    transform: translateY(100%);
+    /* Sin transición mientras el arranque está puesto: si no, la barra bajaría
+       deslizándose en la primera pintura en vez de estar ya escondida. */
+    transition: none;
+  }
+
+  /* Sin movimiento: la barra ya está puesta cuando el arranque se va. Con la
+     preferencia activada el arranque además termina de golpe, sin apagado de
+     tubo, así que las dos cosas casan. */
+  @media (prefers-reduced-motion: reduce) {
+    .xp-taskbar {
+      transition: none;
+    }
+  }
 </style>
