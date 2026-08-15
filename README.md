@@ -15,9 +15,13 @@ cargan nada.
 | `/` | Portada. **Con pantalla de arranque** la primera visita |
 | `/work/` | La misma portada **sin arranque, siempre**. Es la URL del CV |
 | `/proyectos/`, `/proyectos/<id>/`, `/perfil/` | El resto |
+| `/xp/` | **Escritorio de Windows XP.** En obras: fondo y barra, sin ventanas |
 
 `/work/` lleva `noindex` y canonical a `/`, y está fuera del sitemap: es el
 mismo contenido y no debe competir consigo mismo en Google.
+
+`/xp/` lleva `noindex` y está fuera del sitemap por lo mismo: es una fase
+intermedia y no debe aparecer en Google todavía.
 
 ## Arrancar
 
@@ -151,6 +155,53 @@ Tipografía **AcPlus IBM VGA 8x16** de
 `public/fonts/` con su licencia al lado. El crédito que exige está en el pie del
 sitio. El `.woff2` se sacó del pack `_win` (los `Ac` no vienen en el pack web)
 convirtiendo el TTF con `fonttools`.
+
+## Escritorio XP
+
+`/xp/` es un mock de Windows XP: el fondo de pantalla y la barra de tareas del
+tema Luna, y nada más. Sin iconos, sin menú Inicio y sin ventanas.
+
+Existe porque el plan es que **el escritorio acabe sustituyendo al sitio**: el
+portfolio pasará a vivir dentro de ventanas XP y la estética arcade
+desaparecerá. `src/layouts/XP.astro` es el layout definitivo de eso, no un
+andamio, y por eso no importa `global.css` ni las fuentes arcade. En esas
+páginas no hay Tailwind.
+
+Vive en `/xp/` y no en `/` porque un escritorio sin ventanas es un callejón sin
+salida y la portada es la URL que va en el CV. La raíz se muda el día que
+existan las ventanas.
+
+**No hay ni un byte de Microsoft ni de winbows.neocities.org.** El fondo está
+dibujado aquí en SVG, y de la barra solo se han copiado medidas y colores, que
+son hechos y no obra. No hay logotipo de Windows.
+
+Las medidas, con capturas y el porqué de cada número, están en
+`docs/superpowers/specs/2026-08-15-escritorio-xp-fase1-design.md`.
+
+Tres cosas que parecen detalles y sostienen lo demás:
+
+- **La barra no es un degradado.** Es un filo claro, un cuerpo casi plano en
+  siete octavos del alto, y tres píxeles que oscurecen de golpe al final. Un
+  `linear-gradient` de dos colores queda mal. `taskbar-colors.test.mjs` rechaza
+  la barra plana, la de dos paradas y la del degradado suave: si tocas los
+  colores, la sonda te lo dice.
+- **La bandeja del reloj es MÁS clara que la barra, no más oscura.** Lo que la
+  hace parecer hundida es el filo oscuro de 1 px de su izquierda. Pintarla más
+  oscura es lo que pide el instinto y es lo que la rompe.
+- **La barra sube 400 ms después de que el arranque descubra el fondo**, y eso
+  es lo que hace que parezca un arranque en vez de una imagen. No lleva
+  JavaScript: `Boot.astro` quita `html[data-boot]` al terminar y la barra
+  reacciona a que el atributo desaparezca.
+
+Los colores de XP **no llegan a AA de texto normal**: blanco sobre el verde del
+botón da 3,50:1 y sobre el azul de la bandeja 3,39:1, contra los 4,5:1 que pide
+la norma. Los dos sí cumplen AA de texto grande (3:1). Es una decisión tomada a
+sabiendas — bajarlos hasta cumplir deja de parecerse a XP — y la hora llega
+íntegra a un lector de pantalla por el `<time datetime>` pase lo que pase. El
+test fija el suelo de 3:1 para que no empeore sin que nadie se entere.
+
+Para volver a ver el arranque del escritorio: borra `boot_seen_xp` de
+`localStorage`. Es una llave distinta de la de la portada a propósito.
 
 ## Easter egg
 
