@@ -1,0 +1,57 @@
+---
+/**
+ * Un proyecto entero, dentro de su ventana. Es lo que antes era
+ * `/proyectos/<id>/`.
+ */
+import { render, type CollectionEntry } from "astro:content";
+import { ESTADO } from "./proyectos.mjs";
+
+interface Props {
+  proyecto: CollectionEntry<"proyectos">;
+}
+
+const { proyecto } = Astro.props;
+const { Content } = await render(proyecto);
+const { title, summary, stack, year, status, repo, demo } = proyecto.data;
+---
+
+<div class="xp-doc">
+  <h1>{title}</h1>
+  <p class="lede">{summary}</p>
+
+  <dl class="ficha">
+    <div>
+      <dt>Fecha</dt>
+      <dd>{year}</dd>
+    </div>
+    <div>
+      <dt>Estado</dt>
+      <dd>{ESTADO[status]}</dd>
+    </div>
+    <div>
+      <dt>Stack</dt>
+      <dd>{stack.join(" · ")}</dd>
+    </div>
+  </dl>
+
+  {
+    (repo || demo) && (
+      <p class="fila">
+        {demo && (
+          <a href={demo} rel="noopener">
+            Ver en vivo
+          </a>
+        )}
+        {repo && (
+          <a href={repo} rel="noopener">
+            Repositorio
+          </a>
+        )}
+      </p>
+    )
+  }
+
+  <hr />
+
+  <Content />
+</div>

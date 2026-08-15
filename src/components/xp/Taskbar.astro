@@ -153,6 +153,10 @@ const trayEdge = hex(TRAY_EDGE);
     outline-offset: -4px;
   }
 
+  /* En modo apilado se queda vacía: ahí las ventanas ni se minimizan ni se
+     cierran (Window.astro esconde sus tres botones), así que su script no crea
+     botones de barra de tareas. El hueco sigue estando, que es lo que empuja
+     la bandeja a la derecha. */
   .xp-tasks {
     flex: 1 1 auto;
     min-width: 0;

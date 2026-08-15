@@ -1,6 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { clampPosition, initialPosition, KEEP_VISIBLE } from "./windows.mjs";
+import {
+  cascadePosition,
+  clampPosition,
+  initialPosition,
+  CASCADE_STEP,
+  CASCADE_WRAP,
+  KEEP_VISIBLE,
+} from "./windows.mjs";
 
 // Escritorio de referencia: 1440x900 con la barra de 40.
 const DESK = { vw: 1440, vh: 900, barH: 40 };
@@ -68,4 +75,32 @@ test("la posición inicial centra en horizontal", () => {
   assert.equal(p.x, (DESK.vw - WIN.w) / 2);
   // Por encima del centro, como abre Windows: menos de la mitad del hueco.
   assert.ok(p.y < (DESK.vh - DESK.barH - WIN.h) / 2, `y=${p.y}`);
+});
+
+test("la primera ventana de la cascada cae en la posición inicial", () => {
+  assert.deepEqual(cascadePosition(0, WIN, DESK), initialPosition(WIN, DESK));
+});
+
+test("cada ventana de la cascada se desplaza un paso de la anterior", () => {
+  const a = cascadePosition(1, WIN, DESK);
+  const b = cascadePosition(2, WIN, DESK);
+  assert.equal(b.x - a.x, CASCADE_STEP);
+  assert.equal(b.y - a.y, CASCADE_STEP);
+});
+
+test("la cascada vuelve al principio en vez de apilar en el mismo sitio", () => {
+  // El fallo que esto evita: sin la vuelta, el clamp acaba dejando todas las
+  // ventanas a partir de la sexta en píxeles idénticos.
+  assert.deepEqual(cascadePosition(CASCADE_WRAP, WIN, DESK), cascadePosition(0, WIN, DESK));
+  assert.notDeepEqual(cascadePosition(CASCADE_WRAP - 1, WIN, DESK), cascadePosition(0, WIN, DESK));
+});
+
+test("ninguna ventana de la cascada sale del escritorio", () => {
+  // Pantalla pequeña a propósito: es donde la cascada empuja fuera.
+  const chica = { vw: 900, vh: 600, barH: 40 };
+  for (let i = 0; i < CASCADE_WRAP * 2; i++) {
+    const p = cascadePosition(i, WIN, chica);
+    assert.ok(p.x >= KEEP_VISIBLE - WIN.w && p.x <= chica.vw - KEEP_VISIBLE, `i=${i} x=${p.x}`);
+    assert.ok(p.y >= 0 && p.y <= chica.vh - chica.barH - KEEP_VISIBLE, `i=${i} y=${p.y}`);
+  }
 });

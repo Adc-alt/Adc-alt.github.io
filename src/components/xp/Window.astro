@@ -3,16 +3,29 @@
  * Una ventana de Windows XP, tema Luna.
  *
  * ⚠️ AVISO DE PROCEDENCIA, distinto al del resto de este directorio: los
- * colores de la barra de tareas están MEDIDOS sobre capturas (§4 de la spec).
- * Los de aquí NO. Son la aproximación pública de Luna que circula en la web
- * (la de xp.css y compañía), porque no tengo una captura nativa de una ventana
- * que muestrear. Están puestos a ojo contra el recuerdo. Si algún día aparece
- * una captura, esto se mide y se sube a un módulo con test, como los otros.
+ * colores de la barra de tareas están MEDIDOS sobre capturas (§4 de la spec
+ * de fase 1). Los de aquí NO. Son la aproximación pública de Luna que circula
+ * en la web (la de xp.css y compañía), puesta a ojo contra el recuerdo. Si
+ * algún día aparece una captura nativa, esto se mide y se sube a un módulo
+ * con test, como los otros.
  *
- * El contenido va en HTML del build. El JavaScript solo arrastra, minimiza,
- * maximiza y cierra: sin él la ventana sigue ahí, abierta y legible, que es
- * la razón de que la posición inicial venga en el `style` del servidor y no
- * la ponga el script.
+ * El contenido va en HTML del build. El JavaScript solo abre, cierra,
+ * arrastra, minimiza y maximiza.
+ *
+ * DOS MODOS, y el orden importa (fase 2 §4):
+ *
+ *   - **Apilado** es la BASE: las ventanas van en columna, todas visibles, y
+ *     scrollea la página. Es lo que se ve en un móvil y lo que se ve sin
+ *     JavaScript, en cualquier pantalla.
+ *   - **Escritorio** es la MEJORA: absolutas, arrastrables, se abren y se
+ *     cierran. Vive dentro de `@media (min-width: 721px)` y colgando de
+ *     `html.js`, que pone un script inline del layout.
+ *
+ * Escrito al revés harían falta dos copias de las mismas reglas, y un fallo
+ * de JavaScript dejaría el sitio en blanco en vez de en modo lectura.
+ *
+ * Esconder es `display: none`, que ya saca del tabulador y del árbol de
+ * accesibilidad: no hace falta `inert` encima.
  */
 import { initialPosition } from "./windows.mjs";
 import { HEIGHT as BAR_H } from "./taskbar-colors.mjs";
@@ -20,23 +33,27 @@ import { HEIGHT as BAR_H } from "./taskbar-colors.mjs";
 interface Props {
   /** Título de la barra y del botón de la barra de tareas. */
   title: string;
-  /** Identificador único: lo usa el botón de la barra de tareas. */
+  /** Identificador único. Es el destino de los enlaces: `href="#id"`. */
   id: string;
   width?: number;
   height?: number;
+  /** Si abre sola al cargar. Solo la de bienvenida. */
+  open?: boolean;
 }
 
-const { title, id, width = 720, height = 520 } = Astro.props;
+const { title, id, width = 720, height = 520, open = false } = Astro.props;
 
 /* Posición del servidor, calculada contra un escritorio de referencia de
-   1440x900. Con JS el script la recalcula contra la pantalla real en cuanto
-   carga; sin JS, ésta es la que se ve, y por eso pasa por el mismo clamp. */
+   1440x900. En modo escritorio el script la recalcula contra la pantalla real
+   —y en cascada, si ya hay ventanas abiertas—; en modo apilado no se usa. */
 const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: BAR_H });
 ---
 
 <section
   class="xp-window"
   id={id}
+  data-open={open ? "true" : "false"}
+  tabindex="-1"
   style={`--x:${pos.x}px;--y:${pos.y}px;--w:${width}px;--h:${height}px;--bar-h:${BAR_H}px`}
   aria-labelledby={`${id}-title`}
 >
@@ -45,7 +62,8 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
     <h2 class="xp-titletext" id={`${id}-title`}>{title}</h2>
 
     {/* Los tres botones son <button> de verdad. Minimizar y maximizar cambian
-        estado y por eso llevan aria-pressed; cerrar no vuelve, y por eso no. */}
+        estado y por eso llevan aria-pressed; cerrar no vuelve, y por eso no.
+        En modo apilado no se pintan: ahí no significan nada. */}
     <div class="xp-winbtns">
       <button class="xp-winbtn xp-min" type="button" aria-pressed="false" aria-label="Minimizar"
         ><span aria-hidden="true">─</span></button
@@ -65,11 +83,23 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
 </section>
 
 <script>
-  import { clampPosition, initialPosition } from "./windows.mjs";
+  import { cascadePosition, clampPosition } from "./windows.mjs";
+
+  /* 721px: por debajo de eso el escritorio se rinde y todo pasa a modo
+     apilado (fase 2 §4). El mismo número está en el CSS de este fichero. */
+  const ESCRITORIO = matchMedia("(min-width: 721px)");
 
   /** El alto real de la barra de tareas, medido en el DOM y no repetido aquí. */
   const barHeight = () =>
     document.querySelector(".xp-taskbar")?.getBoundingClientRect().height ?? 0;
+
+  const tasks = document.querySelector(".xp-tasks");
+
+  /** id de ventana → cómo abrirla. Lo consulta el manejador de enlaces. */
+  const ventanas = new Map<string, (desde?: HTMLElement | null) => void>();
+
+  /** Contador de profundidad. Sube y no baja: la última en pulsarse, al frente. */
+  let zTop = 5;
 
   document.querySelectorAll<HTMLElement>(".xp-window").forEach((win) => {
     const titlebar = win.querySelector<HTMLElement>(".xp-titlebar");
@@ -87,42 +117,94 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
       win.style.setProperty("--x", `${p.x}px`);
       win.style.setProperty("--y", `${p.y}px`);
     };
-    const reclamp = () => move(clampPosition({ ...size(), x: px("--x"), y: px("--y") }, desk()));
-
-    // Recolocar contra la pantalla real. El servidor la centró contra un
-    // escritorio de referencia; aquí ya sabemos el de verdad.
-    move(initialPosition(size(), desk()));
+    const reclamp = () =>
+      move(clampPosition({ ...size(), x: px("--x"), y: px("--y") }, desk()));
 
     // ── El botón de la barra de tareas ────────────────────────────────────
-    // Lo crea el script y no el HTML: sin JS no se puede minimizar, así que
-    // un botón que restaura no tendría nada que hacer.
+    // Lo crea el script y no el HTML: sin JS no se puede ni minimizar ni
+    // cerrar, así que un botón que restaura no tendría nada que hacer.
     const task = document.createElement("button");
     task.type = "button";
-    task.className = "xp-task xp-task-active";
+    task.className = "xp-task";
     task.textContent = titleText.textContent;
-    document.querySelector(".xp-tasks")?.appendChild(task);
 
-    const setMinimized = (on: boolean) => {
-      win.classList.toggle("is-min", on);
-      btnMin.setAttribute("aria-pressed", String(on));
-      task.classList.toggle("xp-task-active", !on);
-      // `inert` saca del tabulador todo lo que hay dentro: una ventana
-      // minimizada no debe seguir siendo alcanzable con el teclado.
-      win.inert = on;
+    /** Quién abrió la ventana, para devolverle el foco al cerrarla. */
+    let disparador: HTMLElement | null = null;
+
+    const alFrente = () => {
+      if (win.classList.contains("is-front")) return;
+      win.style.zIndex = String(++zTop);
+      document
+        .querySelectorAll(".xp-window.is-front")
+        .forEach((otra) => otra.classList.remove("is-front"));
+      document
+        .querySelectorAll(".xp-task-active")
+        .forEach((otro) => otro.classList.remove("xp-task-active"));
+      win.classList.add("is-front");
+      task.classList.add("xp-task-active");
     };
 
+    const restaurar = () => {
+      win.classList.remove("is-min");
+      btnMin.setAttribute("aria-pressed", "false");
+    };
+
+    const abrir = (desde?: HTMLElement | null) => {
+      if (desde) disparador = desde;
+      if (win.dataset.open !== "true") {
+        // Se cuentan ANTES de abrir esta: la cascada la coloca detrás de las
+        // que ya están. Y `data-open` se pone antes de medir, porque una
+        // ventana en display:none mide 0x0.
+        const abiertas = document.querySelectorAll('.xp-window[data-open="true"]').length;
+        win.dataset.open = "true";
+        restaurar();
+        if (ESCRITORIO.matches) {
+          tasks?.appendChild(task);
+          move(cascadePosition(abiertas, size(), desk()));
+        }
+      }
+      alFrente();
+      win.focus();
+    };
+
+    const cerrar = () => {
+      win.dataset.open = "false";
+      win.classList.remove("is-min", "is-front");
+      task.remove();
+      // El foco no puede quedarse en un elemento que acaba de desaparecer.
+      // Vuelve a quien la abrió si sigue en la página; si no, al botón de
+      // Inicio, que siempre está.
+      const destino =
+        disparador && disparador.isConnected
+          ? disparador
+          : document.querySelector<HTMLElement>(".xp-start");
+      destino?.focus();
+    };
+
+    const minimizar = () => {
+      win.classList.add("is-min");
+      win.classList.remove("is-front");
+      btnMin.setAttribute("aria-pressed", "true");
+      task.classList.remove("xp-task-active");
+      task.focus();
+    };
+
+    // Un clic en el botón de la barra hace lo que hace en Windows: si la
+    // ventana está escondida o detrás, la trae; si ya está delante, la
+    // esconde.
     task.addEventListener("click", () => {
-      const estaba = win.classList.contains("is-min");
-      setMinimized(!estaba);
-      if (estaba) btnClose.focus();
+      if (win.classList.contains("is-min") || !win.classList.contains("is-front")) {
+        restaurar();
+        alFrente();
+        win.focus();
+      } else {
+        minimizar();
+      }
     });
 
     // ── Los tres botones ──────────────────────────────────────────────────
-    btnMin.addEventListener("click", () => {
-      setMinimized(true);
-      task.focus();
-    });
-
+    btnMin.addEventListener("click", minimizar);
+    btnClose.addEventListener("click", cerrar);
     btnMax.addEventListener("click", () => {
       const on = !win.classList.contains("is-max");
       win.classList.toggle("is-max", on);
@@ -132,10 +214,9 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
       if (!on) reclamp();
     });
 
-    btnClose.addEventListener("click", () => {
-      win.remove();
-      task.remove();
-    });
+    // Pulsar en cualquier parte de la ventana la sube al frente, como en
+    // Windows. En captura para que llegue antes que los botones de dentro.
+    win.addEventListener("pointerdown", () => alFrente(), true);
 
     // ── Arrastrar ─────────────────────────────────────────────────────────
     // Punteros y no ratón: el mismo código vale para dedo y lápiz. La captura
@@ -145,7 +226,7 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
 
     titlebar.addEventListener("pointerdown", (e) => {
       const sobreBoton = (e.target as HTMLElement).closest(".xp-winbtn");
-      if (sobreBoton || win.classList.contains("is-max")) return;
+      if (sobreBoton || win.classList.contains("is-max") || !ESCRITORIO.matches) return;
       from = { px: e.clientX, py: e.clientY, x: px("--x"), y: px("--y") };
       titlebar.setPointerCapture(e.pointerId);
     });
@@ -168,22 +249,49 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
     titlebar.addEventListener("pointercancel", endDrag);
 
     // Al cambiar el tamaño de la pantalla la ventana puede quedarse fuera.
-    addEventListener("resize", reclamp);
+    addEventListener("resize", () => {
+      if (ESCRITORIO.matches && win.dataset.open === "true") reclamp();
+    });
+
+    // ── Arranque ──────────────────────────────────────────────────────────
+    ventanas.set(win.id, abrir);
+
+    if (win.dataset.open === "true" && ESCRITORIO.matches) {
+      // La cascada cuenta las que ya tienen botón en la barra: si algún día
+      // abren dos solas, la segunda no cae encima de la primera.
+      const abiertas = tasks?.children.length ?? 0;
+      tasks?.appendChild(task);
+      move(cascadePosition(abiertas, size(), desk()));
+      alFrente();
+    }
+  });
+
+  // ── Los enlaces que abren ventanas ──────────────────────────────────────
+  // Delegado en el documento: vale para los enlaces que hay ahora y para los
+  // que vivan dentro de cualquier ventana. En modo apilado NO se intercepta:
+  // ahí el ancla hace su trabajo de siempre, que es saltar a la ventana, que
+  // está visible. Eso es lo que da navegación sin JavaScript.
+  document.addEventListener("click", (e) => {
+    if (!ESCRITORIO.matches) return;
+    const enlace = (e.target as HTMLElement | null)?.closest?.("a[href]");
+    if (!(enlace instanceof HTMLAnchorElement)) return;
+    const href = enlace.getAttribute("href") ?? "";
+    if (!href.startsWith("#")) return;
+    const abrir = ventanas.get(href.slice(1));
+    if (!abrir) return;
+    e.preventDefault();
+    abrir(enlace);
   });
 </script>
 
 <style>
+  /* ══ MODO APILADO — la base ═══════════════════════════════════════════════
+     Móvil y sin JavaScript. En columna, todas visibles, scrollea la página. */
   .xp-window {
-    position: absolute;
-    top: var(--y);
-    left: var(--x);
-    z-index: 5;
-    width: var(--w);
-    /* Nunca más ancha que la pantalla ni más alta que el hueco sobre la barra:
-       en un móvil la ventana se encoge en vez de salirse. */
-    max-width: calc(100vw - 16px);
-    height: var(--h);
-    max-height: calc(100dvh - var(--bar-h, 40px) - 16px);
+    position: relative;
+    box-sizing: border-box;
+    width: min(100%, var(--w));
+    margin: 0 auto 14px;
     display: flex;
     flex-direction: column;
     /* El marco de Luna: 3px de azul a los lados y abajo, esquinas de arriba
@@ -193,6 +301,11 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
     padding: 0 3px 3px;
     box-shadow: 2px 3px 12px rgba(0, 0, 0, 0.45);
     font-family: Tahoma, "DejaVu Sans", Verdana, sans-serif;
+  }
+  /* Sin foco visible propio: es un contenedor con tabindex="-1" al que el
+     script manda el foco al abrir, no algo que se tabule. */
+  .xp-window:focus {
+    outline: none;
   }
 
   /* ── La barra de título ───────────────────────────────────────────────── */
@@ -214,10 +327,6 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
       #003dd7 96%,
       #003dd7 100%
     );
-    /* La barra de título es el asa: el cursor de texto aquí sobra. */
-    cursor: default;
-    user-select: none;
-    touch-action: none;
   }
   .xp-titleicon {
     height: 16px;
@@ -236,9 +345,11 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
     text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
   }
 
+  /* Escondidos en apilado: minimizar, maximizar y cerrar no significan nada
+     en una columna, y un botón que no hace nada es peor que ninguno. */
   .xp-winbtns {
+    display: none;
     flex: none;
-    display: flex;
     gap: 2px;
   }
   .xp-winbtn {
@@ -273,8 +384,6 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
   .xp-winbody {
     flex: 1 1 auto;
     min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
     background: #ece9d8;
     color: #000000;
     padding: 18px 22px 24px;
@@ -282,23 +391,70 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
     line-height: 1.55;
   }
 
-  /* ── Estados ──────────────────────────────────────────────────────────── */
-  .xp-window.is-max {
-    top: 0;
-    left: 0;
-    width: 100vw;
-    max-width: 100vw;
-    height: calc(100dvh - var(--bar-h, 40px));
-    max-height: none;
-    border-radius: 0;
-    padding-left: 0;
-    padding-right: 0;
-  }
-  .xp-window.is-max .xp-titlebar {
-    border-radius: 0;
-  }
-  .xp-window.is-min {
-    display: none;
+  /* ══ MODO ESCRITORIO — la mejora ══════════════════════════════════════════
+     `html.js` lo pone un script inline del layout. Sin JavaScript esta media
+     query no se aplica nunca, en ninguna pantalla, y todo se queda apilado. */
+  @media (min-width: 721px) {
+    :global(html.js) .xp-window {
+      position: absolute;
+      top: var(--y);
+      left: var(--x);
+      z-index: 5;
+      width: var(--w);
+      margin: 0;
+      /* Nunca más ancha que la pantalla ni más alta que el hueco sobre la
+         barra: en una pantalla pequeña la ventana se encoge en vez de
+         salirse. */
+      max-width: calc(100vw - 16px);
+      height: var(--h);
+      max-height: calc(100dvh - var(--bar-h, 40px) - 16px);
+    }
+    :global(html.js) .xp-window[data-open="false"],
+    :global(html.js) .xp-window.is-min {
+      display: none;
+    }
+    :global(html.js) .xp-titlebar {
+      /* La barra de título es el asa: el cursor de texto aquí sobra.
+         `touch-action: none` es lo que deja arrastrar con el dedo sin que el
+         navegador se lleve el gesto — y por eso NO puede estar en el modo
+         apilado, donde arrastrar la barra tiene que scrollear la página. */
+      cursor: default;
+      user-select: none;
+      touch-action: none;
+    }
+    /* La ventana que no está al frente lleva la barra apagada. Es como se
+       distingue la activa en Windows, y con cinco ventanas hace falta.
+       Un filtro y no otro degradado: no hay captura de la barra inactiva que
+       medir, y aproximar dos veces es peor que aproximar una. */
+    :global(html.js) .xp-window:not(.is-front) .xp-titlebar {
+      filter: saturate(0.4) brightness(0.92);
+    }
+    :global(html.js) .xp-winbtns {
+      display: flex;
+    }
+    :global(html.js) .xp-winbody {
+      /* Aquí sí scrollea la ventana, no la página: el escritorio no tiene
+         scroll. La barra va teñida a mano, y como el resto de los colores de
+         esta ventana es aproximación y no medida: la de XP es un dibujo con
+         relieve que `scrollbar-color` no sabe hacer. */
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-color: #a7bdd9 #f1efe2;
+    }
+    :global(html.js) .xp-window.is-max {
+      top: 0;
+      left: 0;
+      width: 100vw;
+      max-width: 100vw;
+      height: calc(100dvh - var(--bar-h, 40px));
+      max-height: none;
+      border-radius: 0;
+      padding-left: 0;
+      padding-right: 0;
+    }
+    :global(html.js) .xp-window.is-max .xp-titlebar {
+      border-radius: 0;
+    }
   }
 
   /* ── La apertura ──────────────────────────────────────────────────────── */

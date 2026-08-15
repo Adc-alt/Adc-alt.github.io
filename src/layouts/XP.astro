@@ -1,14 +1,19 @@
 ---
 /**
- * El escritorio.
+ * El escritorio. Es el layout del sitio entero: desde la fase 2 no hay otro.
  *
- * Layout DEFINITIVO, no andamio (§2 de la spec): el portfolio acabará viviendo
- * en ventanas XP dentro de este mismo `<main>`, y la estética arcade actual
- * desaparecerá. Por eso aquí NO se importa global.css ni ninguna @fontsource:
- * el escritorio tiene su propio sistema y no debe arrastrar el del sitio viejo.
- * Consecuencia práctica: en estas páginas no hay clases de Tailwind. Una clase
- * de Tailwind aquí no da error, simplemente no hace nada.
+ * No se importa ninguna @fontsource: la única fuente que se sirve es la del
+ * arranque, y `Boot.astro` declara su propia @font-face. Lo demás es Tahoma,
+ * que o la tiene el visitante o cae en la que más se le parezca de las suyas.
+ *
+ * DOS MODOS (fase 2 §4). El apilado es la base y el escritorio la mejora:
+ * las reglas de escritorio van dentro de `@media (min-width: 721px)` y
+ * colgando de `html.js`. Sin JavaScript no se aplican nunca y el sitio se lee
+ * como una columna de ventanas, que es también lo que se ve en un móvil.
+ *
+ * Spec: docs/superpowers/specs/2026-08-15-escritorio-xp-fase2-design.md
  */
+import "../styles/xp-doc.css";
 import Wallpaper from "../components/xp/Wallpaper.astro";
 import Taskbar from "../components/xp/Taskbar.astro";
 import { SITE } from "../consts";
@@ -16,10 +21,11 @@ import { SITE } from "../consts";
 interface Props {
   title?: string;
   description?: string;
+  noindex?: boolean;
 }
 
-const { title = "Escritorio", description = SITE.tagline } = Astro.props;
-const fullTitle = `${title} — ${SITE.name}`;
+const { title, description = SITE.tagline, noindex = false } = Astro.props;
+const fullTitle = title ? `${title} — ${SITE.name}` : `${SITE.name} — ${SITE.role}`;
 ---
 
 <!doctype html>
@@ -29,26 +35,31 @@ const fullTitle = `${title} — ${SITE.name}`;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
-    {/* En obras: no debe competir en Google con el sitio real, igual que
-        /work/ (§5.1). También está fuera del sitemap, en astro.config.mjs. */}
-    <meta name="robots" content="noindex, follow" />
+    {noindex && <meta name="robots" content="noindex, follow" />}
     <link rel="canonical" href={SITE.url + "/"} />
     <meta name="generator" content={Astro.generator} />
     <meta name="theme-color" content="#245edc" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+    {/* La llave del modo escritorio. Va aquí, antes del marcado y en línea,
+        para que el modo esté decidido en la primera pintura: si se pusiera
+        desde un módulo, las ventanas se verían apiladas un fotograma antes de
+        colocarse. Sin JavaScript nunca se pone, y ése es el mecanismo entero
+        del modo apilado. */}
+    <script is:inline>
+      document.documentElement.classList.add("js");
+    </script>
   </head>
 
   <body>
     {/* Hueco a pantalla completa (la pantalla de arranque), primer hijo del
-        <body> igual que en Base.astro. Aquí el orden importa por una razón de
-        más: el script antipestañeo del arranque vive dentro de este hueco y
-        tiene que poner html[data-boot] ANTES de que se parsee la barra, o la
-        barra asoma un fotograma antes de esconderse (ver tarea 7). */}
+        <body>. El orden importa: el script antipestañeo del arranque vive
+        dentro de este hueco y tiene que poner html[data-boot] ANTES de que se
+        parsee la barra, o la barra asoma un fotograma antes de esconderse. */}
     <slot name="overlay" />
 
     {/* id="contenido" no es decorativo: al terminar, el arranque busca ese id
-        para devolverle el foco al teclado. Sin él, el foco se queda en el
-        <body> después de saltarse la pantalla. */}
+        para devolverle el foco al teclado. */}
     <main id="contenido" class="xp-desktop">
       <Wallpaper />
       <slot />
@@ -59,37 +70,56 @@ const fullTitle = `${title} — ${SITE.name}`;
 </html>
 
 <style is:global>
-  /* `Boot.astro` usa var(--font-mono) para caer en un monoespaciada del
-     sistema si "AcPlus IBM VGA 8x16" no está disponible. Ese layout se monta
-     dentro de este (tarea 6), pero este layout NO carga global.css a
-     propósito (ver comentario de arriba), así que la variable no existe aquí
-     salvo que se redefina. Un var() sin fallback que apunta a una variable
-     sin definir invalida TODA la declaración de font-family en tiempo de
-     cómputo — no cae al siguiente nombre de la lista, la descarta entera y
-     hereda la fuente del padre. Por eso se redefine aquí, con el mismo valor
-     que global.css:29, aunque "JetBrains Mono Variable" no se cargue en este
-     layout: una familia no disponible simplemente se salta dentro de la
-     lista, así que no pasa nada por nombrarla. */
+  /* `Boot.astro` usa var(--font-mono) para caer en una monoespaciada del
+     sistema si "AcPlus IBM VGA 8x16" no está disponible. Un var() que apunta a
+     una variable sin definir invalida TODA la declaración en tiempo de cómputo
+     —no cae al siguiente nombre de la lista, descarta la lista entera y hereda
+     la fuente del padre—, así que la variable tiene que existir aquí. */
   :root {
-    --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   }
   html,
   body {
     margin: 0;
     padding: 0;
-    height: 100%;
   }
   body {
-    /* Reserva sólida por si el fondo no llega a pintar (§6). Es el tono medio
-       del cielo de Bliss, así que un fallo se ve como un cielo liso y no como
-       una pantalla blanca. El degradado de reserva vive en Wallpaper.astro;
-       esto es la capa de debajo, para el hueco entre el <body> y la imagen. */
+    /* Reserva sólida por si el fondo no llega a pintar. Es el tono medio del
+       cielo de Bliss, así que un fallo se ve como un cielo liso y no como una
+       pantalla blanca. El degradado de reserva vive en Wallpaper.astro; esto
+       es la capa de debajo, para el hueco entre el <body> y la imagen. */
     background: #4b8fd4;
-    /* Un escritorio no tiene scroll. */
-    overflow: hidden;
   }
+
+  /* ── Modo apilado: la página scrollea ─────────────────────────────────── */
   .xp-desktop {
     position: relative;
-    height: 100dvh;
+    min-height: 100dvh;
+    /* El hueco de abajo es para la barra de tareas, que va fija: sin él, la
+       última ventana queda debajo. 40 es HEIGHT de taskbar-colors.mjs. */
+    padding: 12px 12px calc(40px + 16px);
+    box-sizing: border-box;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      /* Los accesos de la bienvenida son anclas de verdad: en modo apilado
+         saltan a la ventana, y con esto el salto se ve. */
+      scroll-behavior: smooth;
+    }
+  }
+
+  /* ── Modo escritorio: un escritorio no tiene scroll ───────────────────── */
+  @media (min-width: 721px) {
+    html.js,
+    html.js body {
+      height: 100%;
+      overflow: hidden;
+    }
+    html.js .xp-desktop {
+      height: 100dvh;
+      min-height: 0;
+      padding: 0;
+    }
   }
 </style>

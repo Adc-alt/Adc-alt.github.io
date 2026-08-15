@@ -1,0 +1,76 @@
+---
+/**
+ * Bio y herramientas. Es lo que antes era `/perfil/`.
+ */
+import { SOCIAL } from "../../consts";
+
+// TODO(antonio): reescribe la bio y recorta el loadout a lo que de verdad usas.
+// Está deliberadamente corto: un portfolio se lee en diagonal.
+const loadout = [
+  { group: "Lenguajes", items: ["TypeScript", "JavaScript", "Python", "Kotlin", "SQL"] },
+  { group: "Frontend", items: ["Vue", "Nuxt", "Astro", "Jetpack Compose"] },
+  { group: "Backend y datos", items: ["Node", "SQLite", "PostgreSQL", "Cloudflare Workers"] },
+  { group: "Apps nativas", items: ["Electron", "Android"] },
+  { group: "Herramientas", items: ["Git", "GitHub Actions", "Vitest", "Playwright"] },
+];
+---
+
+<div class="xp-doc">
+  <h1>Perfil</h1>
+
+  <p>
+    Soy ingeniero de software. Trabajo en producto de principio a fin:
+    escritorio, móvil y web, y todo lo aburrido que hay en medio — migraciones
+    de esquema, CI, y los bugs que solo salen a las doce de la noche.
+  </p>
+  <p>
+    Me interesa el software que alguien usa todos los días más que el que se
+    enseña una vez en una demo. Eso significa preocuparse por cosas poco
+    fotogénicas: que los datos no se pierdan, que el build sea reproducible y
+    que el error diga lo que ha pasado.
+  </p>
+
+  <hr />
+
+  <h2>Con qué trabajo</h2>
+
+  <dl class="ficha herramientas">
+    {
+      loadout.map((row) => (
+        <div>
+          <dt>{row.group}</dt>
+          <dd>{row.items.join(" · ")}</dd>
+        </div>
+      ))
+    }
+  </dl>
+
+  <hr />
+
+  <h2>Hablamos</h2>
+  <p>Si algo de aquí te encaja, escríbeme. Respondo a todo.</p>
+  <p class="fila">
+    {
+      SOCIAL.map((s) => (
+        <a href={s.href} rel={s.href.startsWith("http") ? "me noopener" : undefined}>
+          {s.label}
+        </a>
+      ))
+    }
+  </p>
+</div>
+
+<style>
+  /* La ficha compartida va en fila; ésta es una lista de grupos, así que cada
+     uno ocupa su renglón. Es lo único que este documento no comparte con los
+     demás, y por eso es lo único que se escribe aquí. */
+  /* Con `.xp-doc` delante a propósito: `.ficha` viene de la hoja global y sin
+     el ancestro las dos reglas empatan en especificidad, y quién gana pasa a
+     depender del orden en que el bundler junte los ficheros. */
+  .xp-doc .herramientas {
+    display: block;
+  }
+  .xp-doc .herramientas > div {
+    margin-bottom: 0.7rem;
+  }
+</style>
