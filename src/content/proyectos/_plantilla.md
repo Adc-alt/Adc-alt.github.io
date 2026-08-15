@@ -4,16 +4,16 @@ summary: "Una frase que diga qué hace y para quién. Máximo 180 caracteres."
 year: 2026
 stack: ["Tecnología 1", "Tecnología 2"]
 status: "wip"
-accent: "magenta"
 order: 50
-featured: false
 draft: true
 # repo: "https://github.com/Adc-alt/..."
 # demo: "https://..."
 ---
 
 > Esto es una plantilla. Está en `draft: true`, así que **no se publica**.
-> Copia el fichero, renómbralo (el nombre es la URL) y pon `draft: false`.
+> Copia el fichero, renómbralo (el nombre es el id de su ventana) y pon
+> `draft: false`. No hace falta tocar nada más: la ventana y su enlace en el
+> índice salen solos.
 
 ## El problema
 

@@ -1,28 +1,28 @@
 # Adc-alt.github.io
 
-Portfolio personal con estética de máquina recreativa.
+Portfolio personal. Es un escritorio de Windows XP: el contenido vive dentro de
+ventanas que se arrastran, se minimizan y se cierran.
 En vivo: **https://adc-alt.github.io/**
 
-Sitio estático generado con Astro. El HTML de todas las páginas se genera en el
-build; el único JavaScript del sitio es el comecocos de la portada (~10 KB), la
-pantalla de arranque (inline), un easter egg de 20 líneas y, en `/xp/`, el
-reloj de la bandeja y el arrastre de la ventana. Las demás páginas no cargan
-nada.
+Sitio estático generado con Astro. **Todo el HTML sale del build**, ventanas
+incluidas: el JavaScript solo las abre, las mueve y las cierra. Si no se
+ejecuta, el sitio se lee igual (ver *Dos modos*). Los dos únicos scripts son la
+pantalla de arranque (en línea) y el gestor de ventanas con el reloj de la
+bandeja.
 
 ## Rutas
 
+El sitio es **una sola página**.
+
 | Ruta | Qué es |
 |---|---|
-| `/` | Portada. **Con pantalla de arranque** la primera visita |
-| `/work/` | La misma portada **sin arranque, siempre**. Es la URL del CV |
-| `/proyectos/`, `/proyectos/<id>/`, `/perfil/` | El resto |
-| `/xp/` | **Escritorio de Windows XP.** En obras: fondo, barra y una ventana con el blog |
+| `/` | El escritorio, con todas las ventanas dentro. **Con pantalla de arranque** la primera visita |
+| `/404` | Ventana de error XP |
+| `/work/`, `/xp/`, `/proyectos/`, `/perfil/` | Redirecciones a `/` |
 
-`/work/` lleva `noindex` y canonical a `/`, y está fuera del sitemap: es el
-mismo contenido y no debe competir consigo mismo en Google.
-
-`/xp/` lleva `noindex` y está fuera del sitemap por lo mismo: es una fase
-intermedia y no debe aparecer en Google todavía.
+Las redirecciones son las rutas de la versión anterior. No son cortesía:
+`/work/` es la URL que está en el CV. En salida estática Astro genera para cada
+una una página con `meta refresh` — GitHub Pages no sabe hacer un 301.
 
 ## Arrancar
 
@@ -34,92 +34,154 @@ pnpm dev          # http://localhost:4321
 | Comando | Qué hace |
 |---|---|
 | `pnpm dev` | Servidor de desarrollo con recarga en caliente |
-| `pnpm build` | `astro check` (tipos) + build a `dist/` |
+| `pnpm build` | tests + `astro check` (tipos) + build a `dist/` |
 | `pnpm preview` | Sirve `dist/` como lo hará producción |
-| `pnpm check` | Solo la comprobación de tipos |
+| `pnpm test` | Solo los tests (`node --test`) |
 
 ## Estructura
 
 ```
 src/
-├── consts.ts                 nombre, URL, menú y enlaces sociales
-├── content.config.ts         schema Zod de los proyectos
-├── content/proyectos/*.md    un fichero = un proyecto = una URL
-├── styles/global.css         TODO el sistema de diseño (tokens + componentes)
-├── layouts/Base.astro        <head>, SEO, capas de CRT
+├── consts.ts                 nombre, URL y enlaces sociales
+├── content.config.ts         schemas Zod de proyectos y blog
+├── content/proyectos/*.md    un fichero = un proyecto = una ventana
+├── content/blog/*.md         un fichero = una entrada
+├── styles/xp-doc.css         el documento dentro de una ventana
+├── layouts/XP.astro          <head>, fondo y barra de tareas
 ├── components/
+│   ├── Boot.astro            la pantalla de arranque
+│   └── xp/
+│       ├── Window.astro      el marco y el gestor de ventanas
+│       ├── windows.mjs       la aritmética de posición (con test)
+│       ├── Taskbar.astro     barra de tareas + reloj
+│       ├── taskbar-colors.mjs  colores medidos (con test)
+│       └── Bienvenida | Proyectos | Proyecto | Perfil | Blog
 └── pages/
-    ├── index.astro
-    ├── perfil.astro
-    ├── 404.astro
-    └── proyectos/
-        ├── index.astro
-        └── [...id].astro     ficha de cada proyecto
+    ├── index.astro           monta el escritorio y todas las ventanas
+    └── 404.astro
 ```
 
-## Añadir un proyecto
+## Añadir contenido
 
-Copia `src/content/proyectos/_plantilla.md`, renómbralo (**el nombre del
-fichero es la URL**) y pon `draft: false`.
+**Un proyecto:** copia `src/content/proyectos/_plantilla.md`, renómbralo y pon
+`draft: false`. Salen solos su ventana y su enlace en el índice; el nombre del
+fichero es el `id` de la ventana.
 
-El frontmatter está validado con Zod en `src/content.config.ts`: si falta un
-campo o el `status` no es uno de los tres válidos, **el build falla**. No se
-puede desplegar una tarjeta a medias.
+**Una entrada de blog:** un `.md` en `src/content/blog/`. Se ordenan por fecha,
+la más reciente arriba.
+
+Los dos frontmatter están validados con Zod en `src/content.config.ts`: si falta
+un campo o el `status` no es uno de los tres válidos, **el build falla**.
 
 Los ficheros con `draft: true` se ven en `pnpm dev` pero **no se publican**.
 
-## Cambiar el tema
+## Dos modos, y el orden importa
 
-Toda la paleta y la tipografía están en el bloque `@theme` de
-`src/styles/global.css`. Son unas veinte variables; no hay nada de color
-repartido por los componentes.
+Un escritorio no se maneja con el dedo. Por debajo de **720 px** las ventanas
+dejan de ser absolutas, se apilan en columna con todas abiertas y scrollea la
+página; se esconden los tres botones de la barra de título, y el arrastre se
+apaga.
 
-## ⚠️ Regla de tipografía
+**El modo apilado es la base y el escritorio es la mejora.** Las reglas del
+escritorio viven dentro de `@media (min-width: 721px)` y colgando de `html.js`,
+una clase que pone un script en línea del `<head>`. Consecuencia buscada: **sin
+JavaScript el sitio entero cae en el modo apilado**, en cualquier pantalla, y se
+lee. Escrito al revés harían falta dos copias de las mismas reglas y un fallo de
+JS dejaría el sitio en blanco.
 
-**Press Start 2P solo tiene ASCII.** No trae `Á É Í Ó Ú Ñ` en mayúscula.
-Un acento en un texto que use la fuente display cae al fallback y se ve de
-otra tipografía a media palabra (`EN LíNEA`, `ESCRITORIO Y MoVIL`).
+Si tocas CSS de ventanas, mira en qué bloque estás. `touch-action: none` en la
+barra de título es del modo escritorio y **no puede salir de ahí**: en apilado
+bloquearía el scroll de la página al arrastrar el título.
 
-Va en fuente display: los `h1/h2/h3`, `.hud-label`, `.btn-arcade`,
-`.btn-ghost`, el menú y los títulos de proyecto. **Escribe esos textos sin
-acentos.** Por eso el menú dice «Perfil» y no «Sobre mí», y el estado dice
-«ACTIVO» y no «EN LÍNEA».
+## Las ventanas
 
-El texto normal usa JetBrains Mono, que sí tiene todo el latín: ahí escribe
-con acentos con total normalidad.
+`src/components/xp/Window.astro` — el marco y el gestor entero. Se abren desde
+los enlaces de la ventana de bienvenida, que son `<a href="#id-de-ventana">` de
+verdad: con JS el gestor los intercepta, y sin JS son anclas que saltan a la
+ventana, que está visible. **No hay iconos de escritorio ni menú Inicio**, así
+que la bienvenida es la única navegación del sitio: si se queda sin enlaces, no
+se llega a nada.
+
+Cuatro cosas que se rompen solas si no se cuidan:
+
+- **La posición pasa siempre por `clampPosition`** (`windows.mjs`, con test).
+  El fallo clásico de un gestor casero es dejar arrastrar hasta que la barra de
+  título queda fuera de la pantalla: a partir de ahí no hay forma de
+  recuperarla. `KEEP_VISIBLE` son 110px y no 60 porque los tres botones ocupan
+  ~70 en el extremo derecho de la barra: con 60, lo que asoma al empujarla a la
+  izquierda son solo botones.
+- **Cerrar esconde, no destruye.** Con una sola ventana que no se reabría,
+  `remove()` valía. Con cinco, una ventana destruida no se puede volver a abrir.
+- **La cascada vuelve al principio cada cinco** (`CASCADE_WRAP`). Sin eso, el
+  clamp acaba dejando todas las ventanas a partir de la sexta en píxeles
+  idénticos, que es peor que no cascadear.
+- **La ventana entra 900 ms después de la tecla**, o sea después de la barra
+  (400+400). Es una transición sobre el estado visible, no una `@keyframes` con
+  retardo: una animación contaría desde que carga la página y la ventana se
+  abriría detrás del arranque.
+
+⚠️ **Los colores de la ventana NO están medidos**, a diferencia de los de la
+barra de tareas. Son la aproximación pública de Luna que circula por ahí,
+puestas a ojo contra el recuerdo. Está avisado en la cabecera del componente.
+
+El blog no tiene URL por entrada: se pintan todas seguidas dentro de su ventana.
+Con dos entradas serían dos páginas de un párrafo; el nombre del fichero ya
+sirve de slug el día que haga falta.
 
 ## Deploy
 
-Push a `main` → GitHub Actions (`.github/workflows/deploy.yml`) hace el build
-y publica. Unos 40-60 segundos. No hay que tocar nada a mano.
+Push a `main` → GitHub Actions (`.github/workflows/deploy.yml`) hace el build y
+publica. Unos 40-60 segundos. No hay que tocar nada a mano.
 
-El origen de Pages es **GitHub Actions**, no «deploy from a branch». `dist/`
-no se commitea.
+El origen de Pages es **GitHub Actions**, no «deploy from a branch». `dist/` no
+se commitea.
 
 ## Accesibilidad
 
 - Todas las animaciones están detrás de `prefers-reduced-motion`.
-- Foco visible siempre (`:focus-visible` en ámbar, nunca `outline: none`).
-- Enlace de «saltar al contenido» como primer elemento tabulable.
-- Las capas de CRT son `aria-hidden` y `pointer-events: none`.
+- Foco visible siempre; nunca `outline: none` sin sustituto.
+- Los tres botones de cada ventana son `<button>` con `aria-label`, y
+  minimizar/maximizar llevan `aria-pressed`.
+- Al abrir una ventana el foco entra en ella; al cerrarla vuelve al enlace que
+  la abrió.
+- El fondo y los adornos de la barra van con `aria-hidden`.
+
+Los colores de XP **no llegan a AA de texto normal**: blanco sobre el verde del
+botón de Inicio da 3,50:1 y sobre el azul de la bandeja 3,39:1, contra los 4,5:1
+que pide la norma. Los dos pares sí superan el 3:1 de AA de texto grande, y ese
+umbral exige además que el texto sea grande de verdad (≥24px, o ≥18,66px en
+negrita):
+
+- **«start» sí cumple AA de texto grande.** Va a 19px en negrita, con sus
+  3,50:1.
+- **El reloj no cumple.** 14px sin negrita es texto normal, y 3,39:1 se queda
+  lejos de 4,5:1.
+
+Es una decisión tomada a sabiendas — bajar los colores hasta cumplir deja de
+parecerse a XP — y para el reloj la mitigación es otra: la hora llega íntegra a
+un lector de pantalla por el `<time datetime>` pase lo que pase con el
+contraste. El test fija el suelo de 3:1 para que no empeore sin que nadie se
+entere.
 
 ## Pantalla de arranque
 
 `src/components/Boot.astro` + `src/components/boot-data.mjs`. POST de BIOS falso
-que tapa la portada la primera vez. Se salta con cualquier tecla, clic o toque.
+que tapa el escritorio la primera vez. Se salta con cualquier tecla, clic o
+toque.
 
 **Es un homenaje calcado a la pantalla de arranque de
 [senna.social](https://senna.social/).** La maqueta, los colores, los tiempos y
-el texto son suyos; aquí solo cambia la identidad (el nombre, ADCSOFT y un
-sello y un pingüino dibujados aquí en lugar de sus dos imágenes). No se copia
-ningún fichero suyo: los dibujos son SVG propios.
+el texto son suyos; aquí solo cambia la identidad (el nombre, ADCSOFT y un sello
+y un pingüino dibujados aquí en lugar de sus dos imágenes). No se copia ningún
+fichero suyo: los dibujos son SVG propios.
 
 Las medidas, con capturas y el porqué de cada número, están en
 `docs/superpowers/specs/2026-08-14-arranque-paridad-senna.md`.
 
-Para cambiar el texto o los tiempos, `boot-data.mjs` — pero **`boot-data.test.mjs`
-te va a parar**, porque comprueba los valores contra la tabla de la referencia.
-Es a propósito: si cambias un número, que sea sabiendo que dejas de copiarla.
+Para cambiar el texto o los tiempos, `boot-data.mjs` — pero
+**`boot-data.test.mjs` te va a parar**, porque comprueba los valores contra la
+tabla de la referencia. Es a propósito: si cambias un número, que sea sabiendo
+que dejas de copiarla.
 
 Cuatro cosas que parecen detalles y sostienen todo lo demás:
 
@@ -139,94 +201,34 @@ Cuatro cosas que parecen detalles y sostienen todo lo demás:
   mide 9,99 px, así que `20ch` son los 200 px de la referencia clavados, y
   además encogen solos cuando el móvil baja la fuente a 16 px.
 
-Va en el slot `overlay` del layout, fuera de `<main>`: dentro no funciona,
-porque `<main>` tiene `z-10` y un `position:fixed` se queda atrapado en ese
-contexto de apilamiento por muy alto que le pongas el z-index. El portfolio
-entero está en el HTML detrás, así que los buscadores y las tarjetas de
-previsualización ven el sitio y no el arranque.
+Va en el slot `overlay` del layout, fuera de `<main>`. El sitio entero está en
+el HTML detrás, así que los buscadores y las tarjetas de previsualización ven el
+escritorio y no el arranque.
 
 Todo su JS es `is:inline` y **la pantalla se enseña desde el script**, no se
-esconde desde él: si el JS falla, el visitante ve el portfolio; al revés vería
-una pantalla negra sin salida.
+esconde desde él: si el JS falla, el visitante ve el sitio; al revés vería una
+pantalla negra sin salida.
 
 Para volver a verla: borra `boot_seen` de `localStorage`.
 
 Tipografía **AcPlus IBM VGA 8x16** de
-[VileR](https://int10h.org/oldschool-pc-fonts/), CC BY-SA 4.0, en
-`public/fonts/` con su licencia al lado. El crédito que exige está en el pie del
-sitio. El `.woff2` se sacó del pack `_win` (los `Ac` no vienen en el pack web)
-convirtiendo el TTF con `fonttools`.
+[VileR](https://int10h.org/oldschool-pc-fonts/), CC BY-SA 4.0, en `public/fonts/`
+con su licencia al lado. **El crédito que exige la licencia está en la ventana de
+bienvenida**, que es la que siempre está abierta — vivía en el pie del sitio, que
+desapareció con la estética arcade. El `.woff2` se sacó del pack `_win` (los `Ac`
+no vienen en el pack web) convirtiendo el TTF con `fonttools`.
 
-## Escritorio XP
+## La barra de tareas
 
-`/xp/` es un mock de Windows XP: el fondo de pantalla, la barra de tareas del
-tema Luna y una ventana con el blog. Todavía sin iconos ni menú Inicio.
-
-Existe porque el plan es que **el escritorio acabe sustituyendo al sitio**: el
-portfolio pasará a vivir dentro de ventanas XP y la estética arcade
-desaparecerá. `src/layouts/XP.astro` es el layout definitivo de eso, no un
-andamio, y por eso no importa `global.css` ni las fuentes arcade. En esas
-páginas no hay Tailwind.
-
-Vive en `/xp/` y no en `/` porque la portada es la URL que va en el CV. La raíz
-se muda cuando el escritorio tenga suficiente dentro.
-
-### La ventana
-
-`src/components/xp/Window.astro`. El contenido va en el HTML del build; el
-JavaScript solo arrastra, minimiza, maximiza y cierra. **Sin JS la ventana
-sigue ahí, abierta y legible** — por eso la posición inicial la calcula el
-servidor y no el script, y por eso el botón de la barra de tareas sí lo crea el
-script: un botón que restaura no sirve de nada si no se puede minimizar.
-
-Dos cosas que se rompen solas si no se cuidan:
-
-- **La posición pasa siempre por `clampPosition`** (`windows.mjs`, con test).
-  El fallo clásico de un gestor de ventanas casero es dejar arrastrar la
-  ventana hasta que la barra de título queda fuera de la pantalla: a partir de
-  ahí no hay forma de recuperarla. `KEEP_VISIBLE` son 110px y no 60 porque los
-  tres botones ocupan ~70 en el extremo derecho de la barra: con 60, lo que
-  asoma al empujarla a la izquierda son solo botones.
-- **La ventana entra 900 ms después de la tecla**, o sea después de la barra
-  (400+400). Es una transición sobre el estado visible, no una `@keyframes`
-  con retardo: una animación contaría desde que carga la página y la ventana
-  se abriría detrás del arranque. Medido: barra a los 700-1100 ms, ventana a
-  los 1100-1600.
-
-⚠️ **Los colores de la ventana NO están medidos**, a diferencia de los de la
-barra. Son la aproximación pública de Luna que circula por ahí, puestas a ojo
-contra el recuerdo. Está avisado en la cabecera del componente.
-
-### El blog
-
-`src/content/blog/*.md`, colección tipada igual que la de proyectos. Se pintan
-todas las entradas seguidas dentro de la ventana: **no hay URL por entrada
-todavía**. Con dos entradas serían dos páginas de un párrafo; el nombre del
-fichero ya sirve de slug el día que haga falta.
-
-**El fondo es Bliss, la foto de Windows XP** (Charles O'Rear, propiedad de
-Microsoft). `public/xp/bliss.webp` sale del `bg.jpg` de
-[winbows.neocities.org](https://winbows.neocities.org/), reescalado a 2560x1440
-y recodificado a WebP: 1008 KB → 225 KB. **No es una imagen libre**: se usa aquí
-como homenaje, igual que hace medio internet, y si algún día molesta se
-sustituye borrando ese fichero — el degradado de reserva de `Wallpaper.astro`
-deja la página en pie sin él.
-
-**El logotipo del botón de Inicio también es de Microsoft.**
-`public/xp/win-flag.png` sale del `win-min.png` de winbows, reducido a 52x48
-(se pinta a 26px de alto, al doble para que no salga borroso en retina). Misma
-salvedad que el fondo: es una marca registrada y no una imagen libre.
-
-De la barra en sí, en cambio, no se ha copiado ningún fichero: solo medidas y
-colores, que son hechos y no obra.
-
-Las medidas, con capturas y el porqué de cada número, están en
+Sus colores **están medidos** sobre capturas de XP, píxel a píxel, y la
+derivación entera vive en `taskbar-colors.mjs` con test. Las medidas, con
+capturas y el porqué de cada número, están en
 `docs/superpowers/specs/2026-08-15-escritorio-xp-fase1-design.md`.
 
 Tres cosas que parecen detalles y sostienen lo demás:
 
-- **La barra no es un degradado.** Es un filo claro, un cuerpo casi plano en
-  dos tercios del alto, y tres píxeles que oscurecen de golpe al final. Un
+- **La barra no es un degradado.** Es un filo claro, un cuerpo casi plano en dos
+  tercios del alto, y tres píxeles que oscurecen de golpe al final. Un
   `linear-gradient` de dos colores queda mal. `taskbar-colors.test.mjs` rechaza
   la barra plana, la de dos paradas y la del degradado suave: si tocas los
   colores, la sonda te lo dice.
@@ -238,26 +240,20 @@ Tres cosas que parecen detalles y sostienen lo demás:
   JavaScript: `Boot.astro` quita `html[data-boot]` al terminar y la barra
   reacciona a que el atributo desaparezca.
 
-Los colores de XP **no llegan a AA de texto normal**: blanco sobre el verde del
-botón da 3,50:1 y sobre el azul de la bandeja 3,39:1, contra los 4,5:1 que pide
-la norma. Los dos pares sí superan el 3:1 de AA de texto grande, y ese umbral
-exige además que el texto sea grande de verdad (≥24px, o ≥18,66px en negrita).
-Con la barra a 40px eso parte la barra en dos:
+## Ficheros que no son míos
 
-- **«start» sí cumple AA de texto grande.** Va a 19px en negrita, por encima
-  del umbral, con sus 3,50:1. Antes iba a 15px y no cumplía nada.
-- **El reloj no cumple.** 14px sin negrita es texto normal, y 3,39:1 se queda
-  lejos de 4,5:1.
+**El fondo es Bliss, la foto de Windows XP** (Charles O'Rear, propiedad de
+Microsoft). `public/xp/bliss.webp` sale del `bg.jpg` de
+[winbows.neocities.org](https://winbows.neocities.org/), reescalado a 2560x1440 y
+recodificado a WebP: 1008 KB → 225 KB. **No es una imagen libre**: se usa aquí
+como homenaje, igual que hace medio internet, y si algún día molesta se sustituye
+borrando ese fichero — el degradado de reserva de `Wallpaper.astro` deja la
+página en pie sin él.
 
-Es una decisión tomada a sabiendas — bajar los colores hasta cumplir deja de
-parecerse a XP — y para el reloj la mitigación es otra: la hora llega íntegra a
-un lector de pantalla por el `<time datetime>` pase lo que pase con el
-contraste. El test fija el suelo de 3:1 en los pares de color para que no
-empeore sin que nadie se entere.
+**El logotipo del botón de Inicio también es de Microsoft.**
+`public/xp/win-flag.png` sale del `win-min.png` de winbows, reducido a 52x48 (se
+pinta a 26px de alto, al doble para que no salga borroso en retina). Misma
+salvedad que el fondo: es una marca registrada y no una imagen libre.
 
-Para volver a ver el arranque del escritorio: borra `boot_seen_xp` de
-`localStorage`. Es una llave distinta de la de la portada a propósito.
-
-## Easter egg
-
-↑ ↑ ↓ ↓ ← → ← → B A
+De la barra en sí, en cambio, no se ha copiado ningún fichero: solo medidas y
+colores, que son hechos y no obra.

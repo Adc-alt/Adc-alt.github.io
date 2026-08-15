@@ -1,13 +1,60 @@
 ---
-import Base from "../layouts/Base.astro";
+/**
+ * El sitio: un escritorio de Windows XP con el portfolio dentro de ventanas.
+ *
+ * Todas las ventanas se renderizan aquí, en el build. El JavaScript solo las
+ * abre, las cierra y las arrastra — si generase el contenido, un buscador
+ * vería un escritorio vacío (fase 1 §13).
+ *
+ * Spec: docs/superpowers/specs/2026-08-15-escritorio-xp-fase2-design.md
+ */
+import { getCollection } from "astro:content";
+import XP from "../layouts/XP.astro";
 import Boot from "../components/Boot.astro";
-import HomeContent from "../components/HomeContent.astro";
+import Window from "../components/xp/Window.astro";
+import Bienvenida from "../components/xp/Bienvenida.astro";
+import Proyectos from "../components/xp/Proyectos.astro";
+import Proyecto from "../components/xp/Proyecto.astro";
+import Perfil from "../components/xp/Perfil.astro";
+import Blog from "../components/xp/Blog.astro";
+import { ventanaDe } from "../components/xp/proyectos.mjs";
+
+const proyectos = (
+  await getCollection("proyectos", ({ data }) => (import.meta.env.PROD ? !data.draft : true))
+).sort((a, b) => a.data.order - b.data.order || b.data.year - a.data.year);
 ---
 
-<Base>
-  {/* La pantalla de arranque solo existe aquí, en la raíz. Los enlaces
-      profundos (/proyectos/x) y /work/ no la ven nunca.
-      Va al slot "overlay" para salir de <main> y poder taparlo todo. */}
+<XP>
   <Boot slot="overlay" />
-  <HomeContent />
-</Base>
+
+  {/* La única que abre sola, y la única navegación que hay: sin iconos ni
+      menú Inicio, todo lo demás se abre desde dentro de ésta. */}
+  {/* 560 no es un número redondo: medido en el navegador, el contenido de la
+      bienvenida ocupa 515 px y el hueco útil son 33 menos que el alto de la
+      ventana. Es la única a la que le importa —las demás son documentos y
+      scrollean de por sí—, porque una barra de scroll en la primera pantalla
+      del sitio dice «aquí no cabe» antes de que nadie lea nada. */}
+  <Window id="ventana-bienvenida" title="Welcome to my page" width={720} height={560} open>
+    <Bienvenida />
+  </Window>
+
+  <Window id="ventana-proyectos" title="Proyectos" width={660} height={480}>
+    <Proyectos />
+  </Window>
+
+  <Window id="ventana-perfil" title="Perfil" width={640} height={520}>
+    <Perfil />
+  </Window>
+
+  <Window id="ventana-blog" title="Blog" width={740} height={560}>
+    <Blog />
+  </Window>
+
+  {
+    proyectos.map((p) => (
+      <Window id={ventanaDe(p.id)} title={p.data.title} width={720} height={560}>
+        <Proyecto proyecto={p} />
+      </Window>
+    ))
+  }
+</XP>

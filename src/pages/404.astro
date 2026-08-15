@@ -1,22 +1,24 @@
 ---
-import Base from "../layouts/Base.astro";
+/**
+ * La página que sirve GitHub Pages cuando la ruta no existe. Sin arranque: a
+ * un 404 se llega por accidente, y no es momento de una animación.
+ */
+import XP from "../layouts/XP.astro";
+import Window from "../components/xp/Window.astro";
 ---
 
-<Base title="404" description="Esta página no existe.">
-  <section class="grid min-h-[70vh] place-items-center px-5 text-center">
-    <div>
-      <p class="neon-magenta font-display text-2xl sm:text-4xl">GAME</p>
-      <p class="neon-magenta mt-3 font-display text-2xl sm:text-4xl">OVER</p>
-
-      <p class="hud-label mt-8">Error 404 · Ruta no encontrada</p>
-
-      <p class="mt-6 font-display text-[0.65rem] tracking-widest text-neon-amber">
-        Continue? <span class="anim-blink">▮</span>
+<XP title="No se encuentra la página" noindex>
+  <Window id="ventana-404" title="Error" width={480} height={260} open>
+    <div class="xp-doc">
+      <h1>No se encuentra la página</h1>
+      <p>
+        La dirección que has pedido no existe en este sitio. Puede que fuera de
+        la versión anterior: el portfolio se rehizo entero y varias rutas
+        desaparecieron.
       </p>
-
-      <div class="mt-8">
-        <a href="/" class="btn-arcade">Volver al inicio</a>
-      </div>
+      <p class="fila">
+        <a href="/">Ir al escritorio</a>
+      </p>
     </div>
-  </section>
-</Base>
+  </Window>
+</XP>

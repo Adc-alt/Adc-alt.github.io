@@ -1,4 +1,4 @@
-/** Metadatos del sitio. Un único sitio donde tocar el nombre, la URL y el menú. */
+/** Metadatos del sitio. Un único sitio donde tocar el nombre y la URL. */
 
 export const SITE = {
   name: 'Antonio Delgado',
@@ -10,14 +10,11 @@ export const SITE = {
   locale: 'es',
 } as const;
 
-// ⚠️ Estas etiquetas se pintan en Press Start 2P, que NO tiene acentos en
-// mayúscula. Todo lo que se pinte en tipografía display debe ser ASCII:
-// por eso «Perfil» y no «Sobre mí».
-export const NAV = [
-  { href: '/', label: 'Inicio' },
-  { href: '/proyectos/', label: 'Proyectos' },
-  { href: '/perfil/', label: 'Perfil' },
-] as const;
+/**
+ * Aquí no hay lista de navegación: desde la fase 2 el sitio es una sola página
+ * y los enlaces son anclas al `id` de cada ventana. La única navegación la
+ * arma `Bienvenida.astro`, que es quien sabe qué pie lleva cada acceso.
+ */
 
 export const SOCIAL = [
   { href: 'https://github.com/Adc-alt', label: 'GitHub' },

@@ -67,3 +67,30 @@ export function initialPosition(win, desk) {
     desk,
   );
 }
+
+/** Desplazamiento entre una ventana y la siguiente, en px. */
+export const CASCADE_STEP = 28;
+
+/**
+ * Cada cuántas ventanas vuelve la cascada al principio.
+ *
+ * Sin esto la sexta ventana caería fuera, el clamp la traería de vuelta y
+ * todas las siguientes se apilarían EXACTAMENTE en el mismo sitio, que es
+ * peor que no cascadear: parecen una sola ventana.
+ */
+export const CASCADE_WRAP = 5;
+
+/**
+ * Dónde se abre la ventana número `abiertas`, contando las que ya están
+ * abiertas. La primera cae en `initialPosition` y cada siguiente baja y se
+ * desplaza a la derecha, como en Windows.
+ *
+ * @param {number} abiertas  cuántas ventanas hay ya abiertas
+ * @param {{w:number,h:number}} win
+ * @param {{vw:number,vh:number,barH:number}} desk
+ */
+export function cascadePosition(abiertas, win, desk) {
+  const base = initialPosition(win, desk);
+  const paso = CASCADE_STEP * (abiertas % CASCADE_WRAP);
+  return clampPosition({ ...win, x: base.x + paso, y: base.y + paso }, desk);
+}
