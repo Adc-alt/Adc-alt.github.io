@@ -1,0 +1,94 @@
+---
+/**
+ * El escritorio.
+ *
+ * Layout DEFINITIVO, no andamio (§2 de la spec): el portfolio acabará viviendo
+ * en ventanas XP dentro de este mismo `<main>`, y la estética arcade actual
+ * desaparecerá. Por eso aquí NO se importa global.css ni ninguna @fontsource:
+ * el escritorio tiene su propio sistema y no debe arrastrar el del sitio viejo.
+ * Consecuencia práctica: en estas páginas no hay clases de Tailwind. Una clase
+ * de Tailwind aquí no da error, simplemente no hace nada.
+ */
+import Wallpaper from "../components/xp/Wallpaper.astro";
+import Taskbar from "../components/xp/Taskbar.astro";
+import { SITE } from "../consts";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = "Escritorio", description = SITE.tagline } = Astro.props;
+const fullTitle = `${title} — ${SITE.name}`;
+---
+
+<!doctype html>
+<html lang={SITE.locale}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    {/* En obras: no debe competir en Google con el sitio real, igual que
+        /work/ (§5.1). También está fuera del sitemap, en astro.config.mjs. */}
+    <meta name="robots" content="noindex, follow" />
+    <link rel="canonical" href={SITE.url + "/"} />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="theme-color" content="#245edc" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+
+  <body>
+    {/* Hueco a pantalla completa (la pantalla de arranque), primer hijo del
+        <body> igual que en Base.astro. Aquí el orden importa por una razón de
+        más: el script antipestañeo del arranque vive dentro de este hueco y
+        tiene que poner html[data-boot] ANTES de que se parsee la barra, o la
+        barra asoma un fotograma antes de esconderse (ver tarea 7). */}
+    <slot name="overlay" />
+
+    {/* id="contenido" no es decorativo: al terminar, el arranque busca ese id
+        para devolverle el foco al teclado. Sin él, el foco se queda en el
+        <body> después de saltarse la pantalla. */}
+    <main id="contenido" class="xp-desktop">
+      <Wallpaper />
+      <slot />
+    </main>
+
+    <Taskbar />
+  </body>
+</html>
+
+<style is:global>
+  /* `Boot.astro` usa var(--font-mono) para caer en un monoespaciada del
+     sistema si "AcPlus IBM VGA 8x16" no está disponible. Ese layout se monta
+     dentro de este (tarea 6), pero este layout NO carga global.css a
+     propósito (ver comentario de arriba), así que la variable no existe aquí
+     salvo que se redefina. Un var() sin fallback que apunta a una variable
+     sin definir invalida TODA la declaración de font-family en tiempo de
+     cómputo — no cae al siguiente nombre de la lista, la descarta entera y
+     hereda la fuente del padre. Por eso se redefine aquí, con el mismo valor
+     que global.css:29, aunque "JetBrains Mono Variable" no se cargue en este
+     layout: una familia no disponible simplemente se salta dentro de la
+     lista, así que no pasa nada por nombrarla. */
+  :root {
+    --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+  }
+  body {
+    /* Reserva sólida por si el SVG del fondo no llega a pintar (§6). Es el tono
+       medio del cielo, así que un fallo se ve como un cielo liso y no como una
+       pantalla blanca. */
+    background: #4b9ada;
+    /* Un escritorio no tiene scroll. */
+    overflow: hidden;
+  }
+  .xp-desktop {
+    position: relative;
+    height: 100dvh;
+  }
+</style>

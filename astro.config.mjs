@@ -7,9 +7,14 @@ import tailwindcss from '@tailwindcss/vite';
 // Si algún día se mueve a un repo de proyecto, hay que añadir base: '/<repo>'.
 export default defineConfig({
   site: 'https://adc-alt.github.io',
-  // /work/ es la misma portada sin pantalla de arranque: fuera del sitemap
-  // para no ofrecerle a Google dos URLs con el mismo contenido.
-  integrations: [sitemap({ filter: (page) => !page.endsWith("/work/") })],
+  // /work/ y /xp/ no deben competir en Google con la portada: /work/ es la
+  // misma portada sin pantalla de arranque, y /xp/ es el escritorio en obras.
+  // Los dos llevan además `noindex` y canonical a la raíz.
+  integrations: [
+    sitemap({
+      filter: (page) => !page.endsWith("/work/") && !page.endsWith("/xp/"),
+    }),
+  ],
   vite: {
     plugins: [tailwindcss()],
   },
