@@ -12,6 +12,16 @@
  * Spec: docs/superpowers/specs/2026-08-15-escritorio-xp-fase1-design.md
  */
 import XP from "../layouts/XP.astro";
+import Boot from "../components/Boot.astro";
 ---
 
-<XP />
+<XP>
+  {/* Llave propia: quien ya vio el arranque de la portada tiene que ver éste
+      igual, porque lo que se enseña aquí es justo el paso del arranque al
+      escritorio. Cuando esto se mude a /, se quitan las dos props. */}
+  <Boot
+    slot="overlay"
+    paths={["/xp/", "/xp", "/xp/index.html"]}
+    seenKey="boot_seen_xp"
+  />
+</XP>
