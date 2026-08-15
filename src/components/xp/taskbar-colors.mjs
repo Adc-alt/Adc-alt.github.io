@@ -13,12 +13,21 @@
  */
 
 /**
- * Alto de la barra, en px. Valor medido en captura nativa a 96 ppp (§4.2).
+ * Alto de la barra, en px.
+ *
+ * Lo medido en captura nativa a 96 ppp (§4.2) son 30. Aquí van 40: XP se
+ * diseñó para 1024x768 y esos 30 px eran el 3,9% de la pantalla; en un monitor
+ * de hoy el mismo número queda en una tira raquítica que no se parece al
+ * recuerdo. Es una decisión de escala tomada a ojo y a petición, no una
+ * medida — el resto del fichero sí son medidas.
+ *
  * `Taskbar.astro` lo recibe como `--bar-h` y las paradas de `STOPS` de aquí
  * abajo se calculan a partir de este número: los dos derivan del mismo sitio
- * y no pueden desalinearse en silencio si algún día cambia.
+ * y no pueden desalinearse en silencio si algún día cambia. Lo que NO escala
+ * con él son el filo de arriba y la sombra de abajo, que son detalles de
+ * píxel: siguen midiendo 6 y 4 px, y lo que se estira es el cuerpo plano.
  */
-export const HEIGHT = 30;
+export const HEIGHT = 40;
 
 /** Cuerpo de la barra. Captura de escritorio 640x480, §4.2. #245edc */
 export const BODY = [36, 94, 220];
@@ -26,6 +35,22 @@ export const BODY = [36, 94, 220];
 /** Botón de Inicio, §4.2. Cuerpo #259e25, borde #1d861d. */
 export const START_BODY = [37, 158, 37];
 export const START_EDGE = [29, 134, 29];
+
+/**
+ * La banda clara de las dos primeras filas del botón de Inicio.
+ *
+ * Medida en la captura nativa de 1920x1080: pico (150,196,150) sobre un cuerpo
+ * de (51,156,51) — que NO es el START_BODY de §4.2, es el de esa otra captura.
+ * Por eso se guarda como multiplicador por canal y no como color absoluto, la
+ * misma regla que STRIP_ROWS: así el brillo sobrevive a un cambio de verde en
+ * vez de quedarse pegado al de una captura concreta.
+ */
+const START_CAPTURE_BODY = [51, 156, 51];
+const START_HIGHLIGHT_SRC = [150, 196, 150];
+
+/** El brillo de arriba del botón, reteñido sobre `body`. */
+export const startHighlight = (body = START_BODY) =>
+  START_HIGHLIGHT_SRC.map((c, i) => (c / START_CAPTURE_BODY[i]) * body[i]);
 
 /** Bandeja del sistema, §4.3. Es MÁS CLARA que la barra, no más oscura. */
 export const TRAY_BODY = [18, 144, 233]; // #1290e9
@@ -74,8 +99,10 @@ const SHADOW_START = HEIGHT - SHADOW_PX;
 /**
  * Paradas del degradado para una barra de HEIGHT px.
  *
- * Reparto real: filo claro 0→6px, cuerpo plano 6→26px, sombra final 26→30px
- * (6 / 20 / 4 de HEIGHT). La tira de referencia tiene 23 filas útiles, pero
+ * Reparto real: filo claro 0→6px, cuerpo plano 6→(HEIGHT-4), sombra final los
+ * 4 últimos px. El filo y la sombra son detalles de píxel y NO escalan con
+ * HEIGHT; lo que se estira al subir la barra es el cuerpo plano, que es lo que
+ * hace XP de verdad. La tira de referencia tiene 23 filas útiles, pero
  * este reparto es el medido en §4.1 y no una regla de tres literal sobre esas
  * 23 filas — no lo "arregles" moviendo {px: 6} a {px: 5} para que cuadre con
  * la proporción de la tira: cambiarías el degradado que ya está en producción.

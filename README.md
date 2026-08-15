@@ -179,8 +179,13 @@ como homenaje, igual que hace medio internet, y si algún día molesta se
 sustituye borrando ese fichero — el degradado de reserva de `Wallpaper.astro`
 deja la página en pie sin él.
 
-De la barra, en cambio, no se ha copiado ningún fichero: solo medidas y
-colores, que son hechos y no obra. No hay logotipo de Windows.
+**El logotipo del botón de Inicio también es de Microsoft.**
+`public/xp/win-flag.png` sale del `win-min.png` de winbows, reducido a 52x48
+(se pinta a 26px de alto, al doble para que no salga borroso en retina). Misma
+salvedad que el fondo: es una marca registrada y no una imagen libre.
+
+De la barra en sí, en cambio, no se ha copiado ningún fichero: solo medidas y
+colores, que son hechos y no obra.
 
 Las medidas, con capturas y el porqué de cada número, están en
 `docs/superpowers/specs/2026-08-15-escritorio-xp-fase1-design.md`.
@@ -202,17 +207,20 @@ Tres cosas que parecen detalles y sostienen lo demás:
 
 Los colores de XP **no llegan a AA de texto normal**: blanco sobre el verde del
 botón da 3,50:1 y sobre el azul de la bandeja 3,39:1, contra los 4,5:1 que pide
-la norma. Los dos pares sí superan el 3:1 de AA de texto grande — pero ese
-umbral exige además que el texto sea grande (≥24px, o ≥18,66px en negrita), y
-aquí no lo es: el reloj va a 11px y «start» a 15px en negrita. Ningún texto de
-la barra llega a ese tamaño, así que en la práctica **no se cumple ningún
-nivel de AA en la barra**, ni siquiera el de texto grande. Es una decisión
-tomada a sabiendas — bajar los colores hasta cumplir deja de parecerse a XP —
-y la mitigación real es otra: la hora llega íntegra a un lector de pantalla
-por el `<time datetime>` pase lo que pase con el contraste, y «start» es un
-`<button>` de verdad con nombre accesible. El test fija el suelo de 3:1 en los
-pares de color para que no empeore sin que nadie se entere, aunque ese suelo
-no habilite por sí solo ninguna excepción de texto grande en esta barra.
+la norma. Los dos pares sí superan el 3:1 de AA de texto grande, y ese umbral
+exige además que el texto sea grande de verdad (≥24px, o ≥18,66px en negrita).
+Con la barra a 40px eso parte la barra en dos:
+
+- **«start» sí cumple AA de texto grande.** Va a 19px en negrita, por encima
+  del umbral, con sus 3,50:1. Antes iba a 15px y no cumplía nada.
+- **El reloj no cumple.** 14px sin negrita es texto normal, y 3,39:1 se queda
+  lejos de 4,5:1.
+
+Es una decisión tomada a sabiendas — bajar los colores hasta cumplir deja de
+parecerse a XP — y para el reloj la mitigación es otra: la hora llega íntegra a
+un lector de pantalla por el `<time datetime>` pase lo que pase con el
+contraste. El test fija el suelo de 3:1 en los pares de color para que no
+empeore sin que nadie se entere.
 
 Para volver a ver el arranque del escritorio: borra `boot_seen_xp` de
 `localStorage`. Es una llave distinta de la de la portada a propósito.
