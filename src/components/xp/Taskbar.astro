@@ -15,6 +15,7 @@
 import {
   gradient,
   hex,
+  HEIGHT,
   START_BODY,
   START_EDGE,
   TRAY_BODY,
@@ -31,7 +32,7 @@ const trayEdge = hex(TRAY_EDGE);
 
 <div
   class="xp-taskbar"
-  style={`--bar:${bar};--start-bg:${startBg};--start-down:${startBgDown};--tray-bg:${trayBg};--tray-edge:${trayEdge}`}
+  style={`--bar:${bar};--bar-h:${HEIGHT}px;--start-bg:${startBg};--start-down:${startBgDown};--tray-bg:${trayBg};--tray-edge:${trayEdge}`}
 >
   {/* Es un <button> de verdad y no un <div>: enfocable con teclado y anunciado
       por un lector de pantalla. En fase 1 se hunde y no abre nada. */}
@@ -72,9 +73,11 @@ const trayEdge = hex(TRAY_EDGE);
     left: 0;
     right: 0;
     bottom: 0;
-    /* 30px: 14-15 filas en una captura reducida 2:1, y el valor por defecto de
-       XP a 96 ppp (§4.2). */
-    height: 30px;
+    /* HEIGHT de taskbar-colors.mjs, por variable (--bar-h): 14-15 filas en una
+       captura reducida 2:1, y el valor por defecto de XP a 96 ppp (§4.2). El
+       degradado de --bar deriva de ese mismo número, así que los dos no
+       pueden desalinearse. */
+    height: var(--bar-h);
     z-index: 10;
     display: flex;
     align-items: stretch;
@@ -122,8 +125,8 @@ const trayEdge = hex(TRAY_EDGE);
     cursor: default;
   }
   .xp-start:active {
-    /* Se hunde invirtiendo el degradado y bajando el texto un píxel. No hace
-       nada más: el menú Inicio es de la fase 2. */
+    /* Se hunde invirtiendo el degradado y bajando el texto dos píxeles. No
+       hace nada más: el menú Inicio es de la fase 2. */
     background: var(--start-down);
     padding-top: 2px;
     padding-bottom: 0;
@@ -140,12 +143,18 @@ const trayEdge = hex(TRAY_EDGE);
   }
 
   /* ── La bandeja ──────────────────────────────────────────────────────────
-     100px medidos (§4.3). Lo que la hace parecer hundida es el FILO oscuro de
-     la izquierda, no el relleno: el relleno es MÁS CLARO que la barra y más
-     cian. Si la pintas más oscura, que es lo que pide el instinto, se rompe. */
+     100px medidos (§4.3), filo incluido. Lo que la hace parecer hundida es el
+     FILO oscuro de la izquierda, no el relleno: el relleno es MÁS CLARO que
+     la barra y más cian. Si la pintas más oscura, que es lo que pide el
+     instinto, se rompe.
+
+     `box-sizing: border-box` porque si no el `border-left` de 1px se suma al
+     `width` y salen 101px: la medida de §4.3 es el ancho total, no el hueco
+     interior. */
   .xp-tray {
     flex: none;
     width: 100px;
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;

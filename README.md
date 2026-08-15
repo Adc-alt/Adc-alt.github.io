@@ -5,8 +5,8 @@ En vivo: **https://adc-alt.github.io/**
 
 Sitio estático generado con Astro. El HTML de todas las páginas se genera en el
 build; el único JavaScript del sitio es el comecocos de la portada (~10 KB), la
-pantalla de arranque (inline) y un easter egg de 20 líneas. Las demás páginas no
-cargan nada.
+pantalla de arranque (inline), un easter egg de 20 líneas y el reloj de la
+bandeja de `/xp/`. Las demás páginas no cargan nada.
 
 ## Rutas
 
@@ -181,7 +181,7 @@ Las medidas, con capturas y el porqué de cada número, están en
 Tres cosas que parecen detalles y sostienen lo demás:
 
 - **La barra no es un degradado.** Es un filo claro, un cuerpo casi plano en
-  siete octavos del alto, y tres píxeles que oscurecen de golpe al final. Un
+  dos tercios del alto, y tres píxeles que oscurecen de golpe al final. Un
   `linear-gradient` de dos colores queda mal. `taskbar-colors.test.mjs` rechaza
   la barra plana, la de dos paradas y la del degradado suave: si tocas los
   colores, la sonda te lo dice.
@@ -195,10 +195,17 @@ Tres cosas que parecen detalles y sostienen lo demás:
 
 Los colores de XP **no llegan a AA de texto normal**: blanco sobre el verde del
 botón da 3,50:1 y sobre el azul de la bandeja 3,39:1, contra los 4,5:1 que pide
-la norma. Los dos sí cumplen AA de texto grande (3:1). Es una decisión tomada a
-sabiendas — bajarlos hasta cumplir deja de parecerse a XP — y la hora llega
-íntegra a un lector de pantalla por el `<time datetime>` pase lo que pase. El
-test fija el suelo de 3:1 para que no empeore sin que nadie se entere.
+la norma. Los dos pares sí superan el 3:1 de AA de texto grande — pero ese
+umbral exige además que el texto sea grande (≥24px, o ≥18,66px en negrita), y
+aquí no lo es: el reloj va a 11px y «start» a 15px en negrita. Ningún texto de
+la barra llega a ese tamaño, así que en la práctica **no se cumple ningún
+nivel de AA en la barra**, ni siquiera el de texto grande. Es una decisión
+tomada a sabiendas — bajar los colores hasta cumplir deja de parecerse a XP —
+y la mitigación real es otra: la hora llega íntegra a un lector de pantalla
+por el `<time datetime>` pase lo que pase con el contraste, y «start» es un
+`<button>` de verdad con nombre accesible. El test fija el suelo de 3:1 en los
+pares de color para que no empeore sin que nadie se entere, aunque ese suelo
+no habilite por sí solo ninguna excepción de texto grande en esta barra.
 
 Para volver a ver el arranque del escritorio: borra `boot_seen_xp` de
 `localStorage`. Es una llave distinta de la de la portada a propósito.

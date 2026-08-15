@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   BODY,
+  HEIGHT,
   START_BODY,
   TRAY_BODY,
   STOPS,
@@ -84,6 +85,13 @@ test("el degradado sale como CSS con paradas en pixeles", () => {
   assert.match(css, /^linear-gradient\(to bottom,/);
   assert.ok(css.includes("#245edc 6px"), css);
   assert.ok(css.includes("#103198 30px"), css);
+});
+
+test("la ultima parada del degradado esta en HEIGHT", () => {
+  // Ancla STOPS a HEIGHT en vez de a un 30 repetido a mano: si HEIGHT
+  // cambiara y la ultima parada no la siguiera, este test lo nota.
+  const ultima = STOPS[STOPS.length - 1];
+  assert.equal(ultima.px, HEIGHT);
 });
 
 test("el blanco sobre verde y sobre bandeja cumple AA grande", () => {
