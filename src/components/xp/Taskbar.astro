@@ -1,0 +1,159 @@
+---
+/**
+ * La barra de tareas de Windows XP, tema Luna.
+ *
+ * Los colores NO son decisiones de aquí: están medidos sobre capturas y la
+ * derivación entera vive en ./taskbar-colors.mjs, con test. Si algo aquí te
+ * parece un color raro, míralo ahí antes de cambiarlo.
+ *
+ *   Medidas y razones → docs/superpowers/specs/2026-08-15-escritorio-xp-fase1-design.md §4, §7
+ *
+ * El degradado se inyecta por `style` en vez de escribirlo en el <style>
+ * porque un bloque de CSS no puede leer el módulo: así el CSS y el test miran
+ * exactamente la misma lista de paradas.
+ */
+import {
+  gradient,
+  hex,
+  START_BODY,
+  START_EDGE,
+  TRAY_BODY,
+  TRAY_FOOT,
+  TRAY_EDGE,
+} from "./taskbar-colors.mjs";
+
+const bar = gradient();
+const startBg = `linear-gradient(to bottom, ${hex(START_BODY)} 0, ${hex(START_BODY)} 70%, ${hex(START_EDGE)} 100%)`;
+const startBgDown = `linear-gradient(to bottom, ${hex(START_EDGE)} 0, ${hex(START_EDGE)} 45%, ${hex(START_BODY)} 100%)`;
+const trayBg = `linear-gradient(to bottom, ${hex(TRAY_BODY)} 0, ${hex(TRAY_BODY)} 90%, ${hex(TRAY_FOOT)} 100%)`;
+const trayEdge = hex(TRAY_EDGE);
+---
+
+<div
+  class="xp-taskbar"
+  style={`--bar:${bar};--start-bg:${startBg};--start-down:${startBgDown};--tray-bg:${trayBg};--tray-edge:${trayEdge}`}
+>
+  {/* Es un <button> de verdad y no un <div>: enfocable con teclado y anunciado
+      por un lector de pantalla. En fase 1 se hunde y no abre nada. */}
+  <button class="xp-start" type="button">start</button>
+
+  {/* Zona de ventanas. Vacía en fase 1 y sin dibujar: existe solo para empujar
+      la bandeja contra el borde derecho. La fase 2 mete aquí los botones. */}
+  <div class="xp-tasks"></div>
+
+  <div class="xp-tray">
+    {/* Sin `datetime` en el HTML del build: el reloj es la hora del VISITANTE,
+        no la del servidor de compilación. Lo pone el script al arrancar. */}
+    <time class="xp-clock" id="xp-clock"></time>
+  </div>
+</div>
+
+<script>
+  import { formatTime, msToNextMinute } from "./clock.mjs";
+
+  const el = document.getElementById("xp-clock");
+  if (el) {
+    const tick = () => {
+      const now = new Date();
+      el.textContent = formatTime(now);
+      // El texto va en local y el `datetime` en ISO/UTC: los dos nombran el
+      // mismo instante, y así un lector de pantalla lo recibe exacto sin
+      // depender de que se lea el contraste de la bandeja (§10.1).
+      el.setAttribute("datetime", now.toISOString());
+      setTimeout(tick, msToNextMinute(now));
+    };
+    tick();
+  }
+</script>
+
+<style>
+  .xp-taskbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* 30px: 14-15 filas en una captura reducida 2:1, y el valor por defecto de
+       XP a 96 ppp (§4.2). */
+    height: 30px;
+    z-index: 10;
+    display: flex;
+    align-items: stretch;
+    background: var(--bar);
+    /* Tahoma es la de XP. No se envía ninguna fuente: si el visitante no la
+       tiene, cae en la que más se le parezca de las suyas. */
+    font-family: Tahoma, "DejaVu Sans", Verdana, sans-serif;
+    /* Un escritorio no se selecciona con el ratón. */
+    user-select: none;
+  }
+
+  /* ── El botón de Inicio ──────────────────────────────────────────────────
+     94x28 medidos (§4.2). 28 sobre 30 deja 1px de barra arriba y otro abajo.
+
+     ⚠️ DOS cosas de aquí NO están medidas y hay que confirmarlas contra una
+     captura nativa (§7):
+       - el radio de 8px: a escala 1:2 los píxeles de la esquina se mezclan con
+         el azul y el detector de verde los descarta, así que lo medido (2-4px)
+         se queda corto;
+       - el brillo del borde de arriba: el botón real de XP tiene una banda
+         clara en la primera fila que esta captura no resuelve, así que aquí
+         solo van los dos verdes que SÍ están medidos.
+     Son los únicos números a ojo de toda la barra. Están juntos y señalados a
+     propósito: en el trabajo de la pantalla de arranque, el único color puesto
+     a ojo fue justo el que la revisión tumbó. */
+  .xp-start {
+    flex: none;
+    align-self: center;
+    width: 94px;
+    height: 28px;
+    margin: 0;
+    padding: 0 0 2px 12px;
+    border: 0;
+    border-radius: 0 8px 8px 0;
+    background: var(--start-bg);
+    color: #ffffff;
+    font: italic bold 15px/1 Tahoma, "DejaVu Sans", Verdana, sans-serif;
+    text-align: left;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.45);
+    /* Cursor de flecha, no de mano: en Windows los botones no cambian el
+       puntero. */
+    cursor: default;
+  }
+  .xp-start:active {
+    /* Se hunde invirtiendo el degradado y bajando el texto un píxel. No hace
+       nada más: el menú Inicio es de la fase 2. */
+    background: var(--start-down);
+    padding-top: 2px;
+    padding-bottom: 0;
+  }
+  .xp-start:focus-visible {
+    /* Hacia dentro: un outline hacia fuera se sale de la barra por abajo. */
+    outline: 2px solid #ffffff;
+    outline-offset: -4px;
+  }
+
+  .xp-tasks {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  /* ── La bandeja ──────────────────────────────────────────────────────────
+     100px medidos (§4.3). Lo que la hace parecer hundida es el FILO oscuro de
+     la izquierda, no el relleno: el relleno es MÁS CLARO que la barra y más
+     cian. Si la pintas más oscura, que es lo que pide el instinto, se rompe. */
+  .xp-tray {
+    flex: none;
+    width: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-left: 1px solid var(--tray-edge);
+    background: var(--tray-bg);
+    color: #ffffff;
+    font-size: 11px;
+  }
+  .xp-clock {
+    /* Sin JS la bandeja queda vacía, y es aceptable: es adorno, no contenido
+       (§9). */
+    letter-spacing: 0.02em;
+  }
+</style>
