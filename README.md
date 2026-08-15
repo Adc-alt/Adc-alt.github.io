@@ -171,9 +171,16 @@ Vive en `/xp/` y no en `/` porque un escritorio sin ventanas es un callejón sin
 salida y la portada es la URL que va en el CV. La raíz se muda el día que
 existan las ventanas.
 
-**No hay ni un byte de Microsoft ni de winbows.neocities.org.** El fondo está
-dibujado aquí en SVG, y de la barra solo se han copiado medidas y colores, que
-son hechos y no obra. No hay logotipo de Windows.
+**El fondo es Bliss, la foto de Windows XP** (Charles O'Rear, propiedad de
+Microsoft). `public/xp/bliss.webp` sale del `bg.jpg` de
+[winbows.neocities.org](https://winbows.neocities.org/), reescalado a 2560x1440
+y recodificado a WebP: 1008 KB → 225 KB. **No es una imagen libre**: se usa aquí
+como homenaje, igual que hace medio internet, y si algún día molesta se
+sustituye borrando ese fichero — el degradado de reserva de `Wallpaper.astro`
+deja la página en pie sin él.
+
+De la barra, en cambio, no se ha copiado ningún fichero: solo medidas y
+colores, que son hechos y no obra. No hay logotipo de Windows.
 
 Las medidas, con capturas y el porqué de cada número, están en
 `docs/superpowers/specs/2026-08-15-escritorio-xp-fase1-design.md`.

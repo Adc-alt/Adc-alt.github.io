@@ -80,10 +80,11 @@ const fullTitle = `${title} — ${SITE.name}`;
     height: 100%;
   }
   body {
-    /* Reserva sólida por si el SVG del fondo no llega a pintar (§6). Es el tono
-       medio del cielo, así que un fallo se ve como un cielo liso y no como una
-       pantalla blanca. */
-    background: #4b9ada;
+    /* Reserva sólida por si el fondo no llega a pintar (§6). Es el tono medio
+       del cielo de Bliss, así que un fallo se ve como un cielo liso y no como
+       una pantalla blanca. El degradado de reserva vive en Wallpaper.astro;
+       esto es la capa de debajo, para el hueco entre el <body> y la imagen. */
+    background: #4b8fd4;
     /* Un escritorio no tiene scroll. */
     overflow: hidden;
   }
