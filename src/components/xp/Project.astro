@@ -1,32 +1,32 @@
 ---
 /**
- * Un proyecto entero, dentro de su ventana. Es lo que antes era
+ * A whole project, inside its window. This is what used to be
  * `/proyectos/<id>/`.
  */
 import { render, type CollectionEntry } from "astro:content";
-import { ESTADO } from "./proyectos.mjs";
+import { STATUS } from "./projects.mjs";
 
 interface Props {
-  proyecto: CollectionEntry<"proyectos">;
+  project: CollectionEntry<"projects">;
 }
 
-const { proyecto } = Astro.props;
-const { Content } = await render(proyecto);
-const { title, summary, stack, year, status, repo, demo } = proyecto.data;
+const { project } = Astro.props;
+const { Content } = await render(project);
+const { title, summary, stack, year, status, repo, demo } = project.data;
 ---
 
 <div class="xp-doc">
   <h1>{title}</h1>
   <p class="lede">{summary}</p>
 
-  <dl class="ficha">
+  <dl class="card">
     <div>
-      <dt>Fecha</dt>
+      <dt>Year</dt>
       <dd>{year}</dd>
     </div>
     <div>
-      <dt>Estado</dt>
-      <dd>{ESTADO[status]}</dd>
+      <dt>Status</dt>
+      <dd>{STATUS[status]}</dd>
     </div>
     <div>
       <dt>Stack</dt>
@@ -36,15 +36,15 @@ const { title, summary, stack, year, status, repo, demo } = proyecto.data;
 
   {
     (repo || demo) && (
-      <p class="fila">
+      <p class="row">
         {demo && (
           <a href={demo} rel="noopener">
-            Ver en vivo
+            See it live
           </a>
         )}
         {repo && (
           <a href={repo} rel="noopener">
-            Repositorio
+            Repository
           </a>
         )}
       </p>

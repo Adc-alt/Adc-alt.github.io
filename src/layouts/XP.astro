@@ -1,17 +1,18 @@
 ---
 /**
- * El escritorio. Es el layout del sitio entero: desde la fase 2 no hay otro.
+ * The desktop. It is the layout for the whole site: since phase 2 there is no
+ * other.
  *
- * No se importa ninguna @fontsource: la única fuente que se sirve es la del
- * arranque, y `Boot.astro` declara su propia @font-face. Lo demás es Tahoma,
- * que o la tiene el visitante o cae en la que más se le parezca de las suyas.
+ * No @fontsource is imported: the only font served is the boot one, and
+ * `Boot.astro` declares its own @font-face. Everything else is Tahoma, which
+ * the visitor either has or falls back to the closest thing they do have.
  *
- * DOS MODOS (fase 2 §4). El apilado es la base y el escritorio la mejora:
- * las reglas de escritorio van dentro de `@media (min-width: 721px)` y
- * colgando de `html.js`. Sin JavaScript no se aplican nunca y el sitio se lee
- * como una columna de ventanas, que es también lo que se ve en un móvil.
+ * TWO MODES (phase 2 §4). Stacked is the base and desktop is the enhancement:
+ * the desktop rules live inside `@media (min-width: 721px)` and hang off
+ * `html.js`. Without JavaScript they never apply and the site reads as a column
+ * of windows, which is also what a phone gets.
  *
- * Spec: docs/superpowers/specs/2026-08-15-escritorio-xp-fase2-design.md
+ * Spec: docs/superpowers/specs/2026-08-15-xp-desktop-phase2-design.md
  */
 import "../styles/xp-doc.css";
 import Wallpaper from "../components/xp/Wallpaper.astro";
@@ -41,26 +42,26 @@ const fullTitle = title ? `${title} — ${SITE.name}` : `${SITE.name} — ${SITE
     <meta name="theme-color" content="#245edc" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
-    {/* La llave del modo escritorio. Va aquí, antes del marcado y en línea,
-        para que el modo esté decidido en la primera pintura: si se pusiera
-        desde un módulo, las ventanas se verían apiladas un fotograma antes de
-        colocarse. Sin JavaScript nunca se pone, y ése es el mecanismo entero
-        del modo apilado. */}
+    {/* The key to desktop mode. It goes here, before the markup and inline, so
+        the mode is decided by the first paint: set from a module, the windows
+        would show stacked for one frame before laying themselves out. Without
+        JavaScript it is never set, and that is the whole mechanism of stacked
+        mode. */}
     <script is:inline>
       document.documentElement.classList.add("js");
     </script>
   </head>
 
   <body>
-    {/* Hueco a pantalla completa (la pantalla de arranque), primer hijo del
-        <body>. El orden importa: el script antipestañeo del arranque vive
-        dentro de este hueco y tiene que poner html[data-boot] ANTES de que se
-        parsee la barra, o la barra asoma un fotograma antes de esconderse. */}
+    {/* The full-screen slot (the boot screen), first child of <body>. The order
+        matters: the boot screen's anti-flash script lives inside this slot and
+        has to set html[data-boot] BEFORE the taskbar is parsed, or the taskbar
+        shows for one frame before hiding. */}
     <slot name="overlay" />
 
-    {/* id="contenido" no es decorativo: al terminar, el arranque busca ese id
-        para devolverle el foco al teclado. */}
-    <main id="contenido" class="xp-desktop">
+    {/* id="content" is not decorative: when it finishes, the boot screen looks
+        for that id to hand keyboard focus back. */}
+    <main id="content" class="xp-desktop">
       <Wallpaper />
       <slot />
     </main>
@@ -70,11 +71,11 @@ const fullTitle = title ? `${title} — ${SITE.name}` : `${SITE.name} — ${SITE
 </html>
 
 <style is:global>
-  /* `Boot.astro` usa var(--font-mono) para caer en una monoespaciada del
-     sistema si "AcPlus IBM VGA 8x16" no está disponible. Un var() que apunta a
-     una variable sin definir invalida TODA la declaración en tiempo de cómputo
-     —no cae al siguiente nombre de la lista, descarta la lista entera y hereda
-     la fuente del padre—, así que la variable tiene que existir aquí. */
+  /* `Boot.astro` uses var(--font-mono) to fall back to a system monospace if
+     "AcPlus IBM VGA 8x16" is not available. A var() pointing at an undefined
+     variable invalidates the WHOLE declaration at computed-value time — it does
+     not fall through to the next name in the list, it throws the entire list
+     away and inherits the parent's font — so the variable has to exist here. */
   :root {
     --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   }
@@ -84,32 +85,32 @@ const fullTitle = title ? `${title} — ${SITE.name}` : `${SITE.name} — ${SITE
     padding: 0;
   }
   body {
-    /* Reserva sólida por si el fondo no llega a pintar. Es el tono medio del
-       cielo de Bliss, así que un fallo se ve como un cielo liso y no como una
-       pantalla blanca. El degradado de reserva vive en Wallpaper.astro; esto
-       es la capa de debajo, para el hueco entre el <body> y la imagen. */
+    /* A solid reserve in case the wallpaper never paints. It is the mid tone of
+       the Bliss sky, so a failure looks like a plain sky and not like a white
+       screen. The fallback gradient lives in Wallpaper.astro; this is the layer
+       underneath, for the gap between the <body> and the image. */
     background: #4b8fd4;
   }
 
-  /* ── Modo apilado: la página scrollea ─────────────────────────────────── */
+  /* ── Stacked mode: the page scrolls ───────────────────────────────────── */
   .xp-desktop {
     position: relative;
     min-height: 100dvh;
-    /* El hueco de abajo es para la barra de tareas, que va fija: sin él, la
-       última ventana queda debajo. 40 es HEIGHT de taskbar-colors.mjs. */
+    /* The gap at the bottom is for the taskbar, which is fixed: without it the
+       last window ends up underneath. 40 is HEIGHT from taskbar-colors.mjs. */
     padding: 12px 12px calc(40px + 16px);
     box-sizing: border-box;
   }
 
   @media (prefers-reduced-motion: no-preference) {
     html {
-      /* Los accesos de la bienvenida son anclas de verdad: en modo apilado
-         saltan a la ventana, y con esto el salto se ve. */
+      /* The welcome shortcuts are real anchors: in stacked mode they jump to
+         the window, and with this the jump is visible. */
       scroll-behavior: smooth;
     }
   }
 
-  /* ── Modo escritorio: un escritorio no tiene scroll ───────────────────── */
+  /* ── Desktop mode: a desktop has no scroll ────────────────────────────── */
   @media (min-width: 721px) {
     html.js,
     html.js body {

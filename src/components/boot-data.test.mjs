@@ -5,9 +5,9 @@ import {
 } from "./boot-data.mjs";
 
 /**
- * La tabla de retardos de la referencia, copiada tal cual de su textloader.js.
- * Si un test de aquí se pone rojo es que alguien ha tocado un tiempo: o lo
- * devuelve a su sitio, o cambia esta tabla a sabiendas de que ya no es igual.
+ * The reference's delay table, copied verbatim from its textloader.js. If a
+ * test here goes red it means someone changed a timing: either put it back, or
+ * change this table knowing it no longer matches.
  */
 const REF = {
   1: 1000, 2: 1600, 3: 1800, 4: 1200, 5: 1400, 6: 1600,
@@ -15,7 +15,7 @@ const REF = {
   13: 3200, 14: 3250, 15: 3700, 16: 3800, 17: 3900, 18: 4000,
 };
 
-test("los tiempos son los de la referencia", () => {
+test("the timings are the reference's", () => {
   assert.equal(T.title, REF[1]);
   assert.equal(T.icon, REF[2]);
   assert.equal(T.logo, REF[3]);
@@ -30,66 +30,66 @@ test("los tiempos son los de la referencia", () => {
   assert.equal(T.prompt, REF[18]);
 });
 
-test("la pausa antes de los chequeos dura 1,1 s", () => {
-  // Es lo que hace que parezca una maquina probandose a si misma.
+test("the pause before the checks lasts 1.1s", () => {
+  // It is what makes it look like a machine testing itself.
   assert.equal(T.name[0] - T.count, 1100);
 });
 
-test("el ultimo veredicto se hace de rogar 450 ms", () => {
+test("the last verdict keeps you waiting an extra 450ms", () => {
   assert.equal(T.verdict.at(-1) - T.verdict.at(-2), 450);
   assert.equal(T.verdict[1] - T.verdict[0], 50);
 });
 
-test("hay un tiempo por cada linea", () => {
+test("there is one timing per line", () => {
   assert.equal(T.spec.length, SPECS.length);
   assert.equal(T.name.length, DEVICES.length);
   assert.equal(T.verdict.length, DEVICES.length);
 });
 
-test("el prompt es lo ultimo que sale", () => {
-  const todos = [
+test("the prompt is the last thing to appear", () => {
+  const all = [
     T.title, T.copy, T.loading, T.icon, T.logo, T.count,
     T.tailKey, T.tailValue, ...T.spec, ...T.name, ...T.verdict,
   ];
-  assert.equal(Math.max(...todos, T.prompt), T.prompt);
+  assert.equal(Math.max(...all, T.prompt), T.prompt);
 });
 
-test("no entra sola", () => {
+test("it does not enter by itself", () => {
   assert.equal(AUTO_MS, 0);
 });
 
-test("la escalera del contador acaba en el valor que se ensena", () => {
-  const fila = SPECS.find((s) => s.count);
-  assert.ok(fila, "tiene que haber una fila con contador");
-  assert.equal(String(COUNT.numbers.at(-1)), fila.v);
+test("the counter's ladder ends on the value that is shown", () => {
+  const row = SPECS.find((s) => s.count);
+  assert.ok(row, "there has to be a row with a counter");
+  assert.equal(String(COUNT.numbers.at(-1)), row.v);
 });
 
-test("hay un intervalo por cada peldano del contador", () => {
+test("there is one interval per rung of the counter", () => {
   assert.equal(COUNT.intervals.length, COUNT.numbers.length);
 });
 
-test("las etiquetas caben en la columna de 20ch", () => {
-  // Una etiqueta mas larga empuja la columna del veredicto y descuadra la
-  // rejilla entera, que es justo lo que no se puede tocar.
-  for (const s of SPECS) assert.ok(s.k.length <= 20, `spec larga: ${s.k}`);
-  for (const d of DEVICES) assert.ok(d.k.length <= 20, `chequeo largo: ${d.k}`);
+test("the labels fit in the 20ch column", () => {
+  // A longer label pushes the verdict column and knocks the whole grid out of
+  // square, which is exactly what must not be touched.
+  for (const s of SPECS) assert.ok(s.k.length <= 20, `long spec: ${s.k}`);
+  for (const d of DEVICES) assert.ok(d.k.length <= 20, `long check: ${d.k}`);
 });
 
-test("todo en ingles: ni tildes, ni enes, ni signos de apertura", () => {
-  const texto = JSON.stringify([HEAD, LOADING, SPECS, DEVICES, TAIL, PROMPT]);
-  const malo = texto.match(/[áéíóúüñÁÉÍÓÚÜÑ¿¡]/g);
-  assert.equal(malo, null, `caracteres en espanol: ${malo}`);
+test("all in English: no accents, no enyes, no opening marks", () => {
+  const text = JSON.stringify([HEAD, LOADING, SPECS, DEVICES, TAIL, PROMPT]);
+  const bad = text.match(/[áéíóúüñÁÉÍÓÚÜÑ¿¡]/g);
+  assert.equal(bad, null, `Spanish characters: ${bad}`);
 });
 
-test("no queda rastro del comecocos", () => {
-  const texto = JSON.stringify([HEAD, LOADING, SPECS, DEVICES, TAIL, PROMPT]);
-  assert.ok(!/comecocos/i.test(texto));
+test("no trace of the pac-man is left", () => {
+  const text = JSON.stringify([HEAD, LOADING, SPECS, DEVICES, TAIL, PROMPT]);
+  assert.ok(!/comecocos/i.test(text));
 });
 
-test("la identidad es la de este portfolio y no la de la referencia", () => {
-  const texto = JSON.stringify([HEAD, LOADING, SPECS, DEVICES, TAIL, PROMPT]);
+test("the identity is this portfolio's and not the reference's", () => {
+  const text = JSON.stringify([HEAD, LOADING, SPECS, DEVICES, TAIL, PROMPT]);
   assert.ok(/Adc-alt/.test(HEAD.title));
   assert.ok(/ADCSOFT/.test(HEAD.copy));
-  assert.ok(!/senna/i.test(texto), "quedan restos del nombre de la referencia");
-  assert.ok(!/SENNASOFT/i.test(texto));
+  assert.ok(!/senna/i.test(text), "traces of the reference's name are left");
+  assert.ok(!/SENNASOFT/i.test(text));
 });

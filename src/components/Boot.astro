@@ -1,25 +1,25 @@
 ---
 /**
- * Pantalla de arranque tipo POST de BIOS. Cortina, no laberinto.
+ * A BIOS POST-style boot screen. A curtain, not a maze.
  *
- * Calcada de la primera página de https://senna.social/. Las medidas, los
- * colores y los tiempos NO son decisiones de aquí: están medidos sobre la
- * referencia con el inspector. Si tocas uno, deja de parecerse.
+ * Traced from the first page of https://senna.social/. The measurements, the
+ * colours and the timings are NOT decisions made here: they are measured off
+ * the reference with the inspector. Touch one and the resemblance goes.
  *
- *   Medidas, razones y capturas → docs/superpowers/specs/2026-08-14-arranque-paridad-senna.md
- *   Texto y tiempos             → ./boot-data.mjs (con test que los bloquea)
+ *   Measurements, reasons and captures → docs/superpowers/specs/2026-08-14-boot-screen-senna-parity.md
+ *   Text and timings                   → ./boot-data.mjs (with a test that locks them)
  *
- * Cómo se comporta, por si hay que depurarlo:
- *  - Las rutas donde sale las decide quien lo monta, por la prop `paths`; por
- *    defecto, las dos direcciones de la raíz, que desde la fase 2 es el sitio
- *    entero. El 404 no la monta a propósito: a un 404 se llega por accidente y
- *    no es momento de una animación.
- *  - Todo el JS es `is:inline` y síncrono. Si el navegador no ejecuta JS, el
- *    overlay se queda en `display:none` y el portfolio funciona igual. Por eso
- *    se ENSEÑA desde el script en vez de esconderse desde el script: al revés,
- *    un fallo de JS dejaría el sitio tapado con una pantalla negra.
- *  - El primer script va ANTES del marcado: así el que ya lo vio no ve ni un
- *    parpadeo de la pantalla de arranque.
+ * How it behaves, in case it needs debugging:
+ *  - Which routes it appears on is decided by whoever mounts it, via the `paths`
+ *    prop; by default the two addresses of the root, which since phase 2 is the
+ *    whole site. The 404 does not mount it on purpose: you reach a 404 by
+ *    accident, and that is no moment for an animation.
+ *  - All the JS is `is:inline` and synchronous. If the browser does not run JS,
+ *    the overlay stays at `display:none` and the portfolio works the same. That
+ *    is why the script SHOWS it instead of hiding it: the other way round, a JS
+ *    failure would leave the site covered by a black screen.
+ *  - The first script goes BEFORE the markup: that way a repeat visitor does not
+ *    see even one frame of the boot screen.
  */
 import {
   HEAD, LOADING, SPECS, COUNT, DEVICES, TAIL, PROMPT, T, AUTO_MS,
@@ -27,15 +27,14 @@ import {
 
 interface Props {
   /**
-   * Rutas donde puede salir. Por defecto solo la raíz, que tiene dos
-   * direcciones porque GitHub Pages sirve la misma página en "/" y en
+   * Routes where it may appear. By default only the root, which has two
+   * addresses because GitHub Pages serves the same page at "/" and at
    * "/index.html".
    */
   paths?: string[];
   /**
-   * Llave de localStorage del «ya lo vi». Una por ruta que arranque: si dos
-   * rutas comparten llave, la segunda no arranca nunca para quien ya vio la
-   * primera.
+   * The localStorage key for "already seen this". One per booting route: if two
+   * routes share a key, the second never boots for anyone who saw the first.
    */
   seenKey?: string;
 }
@@ -43,37 +42,37 @@ interface Props {
 const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
 ---
 
-{/* 1. Antipestañeo. Va antes del marcado a propósito: decide si la pantalla
-      llega a existir, así el visitante que repite no ve ni un frame. */}
+{/* 1. Anti-flash. It goes before the markup on purpose: it decides whether the
+      screen exists at all, so a repeat visitor does not see a single frame. */}
 <script is:inline define:vars={{ paths, seenKey }}>
   (function () {
-    // `define:vars` es la única forma de que un script inline vea el
-    // frontmatter, y aquí no hay alternativa: este script corre ANTES del
-    // marcado, así que no puede leer el dato de un data-* del DOM como hace
-    // el script 2. Astro lo serializa como `const` delante del IIFE.
+    // `define:vars` is the only way for an inline script to see the
+    // frontmatter, and there is no alternative here: this script runs BEFORE
+    // the markup, so it cannot read the value off a data-* in the DOM the way
+    // script 2 does. Astro serialises it as a `const` in front of the IIFE.
     if (paths.indexOf(location.pathname) === -1) return;
     try {
       if (localStorage.getItem(seenKey)) return;
     } catch (e) {
-      /* modo privado: que arranque igual */
+      /* private mode: boot anyway */
     }
     document.documentElement.setAttribute("data-boot", "on");
   })();
 </script>
 
-{/* `data-*` es el puente al script inline: un `is:inline` no ve las variables
-    del frontmatter, así que el dato viaja por el DOM. */}
+{/* `data-*` is the bridge to the inline script: an `is:inline` cannot see the
+    frontmatter variables, so the value travels through the DOM. */}
 <div id="boot" data-auto={AUTO_MS} data-seen-key={seenKey}>
   <div class="boot-inner">
     <div class="boot-screen">
-      {/* El aria-hidden va aquí y NO en el envoltorio: si envuelve también al
-          botón, el overlay se convierte en una trampa sin salida para un lector
-          de pantalla, y un aria-hidden="false" en el hijo no lo rescata. */}
+      {/* The aria-hidden goes here and NOT on the wrapper: if it covered the
+          button too, the overlay would become a dead end for a screen reader,
+          and an aria-hidden="false" on the child does not rescue it. */}
       <div class="boot-text" aria-hidden="true">
         <div class="boot-container">
-          {/* Sello de conformidad, en el hueco donde los PC de la época ponían
-              la pegatina de Energy Star. 42x58 como el de la referencia, pero
-              dibujado aquí: el suyo es un PNG suyo y no se copia. */}
+          {/* A compliance seal, in the slot where PCs of the era put the Energy
+              Star sticker. 42x58 like the reference's, but drawn here: theirs is
+              their own PNG and is not copied. */}
           <svg
             class="boot-icon r"
             data-d={T.icon}
@@ -93,33 +92,50 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
           </div>
 
           <div class="boot-logo r" data-d={T.logo}>
-            {/* Pingüino en píxeles, rejilla de celdas de 4 (12x15 celdas). El
-                cuerpo va en gris azulado y no en negro: sobre fondo negro un
-                pingüino negro no se ve. La panza no llega ni a los bordes ni al
-                cuello, que si no pierde la silueta y parece un robot. */}
-            <svg viewBox="0 0 48 60" width="132" height="165" role="presentation">
-              <g fill="#99a1bd">
-                <rect x="16" y="0" width="16" height="4"></rect>
-                <rect x="8" y="4" width="32" height="4"></rect>
-                <rect x="4" y="8" width="40" height="12"></rect>
-                <rect x="8" y="20" width="32" height="4"></rect>
-                <rect x="0" y="24" width="48" height="16"></rect>
-                <rect x="8" y="40" width="32" height="12"></rect>
-                <rect x="12" y="52" width="24" height="4"></rect>
-              </g>
-              <rect x="16" y="26" width="16" height="26" fill="#e8ebf5"></rect>
-              <g fill="#e8ebf5">
-                <rect x="12" y="10" width="6" height="6"></rect>
-                <rect x="30" y="10" width="6" height="6"></rect>
-              </g>
-              <g fill="#0d0f16">
-                <rect x="14" y="12" width="3" height="3"></rect>
-                <rect x="32" y="12" width="3" height="3"></rect>
-              </g>
-              <g fill="#ffc53d">
-                <rect x="20" y="16" width="8" height="6"></rect>
-                <rect x="8" y="56" width="12" height="4"></rect>
-                <rect x="28" y="56" width="12" height="4"></rect>
+            {/* The maker's doodle, where the reference has its own. Same idea —
+                one yellow pen stroke: a halo over a signature that ends in a
+                face — but drawn here, letter by letter, with my name in it.
+                Their PNG is theirs and is not copied.
+
+                #fdff54 IS measured off their PNG (4164 opaque pixels of that
+                exact value), the same way the green of the strapline below was.
+                Two colours, one homage; the drawing is not shared.
+
+                266x148 is the reference's own logo box minus the strapline,
+                which here is live text and not part of the drawing. */}
+            <svg viewBox="0 0 266 148" width="266" height="148" role="presentation">
+              <g
+                fill="none"
+                stroke="#fdff54"
+                stroke-width="3.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                {/* halo */}
+                <path d="M26 126 C6 118 2 92 8 66 C16 32 62 8 118 6 C170 4 214 22 234 52 C244 68 246 76 244 84"></path>
+                {/* a */}
+                <path d="M35 96 C31 90 22 90 17 97 C12 104 13 113 19 116 C25 119 32 114 34 107"></path>
+                <path d="M34 93 L35 112 C35 117 39 118 42 113"></path>
+                {/* n */}
+                <path d="M42 114 C43 106 44 100 45 94 C47 89 54 89 57 96 C58 102 58 109 58 114 C58 117 61 118 63 115"></path>
+                {/* t, stem then crossbar */}
+                <path d="M63 115 C65 105 68 88 70 74 C71 67 68 66 67 72 C65 82 64 102 65 111 C65 116 70 117 74 112"></path>
+                <path d="M58 89 L79 86"></path>
+                {/* h */}
+                <path d="M78 114 C80 100 82 82 84 70 C85 63 90 63 89 71 C88 81 84 97 83 108 C82 113 83 114 84 112 C86 98 89 91 93 90 C98 89 101 95 101 102 C101 108 101 111 101 114 C101 117 104 118 106 115"></path>
+                {/* o */}
+                <path d="M106 115 C108 105 112 94 119 92 C126 90 129 98 127 106 C125 114 118 118 113 114 C108 110 109 100 116 95 C122 91 128 92 131 96"></path>
+                {/* n */}
+                <path d="M131 114 C132 106 133 100 134 94 C136 89 143 89 146 96 C147 102 147 109 147 114 C147 117 150 118 152 115"></path>
+                {/* y, with the descender that turns into the flourish */}
+                <path d="M152 96 C151 104 151 111 153 114 C156 118 161 116 164 110 C167 103 168 98 169 94 C169 104 168 116 165 126 C161 138 153 143 147 139"></path>
+                {/* the join from the y into the face */}
+                <path d="M169 95 C172 91 174 89 176 88"></path>
+                {/* the face. The eyes are filled, everything else is a stroke. */}
+                <circle cx="209" cy="96" r="35"></circle>
+                <circle cx="199" cy="88" r="2.6" fill="#fdff54"></circle>
+                <circle cx="218" cy="88" r="2.6" fill="#fdff54"></circle>
+                <path d="M196 106 C202 114 214 114 220 105"></path>
               </g>
             </svg>
             <span class="boot-mark">{HEAD.mark}</span>
@@ -169,17 +185,17 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
 
         <div class="boot-gap"></div>
 
-        {/* El espacio va en duro (\u00a0): uno normal al principio de un
-            inline-block se colapsa y quedaría "inserted :lego-island-two.pcm". */}
+        {/* The space is hard-coded (\u00a0):a normal one at the start of an
+            inline-block collapses and it would read "inserted :lego-island-two.pcm". */}
         <span class="r" data-d={T.tailKey}>{TAIL.k}</span><span
           class="r"
           data-d={T.tailValue}>{"\u00a0" + TAIL.v}</span
         >
       </div>
 
-      {/* La referencia usa un <span> aquí. Un <span> no se puede tabular y un
-          lector de pantalla no lo anuncia, así que el overlay no tendría salida
-          sin ratón. El texto es idéntico; solo cambia la etiqueta. */}
+      {/* The reference uses a <span> here. A <span> cannot be tabbed to and a
+          screen reader does not announce it, so the overlay would have no way
+          out without a mouse. The text is identical; only the tag changes. */}
       <button id="boot-enter" class="r blinking" type="button" data-d={T.prompt}>
         {PROMPT}
       </button>
@@ -187,30 +203,30 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
   </div>
 </div>
 
-{/* 2. Comportamiento. Inline y síncrono, sin imports: este es el que la
-      QUITA — el que la enseña es el script 1, arriba del marcado. */}
+{/* 2. Behaviour. Inline and synchronous, no imports: this is the one that TAKES
+      IT AWAY — the one that shows it is script 1, above the markup. */}
 <script is:inline>
   (function () {
     var el = document.getElementById("boot");
     if (!el) return;
     if (document.documentElement.getAttribute("data-boot") !== "on") {
-      el.remove(); // no toca arrancar: fuera del DOM y a otra cosa
+      el.remove(); // not booting this time: out of the DOM and move on
       return;
     }
 
     var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
     var done = false;
-    // 0 = se queda esperando, como la referencia. Ver AUTO_MS en boot-data.mjs.
+    // 0 = it waits, like the reference. See AUTO_MS in boot-data.mjs.
     var auto = Number(el.getAttribute("data-auto")) || 0;
     var timers = [];
 
     var btn = document.getElementById("boot-enter");
-    // Los listeners de salida van los primeros, antes de nada que pueda
-    // fallar mas abajo: el script 1 ya encendio la pantalla, y si una edicion
-    // futura rompe la sintaxis de algo posterior, sin esto la portada se
-    // queda negra, sin scroll y sin forma de salir para siempre (tampoco
-    // llegaria a ponerse boot_seen). `enter` es `function`, va hoisted: es
-    // seguro referenciarla aqui aunque se declare mas abajo.
+    // The exit listeners go first, before anything that could fail further
+    // down: script 1 has already switched the screen on, and if a future edit
+    // breaks the syntax of something below, without these the front page stays
+    // black, unscrollable and with no way out for ever (boot_seen would never
+    // get set either). `enter` is a `function`, so it is hoisted: referencing
+    // it here is safe even though it is declared below.
     addEventListener("keydown", enter, true);
     addEventListener("pointerdown", enter, true);
     if (btn) btn.addEventListener("click", enter);
@@ -219,8 +235,9 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
 
     var nodes = el.querySelectorAll(".r");
 
-    // Cada elemento sale a SU hora, no en cadena. Los tiempos vienen del
-    // frontmatter por `data-d`: un `is:inline` no ve las variables de Astro.
+    // Each element appears at ITS OWN time, not in a chain. The timings come
+    // from the frontmatter via `data-d`: an `is:inline` cannot see Astro's
+    // variables.
     for (var i = 0; i < nodes.length; i++) {
       (function (n) {
         var ms = reduce ? 0 : Number(n.getAttribute("data-d")) || 0;
@@ -233,9 +250,10 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
       })(nodes[i]);
     }
 
-    // Contador de memoria. Arranca en la hora NOMINAL, no en la visible: en la
-    // referencia sale del mismo setTimeout que enciende la linea, asi que sus
-    // primeros 500 ms corren escondidos detras del visibility. Es a proposito.
+    // The memory counter. It starts at the NOMINAL time, not the visible one:
+    // in the reference it comes out of the same setTimeout that switches the
+    // line on, so its first 500ms run hidden behind the visibility. That is
+    // deliberate.
     function contar(n) {
       var vals = n.getAttribute("data-numbers").split(",");
       var ivs = n.getAttribute("data-intervals").split(",").map(Number);
@@ -253,14 +271,14 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
       })();
     }
 
-    // `pointerdown` se dispara antes que `touchstart`/`click` en todo
-    // navegador con Pointer Events: para cuando llega el clic de
-    // compatibilidad de un toque (50-150ms mas tarde), `enter()` ya corrio y
-    // `#boot` lleva ese tiempo encogiendose (`crt-off`, `scaleY(0.008)`), que
-    // colapsa tambien su caja de impacto. Sin tragarnos ese clic, aterriza en
-    // lo que haya debajo del punto tocado (enlaces del menu, tarjetas). Por
-    // eso no hace falta un listener de `touchstart` aparte: `pointerdown` ya
-    // cubre el toque, y lo unico que falta es tragarse ese clic tardio.
+    // `pointerdown` fires before `touchstart`/`click` in every browser with
+    // Pointer Events: by the time the compatibility click of a tap arrives
+    // (50-150ms later), `enter()` has already run and `#boot` has spent that
+    // long shrinking (`crt-off`, `scaleY(0.008)`), which collapses its hit box
+    // too. Without swallowing that click, it lands on whatever is under the
+    // point that was tapped (menu links, cards). That is why no separate
+    // `touchstart` listener is needed: `pointerdown` already covers the tap,
+    // and all that is left is swallowing that late click.
     var eat = function (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -272,68 +290,70 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
       for (var i = 0; i < timers.length; i++) clearTimeout(timers[i]);
       removeEventListener("keydown", enter, true);
       removeEventListener("pointerdown", enter, true);
-      // Instalado AQUI, dentro de enter(): el clic del propio boton ya llego
-      // a su listener antes de esto, asi que seguir pulsando con raton no se
-      // ve afectado.
+      // Installed HERE, inside enter(): the button's own click has already
+      // reached its listener before this, so clicking with a mouse is
+      // unaffected.
       addEventListener("click", eat, true);
 
       try {
-        // Del DOM y no del frontmatter: este script no lleva `define:vars`.
-        // Sin fallback a proposito: si `seenKey=""` se leyera aqui como
-        // "boot_seen", el script 1 (que si lee `seenKey` del frontmatter via
-        // `define:vars`) seguiria comprobando la llave vacia y el arranque no
-        // dejaria de repetirse nunca, ademas de pisar la llave de la portada.
-        // Sin el fallback, `seenKey=""` es rara pero consistente entre los
-        // dos scripts.
+        // From the DOM and not the frontmatter: this script has no
+        // `define:vars`. No fallback on purpose: if `seenKey=""` were read here
+        // as "boot_seen", script 1 (which does read `seenKey` from the
+        // frontmatter via `define:vars`) would keep checking the empty key and
+        // the boot screen would never stop repeating, besides trampling the
+        // front page's key. Without the fallback, `seenKey=""` is odd but
+        // consistent between the two scripts.
         localStorage.setItem(el.getAttribute("data-seen-key"), "1");
       } catch (e) {
-        /* modo privado */
+        /* private mode */
       }
 
-      // "off" en vez de quitar el atributo: devuelve el scroll pero mantiene la
-      // pantalla visible mientras se apaga.
+      // "off" instead of removing the attribute: it gives the scroll back but
+      // keeps the screen visible while it shuts down.
       document.documentElement.setAttribute("data-boot", "off");
 
-      var fin = function () {
+      var finish = function () {
         el.remove();
         document.documentElement.removeAttribute("data-boot");
         removeEventListener("click", eat, true);
-        var main = document.getElementById("contenido");
+        var main = document.getElementById("content");
         if (main) {
           main.setAttribute("tabindex", "-1");
           main.focus({ preventScroll: true });
         }
       };
-      if (reduce) return fin();
+      if (reduce) return finish();
       el.classList.add("is-off");
-      setTimeout(fin, 300);
+      setTimeout(finish, 300);
     }
   })();
 </script>
 
 <style>
   /* AcPlus IBM VGA 8x16 — VileR, https://int10h.org/oldschool-pc-fonts/ (CC BY-SA 4.0).
-     La licencia completa viaja con el fichero, en /fonts/, y el crédito que
-     exige está en el pie del sitio.
+     The full licence travels with the file, in /fonts/, and the credit it
+     requires is in the welcome window (the site footer it used to live in went
+     away with the arcade look).
 
-     ⚠️ Tiene que ser la variante **AcPlus** (aspect-corrected), no Web/WebPlus.
-     La 8x16 original se veía en una VGA de 720x400 estirada a una pantalla 4:3,
-     o sea con el píxel más alto que ancho. AcPlus lleva ese estirón dentro: el
-     avance es 0,4167em (9,99px a 24px) en vez de 0,5em. Con WebPlus las letras
-     salen cuadradas y anchas, y eso solo ya rompe el parecido por mucho que
-     cuadre todo lo demás. */
+     ⚠️ It has to be the **AcPlus** variant (aspect-corrected), not Web/WebPlus.
+     The original 8x16 was seen on a 720x400 VGA stretched onto a 4:3 screen —
+     that is, with pixels taller than they are wide. AcPlus bakes that stretch
+     in: the advance is 0.4167em (9.99px at 24px) instead of 0.5em. With WebPlus
+     the letters come out square and wide, and that alone breaks the resemblance
+     however well everything else lines up. */
   @font-face {
     font-family: "AcPlus IBM VGA 8x16";
     src: url("/fonts/AcPlus_IBM_VGA_8x16.woff2") format("woff2");
     font-weight: 400;
     font-style: normal;
-    /* `block`: nada aparece antes de 1,5 s, así que da tiempo de sobra a
-       cargarla y nadie ve una línea en la tipografía de reserva saltando. */
+    /* `block`: nothing appears before 1.5s, so there is plenty of time to load
+       it and nobody sees a line in the fallback typeface jumping. */
     font-display: block;
   }
 
-  /* Por defecto NO existe. Solo el script inline la enciende: si el JS falla,
-     el visitante ve el portfolio y no una pantalla negra sin salida. */
+  /* By default it does NOT exist. Only the inline script switches it on: if the
+     JS fails, the visitor sees the portfolio and not a black screen with no way
+     out. */
   #boot {
     display: none;
   }
@@ -342,25 +362,25 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
     display: block;
     position: fixed;
     inset: 0;
-    /* Por encima de todo, incluidas las capas de CRT del sitio (z 58-60) y el
-       enlace de saltar al contenido (z 100). */
+    /* Above everything, including the site's CRT layers (z 58-60) and the
+       skip-to-content link (z 100). */
     z-index: 200;
     overflow: hidden;
   }
-  /* Nada de scroll por detrás mientras arranca. */
+  /* No scrolling behind while it boots. */
   :global(html[data-boot="on"] body) {
     overflow: hidden;
   }
 
   /* ── Base ────────────────────────────────────────────────────────────────
-     Referencia: body{background:#060606;color:#b3b3b3}
-                 span{color:#dedede;font-size:24px;line-height:1.3}
-     El CUERPO del POST es monocromo: gris sobre negro, como un modo texto de
-     VGA de verdad. El único color que se sale de eso es el verde de
-     `.boot-mark` (§ Cabecera, más abajo), y va aparte a propósito: es la
-     marca del fabricante, no el texto del POST — en la referencia también
-     vive fuera de este monocromo. Cualquier OTRO color sí rompería el
-     parecido y lo convertiría en un tema de terminal. */
+     Reference: body{background:#060606;color:#b3b3b3}
+                span{color:#dedede;font-size:24px;line-height:1.3}
+     The BODY of the POST is monochrome: grey on black, like a real VGA text
+     mode. The only colour that breaks that is the green of `.boot-mark`
+     (§ Header, below), and it is separate on purpose: it is the manufacturer's
+     mark, not POST text — in the reference it also lives outside this
+     monochrome. Any OTHER colour would break the resemblance and turn this into
+     a terminal theme. */
   #boot {
     background: #060606;
     color: #b3b3b3;
@@ -368,16 +388,16 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
     font-size: 24px;
     line-height: 1.3;
   }
-  /* Un móvil de 390px no da para 24px. Como las columnas van en `ch`, la
-     rejilla entera encoge con la fuente y mantiene la forma. Es lo único que
-     no se copia, porque la referencia sencillamente desborda en el móvil. */
+  /* A 390px phone cannot take 24px. Because the columns are in `ch`, the whole
+     grid shrinks with the font and keeps its shape. It is the one thing that is
+     not copied, because the reference simply overflows on a phone. */
   @media (max-width: 700px) {
     #boot {
       font-size: 16px;
     }
   }
 
-  /* `main{padding:1%}` de la referencia, más los 8px de margen de su body. */
+  /* The reference's `main{padding:1%}`, plus the 8px margin on its body. */
   .boot-inner {
     padding: calc(8px + 1%);
     height: 100dvh;
@@ -388,17 +408,18 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
     color: #dedede;
   }
 
-  /* ── La aparición ────────────────────────────────────────────────────────
-     Copiado literal de la referencia, y NO es un fundido aunque lo parezca.
-     `visibility` dura 0s pero tiene 0,5s de RETARDO, así que la opacidad sube
-     de 0 a 1 con el elemento todavía en `hidden`. Cuando por fin se ve, ya
-     está opaco: cada línea aparece de golpe, 500 ms después de la hora que
-     dice `boot-data.mjs`.
+  /* ── The appearance ──────────────────────────────────────────────────────
+     Copied literally from the reference, and it is NOT a fade even though it
+     looks like one. `visibility` lasts 0s but has a 0.5s DELAY, so the opacity
+     goes from 0 to 1 with the element still `hidden`. By the time you can see
+     it, it is already opaque: each line appears all at once, 500ms after the
+     time `boot-data.mjs` gives.
 
-     Medido sobre la referencia: "Loading..." tiene retardo 1400 y se ve a los
-     1898 ms, con opacity ya en 1. Es un fallo suyo, pero se ve y se copia.
-     ⚠️ NO lo "arregles" quitando la línea de visibility: cambiarías la
-     pantalla entera de carácter. */
+     Measured on the reference: "Loading..." has a delay of 1400 and becomes
+     visible at 1898ms, with opacity already at 1. It is a bug of theirs, but
+     you can see it, so it gets copied.
+     ⚠️ Do NOT "fix" it by removing the visibility line: you would change the
+     character of the whole screen. */
   .r {
     opacity: 0;
     visibility: hidden;
@@ -411,32 +432,32 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
     visibility: visible;
   }
 
-  /* Los <br><br> de la referencia van fuera de los spans, o sea a la altura de
-     línea de su body (16px), no a la de 24px del texto: 32px en la
-     referencia. Aquí se expresa en `em` de la fuente del arranque (24px, o
-     16px bajo los 700px de móvil) y no en px fijos, así que el hueco encoge
-     con ella igual que el resto de la rejilla. */
+  /* The reference's <br><br> sit outside the spans, that is, at its body's line
+     height (16px) and not the 24px of the text: 32px in the reference. Here it
+     is expressed in `em` of the boot font (24px, or 16px below the 700px phone
+     breakpoint) and not in fixed px, so the gap shrinks with it like the rest of
+     the grid. */
   .boot-gap {
     height: 1.3em;
   }
 
-  /* ── La rejilla ──────────────────────────────────────────────────────────
-     Referencia:
+  /* ── The grid ────────────────────────────────────────────────────────────
+     Reference:
        .aligned-section              { display:flex; flex-wrap:wrap; gap:20px }
        .aligned-section span         { min-width:200px }
        .aligned-section span:nth-child(2) { min-width:40px; text-align:center }
        .number { width:20px; text-align:right }  .unit { margin-left:-20px }
-       y el bloque de specs con gap:50px.
+       plus the specs block with gap:50px.
 
-     Aquí va en `ch` y no en px: a 24px un `ch` de esta fuente mide 9,99px, así
-     que 20ch son esos 200px clavados — pero además encogen solos cuando el
-     móvil baja la fuente. Con px fijos no encogerían.
+     Here it is in `ch` and not px: at 24px a `ch` of this font is 9.99px, so
+     20ch is exactly those 200px — but it also shrinks by itself when the phone
+     drops the font size. With fixed px it would not.
 
-     Comprobación: etiqueta en x=20, puntos en 240, veredicto en 300, valor de
-     spec en 270 y la unidad en 340. Son los de la referencia. */
+     Check: label at x=20, dots at 240, verdict at 300, spec value at 270 and the
+     unit at 340. Those are the reference's. */
   .aligned-section {
     display: flex;
-    flex-wrap: wrap; /* en pantalla estrecha parte la línea, como la referencia */
+    flex-wrap: wrap; /* on a narrow screen it wraps, like the reference */
     gap: 2ch;
   }
   .aligned-section > span {
@@ -446,17 +467,16 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
     min-width: 4ch;
     text-align: center;
   }
-  /* El contador de memoria no es un punto, es un numero: la referencia
-     declara `.number{width:20px;text-align:right}`, pero el
-     `min-width:40px` de la regla de arriba SUBE ese ancho a 40 — un
-     min-width por encima de un width mas pequeño gana. Esos 40px (no los 20
-     que pone `.number` a secas) son los que ponen `KB` en x=340, que es el
-     numero medido contra la referencia. Por eso aqui va `4ch` y no los `2ch`
-     que `.number` declara literalmente. Su `text-align:right` sigue
-     perdiendo contra el `text-align:center` de esa misma regla de arriba
-     (0,2,1 contra 0,2,0 del `.number`), y esa declaracion muerta se copia
-     tambien: por eso aqui NO se le anade el selector de tipo `span`, que
-     empataria la especificidad y le haria ganar por orden. */
+  /* The memory counter is not a dot, it is a number: the reference declares
+     `.number{width:20px;text-align:right}`, but the `min-width:40px` of the rule
+     above RAISES that width to 40 — a min-width above a smaller width wins.
+     Those 40px (not the 20 that `.number` states on its own) are what put `KB`
+     at x=340, which is the number measured against the reference. That is why
+     this is `4ch` and not the `2ch` that `.number` literally declares. Its
+     `text-align:right` still loses against the `text-align:center` of that same
+     rule above (0,2,1 against `.number`'s 0,2,0), and that dead declaration gets
+     copied too: which is why the type selector `span` is NOT added here, as it
+     would tie the specificity and let it win on order. */
   .aligned-section > .number {
     width: 4ch;
     text-align: right;
@@ -471,9 +491,9 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
     margin-left: -2ch;
   }
 
-  /* ── Cabecera ────────────────────────────────────────────────────────────
-     Icono a la izquierda, dos líneas al lado, y la marca del fabricante
-     flotando a la derecha con su raya y su leyenda, como un PC de 1998. */
+  /* ── Header ──────────────────────────────────────────────────────────────
+     Icon on the left, two lines beside it, and the maker's mark floating on the
+     right with its rule and its strapline, like a PC from 1998. */
   .boot-container {
     display: flex;
     align-items: flex-start;
@@ -488,19 +508,19 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
     display: flex;
     flex-direction: column;
   }
-  /* Ancla: `.boot-container`, que es el `position: relative` mas cercano (no
-     `.boot-screen`, que no aporta nada aqui). Igual que en la referencia, y
-     con el mismo alto de caja (62,38px medidos en ambas): el `top: 10%`
-     resuelve a los mismos 6,23px. */
+  /* Anchor: `.boot-container`, which is the nearest `position: relative` (not
+     `.boot-screen`, which contributes nothing here). Same as the reference, and
+     with the same box height (62.38px measured on both): the `top: 10%` resolves
+     to the same 6.23px. */
   .boot-logo {
     position: absolute;
     right: 0;
     top: 10%;
     text-align: center;
   }
-  /* #71f662: muestreado del PNG del logo de la referencia (1452 píxeles
-     opacos de ese valor exacto), no elegido a ojo. Con `#boot .boot-mark`
-     (1,1,0) ya gana a `#boot span` (1,0,1) sin necesidad de `!important`. */
+  /* #71f662: sampled from the reference logo's PNG (1452 opaque pixels of that
+     exact value), not picked by eye. With `#boot .boot-mark` (1,1,0) it already
+     beats `#boot span` (1,0,1) without needing `!important`. */
   #boot .boot-mark {
     display: block;
     padding-top: 4px;
@@ -509,18 +529,18 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
     white-space: nowrap;
     font-size: 0.8em;
   }
-  /* En móvil no hay sitio: el texto manda. */
+  /* On a phone there is no room: the text wins. */
   @media (max-width: 700px) {
     .boot-logo {
       display: none;
     }
   }
 
-  /* ── El prompt ───────────────────────────────────────────────────────────
-     No parpadea con opacidad: invierte el vídeo, negro sobre blanco y vuelta,
-     en saltos secos. Es el cursor de bloque de una consola de texto. */
+  /* ── The prompt ──────────────────────────────────────────────────────────
+     It does not blink with opacity: it inverts the video, black on white and
+     back, in hard steps. It is the block cursor of a text console. */
   #boot-enter {
-    /* Los ocho <br> de la referencia: 112px de aire medidos. */
+    /* The reference's eight <br>: 112px of air, measured. */
     margin-top: calc(1.3em * 3.6);
     padding: 0;
     background: none;
@@ -553,10 +573,10 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
     }
   }
 
-  /* Sin scanlines, sin viñeteado, sin curvatura: la referencia no lleva
-     ninguno y es lo primero que convierte el homenaje en parodia. Lo único que
-     hay es el apagado del tubo al salir, que tapa el cambio al portfolio (la
-     referencia no lo necesita porque navega a otra página). */
+  /* No scanlines, no vignette, no curvature: the reference has none of them and
+     they are the first thing that turns a homage into a parody. The only effect
+     is the tube switching off on exit, which covers the cut to the portfolio
+     (the reference does not need it because it navigates to another page). */
   #boot.is-off {
     animation: crt-off 300ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
@@ -576,8 +596,7 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
     }
   }
 
-  /* Sin movimiento: el texto entero de golpe, sin contador, sin parpadeo y sin
-     apagado. */
+  /* No motion: the whole text at once, no counter, no blink and no shutdown. */
   @media (prefers-reduced-motion: reduce) {
     .r {
       transition: none;

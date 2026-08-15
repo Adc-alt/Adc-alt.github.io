@@ -3,25 +3,25 @@ import { glob } from "astro/loaders";
 import { z } from "astro/zod";
 
 /**
- * Cada proyecto es un .md en src/content/proyectos/.
- * El nombre del fichero es el id de su ventana: `hito.md` → #ventana-proyecto-hito
+ * Each project is a .md in src/content/projects/.
+ * The filename is its window id: `hito.md` → #window-project-hito
  *
- * El schema no es decoración: si a un proyecto le falta un campo o pones
- * un `status` que no existe, `pnpm build` FALLA. Es imposible desplegar
- * una ventana a medias.
+ * The schema is not decoration: if a project is missing a field, or has a
+ * `status` that does not exist, `pnpm build` FAILS. Shipping a half-written
+ * window is impossible.
  */
-const proyectos = defineCollection({
-  loader: glob({ base: "./src/content/proyectos", pattern: "**/*.md" }),
+const projects = defineCollection({
+  loader: glob({ base: "./src/content/projects", pattern: "**/*.md" }),
   schema: z.object({
     title: z.string(),
-    /** Una frase. Es lo que se lee en la tarjeta; que quepa. */
+    /** One sentence. It is what gets read in the index; make it fit. */
     summary: z.string().max(180),
     year: z.number().int().min(2000).max(2100),
     stack: z.array(z.string()).min(1),
     status: z.enum(["live", "wip", "archived"]),
-    /** Orden en el índice. Menor = antes. */
+    /** Order in the index. Lower = earlier. */
     order: z.number().default(99),
-    /** Los borradores no se publican en producción. */
+    /** Drafts are not published in production. */
     draft: z.boolean().default(false),
     repo: z.url().optional(),
     demo: z.url().optional(),
@@ -29,22 +29,22 @@ const proyectos = defineCollection({
 });
 
 /**
- * Cada entrada del blog es un .md en src/content/blog/.
+ * Each blog entry is a .md in src/content/blog/.
  *
- * De momento no hay URL por entrada: se pintan todas seguidas dentro de la
- * ventana del escritorio, que es un feed. El día que haya suficientes, el
- * `id` del fichero ya sirve de slug sin tocar nada de aquí.
+ * There is no per-entry URL for now: they all render one after another inside
+ * the desktop window, which is a feed. The day there are enough of them, the
+ * file `id` already works as a slug without touching anything here.
  */
 const blog = defineCollection({
   loader: glob({ base: "./src/content/blog", pattern: "**/*.md" }),
   schema: z.object({
     title: z.string(),
-    /** Fecha de publicación. Ordena el feed: la más reciente arriba. */
+    /** Publication date. It orders the feed: newest at the top. */
     date: z.date(),
-    /** Una frase de entradilla. Que quepa en la ventana sin scroll. */
+    /** A one-sentence standfirst. Should fit in the window without scrolling. */
     summary: z.string().max(200),
     draft: z.boolean().default(false),
   }),
 });
 
-export const collections = { proyectos, blog };
+export const collections = { projects, blog };

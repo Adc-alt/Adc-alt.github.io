@@ -1,0 +1,44 @@
+---
+/**
+ * The project index. Each title opens that project's window, which is rendered
+ * at build time just like this one (phase 1 §13: the content is not generated
+ * by JavaScript).
+ *
+ * A project's window id is composed here and in `index.astro`. It comes out of
+ * `windowIdFor()`, in one single place, because if the two drift apart the link
+ * stops opening anything and the build does not fail.
+ */
+import { getCollection } from "astro:content";
+import { STATUS, windowIdFor } from "./projects.mjs";
+
+const projects = (
+  await getCollection("projects", ({ data }) => (import.meta.env.PROD ? !data.draft : true))
+).sort((a, b) => a.data.order - b.data.order || b.data.year - a.data.year);
+---
+
+<div class="xp-doc">
+  <h1>Projects</h1>
+
+  <p class="lede">
+    Things I have built: what problem they solved and how they work inside. Each
+    one opens in its own window.
+  </p>
+
+  <hr />
+
+  <ul class="index">
+    {
+      projects.map((p) => (
+        <li>
+          <h2>
+            <a href={`#${windowIdFor(p.id)}`}>{p.data.title}</a>
+          </h2>
+          <p class="note">
+            {p.data.year} · {STATUS[p.data.status]} · {p.data.stack.join(" · ")}
+          </p>
+          <p>{p.data.summary}</p>
+        </li>
+      ))
+    }
+  </ul>
+</div>

@@ -2,16 +2,16 @@
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 
-// Sitio de usuario (Adc-alt.github.io) → se sirve en la raíz, sin `base`.
-// Si algún día se mueve a un repo de proyecto, hay que añadir base: '/<repo>'.
+// User site (Adc-alt.github.io) → served from the root, no `base`.
+// If it ever moves to a project repo, base: '/<repo>' has to be added.
 export default defineConfig({
   site: 'https://adc-alt.github.io',
 
-  // Las rutas de antes de la fase 2. No son cortesía: `/work/` es la URL que
-  // está en el currículum y `/proyectos/` lleva meses en el sitemap; un 404
-  // ahí es una candidatura perdida. En salida estática Astro genera para cada
-  // una una página con `meta refresh`, no una redirección HTTP: GitHub Pages
-  // no sabe hacer 301.
+  // The routes from before phase 2. They are not a courtesy: `/work/` is the
+  // URL printed on the CV and `/proyectos/` has been in the sitemap for months;
+  // a 404 there is a lost application. On a static build Astro generates a
+  // `meta refresh` page for each one, not an HTTP redirect: GitHub Pages cannot
+  // do 301s.
   redirects: {
     '/work/': '/',
     '/xp/': '/',
@@ -20,8 +20,8 @@ export default defineConfig({
   },
 
   integrations: [
-    // El sitio entero es una sola página. Todo lo demás son redirecciones y el
-    // 404, y ninguna de las dos cosas pinta nada en un sitemap.
+    // The whole site is a single page. Everything else is redirects and the
+    // 404, and neither of those belongs in a sitemap.
     sitemap({ filter: (page) => page === 'https://adc-alt.github.io/' }),
   ],
 });

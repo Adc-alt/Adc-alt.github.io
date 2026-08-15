@@ -1,16 +1,16 @@
 ---
 /**
- * La barra de tareas de Windows XP, tema Luna.
+ * The Windows XP taskbar, Luna theme.
  *
- * Los colores NO son decisiones de aquí: están medidos sobre capturas y la
- * derivación entera vive en ./taskbar-colors.mjs, con test. Si algo aquí te
- * parece un color raro, míralo ahí antes de cambiarlo.
+ * The colours are NOT decided here: they are measured off screenshots and the
+ * whole derivation lives in ./taskbar-colors.mjs, with a test. If something
+ * here looks like an odd colour, look there before changing it.
  *
- *   Medidas y razones → docs/superpowers/specs/2026-08-15-escritorio-xp-fase1-design.md §4, §7
+ *   Measurements and reasons → docs/superpowers/specs/2026-08-15-xp-desktop-phase1-design.md §4, §7
  *
- * El degradado se inyecta por `style` en vez de escribirlo en el <style>
- * porque un bloque de CSS no puede leer el módulo: así el CSS y el test miran
- * exactamente la misma lista de paradas.
+ * The gradient is injected via `style` instead of being written in the <style>
+ * block because a CSS block cannot read the module: this way the CSS and the
+ * test look at exactly the same list of stops.
  */
 import {
   gradient,
@@ -25,9 +25,9 @@ import {
 } from "./taskbar-colors.mjs";
 
 const bar = gradient();
-// Las dos primeras filas son la banda clara medida (§4.2) y se dan en px, no
-// en %, porque son un detalle de píxel: si la barra cambia de alto, el brillo
-// tiene que seguir midiendo lo mismo. El resto sí va en % y se estira.
+// The first two rows are the measured light band (§4.2) and are given in px,
+// not %, because they are a pixel detail: if the bar changes height, the
+// highlight has to keep measuring the same. The rest is in % and stretches.
 const startBg = `linear-gradient(to bottom, ${hex(startHighlight())} 0, ${hex(startHighlight())} 3px, ${hex(START_BODY)} 10px, ${hex(START_BODY)} 72%, ${hex(START_EDGE)} 100%)`;
 const startBgDown = `linear-gradient(to bottom, ${hex(START_EDGE)} 0, ${hex(START_EDGE)} 45%, ${hex(START_BODY)} 100%)`;
 const trayBg = `linear-gradient(to bottom, ${hex(TRAY_BODY)} 0, ${hex(TRAY_BODY)} 90%, ${hex(TRAY_FOOT)} 100%)`;
@@ -38,23 +38,23 @@ const trayEdge = hex(TRAY_EDGE);
   class="xp-taskbar"
   style={`--bar:${bar};--bar-h:${HEIGHT}px;--start-bg:${startBg};--start-down:${startBgDown};--tray-bg:${trayBg};--tray-edge:${trayEdge}`}
 >
-  {/* Es un <button> de verdad y no un <div>: enfocable con teclado y anunciado
-      por un lector de pantalla. En fase 1 se hunde y no abre nada. */}
+  {/* A real <button> and not a <div>: focusable with a keyboard and announced
+      by a screen reader. In phase 1 it depresses and opens nothing. */}
   <button class="xp-start" type="button">
-    {/* La bandera es adorno: el nombre accesible del botón ya es «start», así
-        que el alt vacío evita que un lector lea dos veces lo mismo. */}
+    {/* The flag is decoration: the button's accessible name is already "start",
+        so the empty alt stops a reader saying the same thing twice. */}
     <img class="xp-flag" src="/xp/win-flag.png" width="52" height="48" alt="" />
     start
   </button>
 
-  {/* Zona de ventanas. Vacía en el HTML: los botones los crea el script de
-      Window.astro al arrancar, porque un botón que restaura una ventana
-      minimizada no tiene sentido si no hay JavaScript para minimizarla. */}
+  {/* The window area. Empty in the HTML: the buttons are created by the script
+      in Window.astro on start-up, because a button that restores a minimised
+      window makes no sense if there is no JavaScript to minimise it. */}
   <div class="xp-tasks"></div>
 
   <div class="xp-tray">
-    {/* Sin `datetime` en el HTML del build: el reloj es la hora del VISITANTE,
-        no la del servidor de compilación. Lo pone el script al arrancar. */}
+    {/* No `datetime` in the built HTML: the clock is the VISITOR's time, not the
+        build server's. The script fills it in on start-up. */}
     <time class="xp-clock" id="xp-clock"></time>
   </div>
 </div>
@@ -67,9 +67,9 @@ const trayEdge = hex(TRAY_EDGE);
     const tick = () => {
       const now = new Date();
       el.textContent = formatTime(now);
-      // El texto va en local y el `datetime` en ISO/UTC: los dos nombran el
-      // mismo instante, y así un lector de pantalla lo recibe exacto sin
-      // depender de que se lea el contraste de la bandeja (§10.1).
+      // The text is local and the `datetime` is ISO/UTC: the two name the same
+      // instant, so a screen reader gets it exactly right without depending on
+      // reading the contrast of the tray (§10.1).
       el.setAttribute("datetime", now.toISOString());
       setTimeout(tick, msToNextMinute(now));
     };
@@ -83,36 +83,35 @@ const trayEdge = hex(TRAY_EDGE);
     left: 0;
     right: 0;
     bottom: 0;
-    /* HEIGHT de taskbar-colors.mjs, por variable (--bar-h): 14-15 filas en una
-       captura reducida 2:1, y el valor por defecto de XP a 96 ppp (§4.2). El
-       degradado de --bar deriva de ese mismo número, así que los dos no
-       pueden desalinearse. */
+    /* HEIGHT from taskbar-colors.mjs, via a variable (--bar-h): 14-15 rows in a
+       capture downscaled 2:1, and XP's own default at 96 dpi (§4.2). The --bar
+       gradient derives from that same number, so the two cannot drift apart. */
     height: var(--bar-h);
     z-index: 10;
     display: flex;
     align-items: stretch;
     background: var(--bar);
-    /* Tahoma es la de XP. No se envía ninguna fuente: si el visitante no la
-       tiene, cae en la que más se le parezca de las suyas. */
+    /* Tahoma is XP's. No font is served: if the visitor does not have it, they
+       fall back to the closest thing they do have. */
     font-family: Tahoma, "DejaVu Sans", Verdana, sans-serif;
-    /* Un escritorio no se selecciona con el ratón. */
+    /* You do not text-select a desktop. */
     user-select: none;
   }
 
-  /* ── El botón de Inicio ──────────────────────────────────────────────────
-     A ras de la barra, arriba y abajo. La captura nativa de 1920x1080 lo lee
-     a 97x30 sobre una barra de 30, o sea sin margen; el 94x28 anterior venía
-     de la otra captura (§4.2) y dejaba 1px de azul arriba y abajo que en XP no
-     está. Con la barra a 40 se resuelve a favor de la captura nativa.
+  /* ── The Start button ────────────────────────────────────────────────────
+     Flush with the bar, top and bottom. The native 1920x1080 capture reads it
+     at 97x30 on a bar of 30 — that is, no margin; the earlier 94x28 came from
+     the other capture (§4.2) and left 1px of blue above and below that XP does
+     not have. With the bar at 40 it is settled in favour of the native capture.
 
-     El ancho ya no es un número: lo pone el contenido. Con la bandera dentro,
-     una anchura fija obliga a recalcularla cada vez que se toca la fuente o el
-     icono, y el resultado es el mismo botón de ~105px.
+     The width is no longer a number: the content sets it. With the flag inside,
+     a fixed width means recalculating it every time the font or the icon is
+     touched, and the result is the same ~105px button.
 
-     El redondeo de la derecha NO es circular, y por eso el `border-radius` va
-     en dos grupos: en esa misma captura el borde se aparta 4 px en horizontal
-     y tarda unas 10 filas en hacerlo. Los 8px circulares de partida hacían lo
-     contrario: mucho bulto en poco alto. */
+     The rounding on the right is NOT circular, and that is why `border-radius`
+     comes in two groups: in that same capture the border moves 4px
+     horizontally and takes about 10 rows to do it. The 8px circular value we
+     started with did the opposite: a lot of bulge in very little height. */
   .xp-start {
     flex: none;
     align-self: stretch;
@@ -128,35 +127,33 @@ const trayEdge = hex(TRAY_EDGE);
     font: italic bold 19px/1 Tahoma, "DejaVu Sans", Verdana, sans-serif;
     text-align: left;
     text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.45);
-    /* Cursor de flecha, no de mano: en Windows los botones no cambian el
-       puntero. */
+    /* Arrow cursor, not a hand: in Windows, buttons do not change the pointer. */
     cursor: default;
   }
-  /* La bandera se sirve al doble (52x48) y se pinta a la mitad, para que en
-     pantalla de retina no salga borrosa. `width: auto` mantiene su proporción,
-     que no es cuadrada. */
+  /* The flag is served at double size (52x48) and painted at half, so it does
+     not come out blurry on a retina screen. `width: auto` keeps its
+     proportions, which are not square. */
   .xp-flag {
     display: block;
     height: 26px;
     width: auto;
   }
   .xp-start:active {
-    /* Se hunde invirtiendo el degradado y bajando el texto dos píxeles. No
-       hace nada más: el menú Inicio es de la fase 2. */
+    /* It depresses by inverting the gradient and dropping the text two pixels.
+       It does nothing else: the Start menu is a phase 2 thing. */
     background: var(--start-down);
     padding-top: 2px;
     padding-bottom: 0;
   }
   .xp-start:focus-visible {
-    /* Hacia dentro: un outline hacia fuera se sale de la barra por abajo. */
+    /* Inwards: an outline pointing outwards falls off the bottom of the bar. */
     outline: 2px solid #ffffff;
     outline-offset: -4px;
   }
 
-  /* En modo apilado se queda vacía: ahí las ventanas ni se minimizan ni se
-     cierran (Window.astro esconde sus tres botones), así que su script no crea
-     botones de barra de tareas. El hueco sigue estando, que es lo que empuja
-     la bandeja a la derecha. */
+  /* In stacked mode this stays empty: there, windows neither minimise nor close
+     (Window.astro hides its three buttons), so its script creates no taskbar
+     buttons. The gap is still there, which is what pushes the tray right. */
   .xp-tasks {
     flex: 1 1 auto;
     min-width: 0;
@@ -167,10 +164,9 @@ const trayEdge = hex(TRAY_EDGE);
     overflow: hidden;
   }
 
-  /* `:global` porque estos botones los crea el script de Window.astro y por
-     tanto no llevan el atributo de ámbito de este componente. Van anidados
-     bajo `.xp-tasks`, que sí es nuestro, así que la regla no se escapa fuera
-     de la barra. */
+  /* `:global` because these buttons are created by Window.astro's script and so
+     do not carry this component's scope attribute. They are nested under
+     `.xp-tasks`, which is ours, so the rule does not escape the bar. */
   .xp-tasks :global(.xp-task) {
     flex: 0 1 168px;
     min-width: 0;
@@ -178,8 +174,8 @@ const trayEdge = hex(TRAY_EDGE);
     padding: 0 8px;
     border: 0;
     border-radius: 3px;
-    /* Más claro que la barra y con un filo interior claro arriba: es un botón
-       levantado. El activo de abajo hace justo lo contrario. */
+    /* Lighter than the bar and with a light inner edge at the top: it is a
+       raised button. The active one below does exactly the opposite. */
     background: linear-gradient(to bottom, #4a91ef 0, #3a80e8 45%, #2c6fd8 100%);
     box-shadow:
       inset 1px 1px 0 rgba(255, 255, 255, 0.35),
@@ -193,8 +189,8 @@ const trayEdge = hex(TRAY_EDGE);
     cursor: default;
   }
   .xp-tasks :global(.xp-task-active) {
-    /* Hundido: degradado invertido y sombra interior. Es el estado de la
-       ventana que está abierta y a la vista. */
+    /* Depressed: inverted gradient and an inner shadow. It is the state of the
+       window that is open and in view. */
     background: linear-gradient(to bottom, #1f56b8 0, #2b6ad0 55%, #3f86e4 100%);
     box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.45);
     font-weight: bold;
@@ -204,17 +200,16 @@ const trayEdge = hex(TRAY_EDGE);
     outline-offset: -3px;
   }
 
-  /* ── La bandeja ──────────────────────────────────────────────────────────
-     133px: los 100 medidos (§4.3, filo incluido) por el mismo 40/30 con el que
-     ha crecido la barra, para que la proporción no cambie. Lo que la hace
-     parecer hundida es el
-     FILO oscuro de la izquierda, no el relleno: el relleno es MÁS CLARO que
-     la barra y más cian. Si la pintas más oscura, que es lo que pide el
-     instinto, se rompe.
+  /* ── The tray ────────────────────────────────────────────────────────────
+     133px: the 100 measured (§4.3, edge included) times the same 40/30 by which
+     the bar has grown, so the proportion does not change. What makes it look
+     sunken is the dark EDGE on the left, not the fill: the fill is LIGHTER than
+     the bar and more cyan. Paint it darker, which is what instinct asks for,
+     and it breaks.
 
-     `box-sizing: border-box` porque si no el `border-left` de 1px se suma al
-     `width` y salen 101px: la medida de §4.3 es el ancho total, no el hueco
-     interior. */
+     `box-sizing: border-box` because otherwise the 1px `border-left` adds to
+     `width` and it comes out 101px: the measurement in §4.3 is the total width,
+     not the inner well. */
   .xp-tray {
     flex: none;
     width: 133px;
@@ -228,36 +223,38 @@ const trayEdge = hex(TRAY_EDGE);
     font-size: 14px;
   }
   .xp-clock {
-    /* Sin JS la bandeja queda vacía, y es aceptable: es adorno, no contenido
-       (§9). */
+    /* Without JS the tray stays empty, and that is acceptable: it is decoration,
+       not content (§9). */
     letter-spacing: 0.02em;
   }
 
-  /* ── La entrada ──────────────────────────────────────────────────────────
-     Sin JavaScript. El arranque pone html[data-boot] mientras se ve y lo QUITA
-     al terminar (Boot.astro, fin()): la barra solo reacciona a que desaparezca.
+  /* ── The entrance ────────────────────────────────────────────────────────
+     No JavaScript. The boot screen sets html[data-boot] while it is visible and
+     REMOVES it when it finishes (Boot.astro, finish()): the bar only reacts to
+     it going away.
 
-     La transición se declara en el estado VISIBLE y no en el escondido a
-     propósito: el navegador lee la `transition` del estado de destino, así que
-     al quitarse el atributo la barra anima, y mientras está puesto no anima.
+     The transition is declared on the VISIBLE state and not on the hidden one
+     on purpose: the browser reads the `transition` off the destination state,
+     so the bar animates when the attribute is removed, and does not animate
+     while it is set.
 
-     Los 400 ms de retardo son lo que vende la escena (§8): si la barra sube a
-     la vez que aparece el fondo, parece una imagen; si sube después, parece un
-     arranque. */
+     The 400ms delay is what sells the scene (§8): if the bar rises at the same
+     time as the wallpaper appears, it looks like an image; if it rises
+     afterwards, it looks like a machine starting up. */
   .xp-taskbar {
     transform: translateY(0);
     transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1) 400ms;
   }
   :global(html[data-boot]) .xp-taskbar {
     transform: translateY(100%);
-    /* Sin transición mientras el arranque está puesto: si no, la barra bajaría
-       deslizándose en la primera pintura en vez de estar ya escondida. */
+    /* No transition while the boot screen is up: otherwise the bar would slide
+       down on the first paint instead of already being hidden. */
     transition: none;
   }
 
-  /* Sin movimiento: la barra ya está puesta cuando el arranque se va. Con la
-     preferencia activada el arranque además termina de golpe, sin apagado de
-     tubo, así que las dos cosas casan. */
+  /* No motion: the bar is already in place when the boot screen leaves. With the
+     preference set the boot screen also ends abruptly, with no tube shutdown, so
+     the two match. */
   @media (prefers-reduced-motion: reduce) {
     .xp-taskbar {
       transition: none;

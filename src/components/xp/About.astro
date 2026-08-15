@@ -1,0 +1,76 @@
+---
+/**
+ * Bio and tooling. This is what used to be `/perfil/`.
+ */
+import { SOCIAL } from "../../consts";
+
+// TODO(antonio): rewrite the bio in your own voice and cut the loadout down to
+// what you actually use. It is deliberately short: a portfolio gets skimmed.
+const loadout = [
+  { group: "Languages", items: ["TypeScript", "JavaScript", "Python", "Kotlin", "SQL"] },
+  { group: "Frontend", items: ["Vue", "Nuxt", "Astro", "Jetpack Compose"] },
+  { group: "Backend and data", items: ["Node", "SQLite", "PostgreSQL", "Cloudflare Workers"] },
+  { group: "Native apps", items: ["Electron", "Android"] },
+  { group: "Tooling", items: ["Git", "GitHub Actions", "Vitest", "Playwright"] },
+];
+---
+
+<div class="xp-doc">
+  <h1>About me</h1>
+
+  <p>
+    I'm a software engineer. I work on product end to end: desktop, mobile and
+    web, and all the boring parts in between — schema migrations, CI, and the
+    bugs that only show up at midnight.
+  </p>
+  <p>
+    I care more about software someone uses every day than about software that
+    gets shown once in a demo. That means caring about unphotogenic things: that
+    data does not get lost, that the build is reproducible, and that the error
+    message says what actually happened.
+  </p>
+
+  <hr />
+
+  <h2>What I work with</h2>
+
+  <dl class="card tools">
+    {
+      loadout.map((row) => (
+        <div>
+          <dt>{row.group}</dt>
+          <dd>{row.items.join(" · ")}</dd>
+        </div>
+      ))
+    }
+  </dl>
+
+  <hr />
+
+  <h2>Get in touch</h2>
+  <p>If something here fits what you need, write to me. I answer everything.</p>
+  <p class="row">
+    {
+      SOCIAL.map((s) => (
+        <a href={s.href} rel={s.href.startsWith("http") ? "me noopener" : undefined}>
+          {s.label}
+        </a>
+      ))
+    }
+  </p>
+</div>
+
+<style>
+  /* The shared card lays out in a row; this one is a list of groups, so each
+     gets its own line. It is the only thing this document does not share with
+     the others, and that is why it is the only thing written here. */
+  /* `.xp-doc` in front on purpose: `.card` comes from the global sheet, and
+     without the ancestor the two rules tie on specificity — which one wins then
+     depends on the order the bundler happens to concatenate the files in. */
+  .xp-doc .tools {
+    display: block;
+  }
+  .xp-doc .tools > div {
+    margin-bottom: 0.7rem;
+  }
+</style>
