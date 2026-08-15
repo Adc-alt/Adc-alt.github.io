@@ -22,19 +22,36 @@
 import {
   HEAD, LOADING, SPECS, COUNT, DEVICES, TAIL, PROMPT, T, AUTO_MS,
 } from "./boot-data.mjs";
+
+interface Props {
+  /**
+   * Rutas donde puede salir. Por defecto solo la raíz, que tiene dos
+   * direcciones porque GitHub Pages sirve la misma página en "/" y en
+   * "/index.html".
+   */
+  paths?: string[];
+  /**
+   * Llave de localStorage del «ya lo vi». Una por ruta que arranque: si dos
+   * rutas comparten llave, la segunda no arranca nunca para quien ya vio la
+   * primera.
+   */
+  seenKey?: string;
+}
+
+const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
 ---
 
 {/* 1. Antipestañeo. Va antes del marcado a propósito: decide si la pantalla
       llega a existir, así el visitante que repite no ve ni un frame. */}
-<script is:inline>
+<script is:inline define:vars={{ paths, seenKey }}>
   (function () {
-    // La raiz tiene dos direcciones: GitHub Pages sirve la misma pagina en "/"
-    // y en "/index.html", y comparando solo con "/" el arranque no salia por
-    // la segunda. Cualquier otra ruta (enlaces profundos, /work/) no arranca.
-    var p = location.pathname;
-    if (p !== "/" && p !== "/index.html") return;
+    // `define:vars` es la única forma de que un script inline vea el
+    // frontmatter, y aquí no hay alternativa: este script corre ANTES del
+    // marcado, así que no puede leer el dato de un data-* del DOM como hace
+    // el script 2. Astro lo serializa como `const` delante del IIFE.
+    if (paths.indexOf(location.pathname) === -1) return;
     try {
-      if (localStorage.getItem("boot_seen")) return;
+      if (localStorage.getItem(seenKey)) return;
     } catch (e) {
       /* modo privado: que arranque igual */
     }
@@ -44,7 +61,7 @@ import {
 
 {/* `data-*` es el puente al script inline: un `is:inline` no ve las variables
     del frontmatter, así que el dato viaja por el DOM. */}
-<div id="boot" data-auto={AUTO_MS}>
+<div id="boot" data-auto={AUTO_MS} data-seen-key={seenKey}>
   <div class="boot-inner">
     <div class="boot-screen">
       {/* El aria-hidden va aquí y NO en el envoltorio: si envuelve también al
@@ -259,7 +276,8 @@ import {
       addEventListener("click", eat, true);
 
       try {
-        localStorage.setItem("boot_seen", "1");
+        // Del DOM y no del frontmatter: este script no lleva `define:vars`.
+        localStorage.setItem(el.getAttribute("data-seen-key") || "boot_seen", "1");
       } catch (e) {
         /* modo privado */
       }
