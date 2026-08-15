@@ -89,17 +89,20 @@ const trayEdge = hex(TRAY_EDGE);
   /* ── El botón de Inicio ──────────────────────────────────────────────────
      94x28 medidos (§4.2). 28 sobre 30 deja 1px de barra arriba y otro abajo.
 
-     ⚠️ DOS cosas de aquí NO están medidas y hay que confirmarlas contra una
-     captura nativa (§7):
-       - el radio de 8px: a escala 1:2 los píxeles de la esquina se mezclan con
-         el azul y el detector de verde los descarta, así que lo medido (2-4px)
-         se queda corto;
-       - el brillo del borde de arriba: el botón real de XP tiene una banda
-         clara en la primera fila que esta captura no resuelve, así que aquí
-         solo van los dos verdes que SÍ están medidos.
-     Son los únicos números a ojo de toda la barra. Están juntos y señalados a
-     propósito: en el trabajo de la pantalla de arranque, el único color puesto
-     a ojo fue justo el que la revisión tumbó. */
+     El redondeo de la derecha NO es circular, y por eso el `border-radius` va
+     en dos grupos: medido sobre una captura nativa de 1920x1080 —30px de alto
+     clavados y cuerpo (36,93,219), que es el #245edc de §4.2, y por eso se le
+     cree—, el borde del botón se aparta 4 px en horizontal y tarda unas 10
+     filas en hacerlo. Los 8px circulares de partida hacían lo contrario: mucho
+     bulto en poco alto. En esa captura el botón mide además 97x30 a ras de la
+     barra, no 94x28; se deja como está porque el tamaño sí venía de una medida
+     limpia (§4.2) y cambiarlo es otra decisión, no ésta.
+
+     ⚠️ Lo que sigue sin pintarse es el brillo de arriba. El botón real tiene
+     una banda clara en las dos primeras filas —pico (150,196,150) contra el
+     (51,156,51) del cuerpo— que aquí no está. Queda CONFIRMADA, no descartada:
+     ponerla pide un color nuevo en taskbar-colors.mjs, que es donde viven los
+     colores con su test, y no una constante suelta en este fichero. */
   .xp-start {
     flex: none;
     align-self: center;
@@ -108,7 +111,7 @@ const trayEdge = hex(TRAY_EDGE);
     margin: 0;
     padding: 0 0 2px 12px;
     border: 0;
-    border-radius: 0 8px 8px 0;
+    border-radius: 0 4px 4px 0 / 0 10px 10px 0;
     background: var(--start-bg);
     color: #ffffff;
     font: italic bold 15px/1 Tahoma, "DejaVu Sans", Verdana, sans-serif;

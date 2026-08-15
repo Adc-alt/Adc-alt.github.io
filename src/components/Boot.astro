@@ -10,8 +10,12 @@
  *   Texto y tiempos             → ./boot-data.mjs (con test que los bloquea)
  *
  * Cómo se comporta, por si hay que depurarlo:
- *  - Solo se monta en `/` y en `/index.html`. `/work/` (la URL del currículum)
- *    y los enlaces profundos pintan el portfolio sin pasar por aquí.
+ *  - Las rutas donde sale las decide quien lo monta, por la prop `paths`; por
+ *    defecto, las dos direcciones de la portada. `/work/` (la URL del
+ *    currículum) y los enlaces profundos no la pasan, así que pintan el
+ *    portfolio sin pasar por aquí. `/xp/` monta el suyo con su lista y su
+ *    `seenKey`, porque el arranque del escritorio es otra escena y quien ya
+ *    vio el de la portada tiene que ver ése igual.
  *  - Todo el JS es `is:inline` y síncrono. Si el navegador no ejecuta JS, el
  *    overlay se queda en `display:none` y el portfolio funciona igual. Por eso
  *    se ENSEÑA desde el script en vez de esconderse desde el script: al revés,
