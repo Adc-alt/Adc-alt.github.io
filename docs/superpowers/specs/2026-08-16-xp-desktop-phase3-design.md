@@ -81,7 +81,7 @@ far as a crawler is concerned.
 
 Row width: `200 + 700 + 240 + 2 gaps of 16 = 1172`.
 
-### 4.1 The row, and when it is abandoned
+### 4.1 The row, and the breakpoint it defines
 
 `rowPositions(sizes, desk)` lays the three out as a row, horizontally centred,
 **tops aligned**, at `y = round((deskHeight - taskbar - tallest) * ABOVE_CENTRE)`,
@@ -91,14 +91,38 @@ prevent drift — a window that opened on its own must land at the same height a
 the row.
 
 If the row plus a 16px margin each side does not fit the viewport, the function
-returns `null` and the caller falls back to `cascadePosition`, which phase 2
-already has and already tests. The threshold is therefore **1204px** of desktop
-width. Below that the three windows cascade like phase 2, overlapping but each
-reachable and draggable.
+returns `null`. The alternative — shrinking the windows to fit — is rejected: a
+460px-wide reading pane is worse than no desktop at all, and the sizes are what
+make the layout legible.
 
-The alternative — shrinking the windows to fit — is rejected: a 460px-wide
-reading pane is worse than a cascade, and the sizes are what make the layout
-legible.
+**Desktop mode therefore means "the row fits", and the breakpoint is that same
+arithmetic:**
+
+```
+DESKTOP_MIN_WIDTH = 200 + 700 + 240 + 2×ROW_GAP + 2×ROW_MARGIN = 1204
+```
+
+It is exported from `windows.mjs`, computed from `ROW_SIZES` — which live there,
+not in `index.astro`, so a window cannot change size without the breakpoint
+moving with it — and it is what the script gives `matchMedia`. CSS cannot read a
+JS constant, so 1204 is written out in the two media queries (`Window.astro` and
+`XP.astro`), each with the arithmetic named in a comment. A unit test pins the
+invariant rather than the number: `rowPositions(ROW_SIZES, …)` is non-null at
+`DESKTOP_MIN_WIDTH` and `null` one pixel below.
+
+**Why not cascade below it, as this spec first said.** `cascadePosition` centres
+each window *for its own width* and steps it by 28px, so with 200 / 700 / 240 the
+two small windows land geometrically inside the 700-wide pane's box — every time,
+structurally, not by coincidence of one viewport. And the pane is in front, since
+the switcher's first `xp:show` raises it. From 722 to 1203px the site loaded with
+its only navigation invisible and unclickable, and the CC BY-SA colophon of §8
+with it. That band contains a 1024x768 screen, a browser at half-width on a 1920
+monitor and a 1366x768 laptop at Windows' default scaling. Below 1204 the visitor
+now gets the stacked document, which is a different first impression but a
+working one.
+
+`cascadePosition` stays: `/404` mounts a single window with no `row` prop, and one
+window cascading alone cannot occlude anything.
 
 ### 4.2 The entrance: the same stagger every visit
 
@@ -279,9 +303,12 @@ decoration.
 - **The Projects section still has one entry, and it is this site.** Unchanged
   from phase 2 §7 and still the largest gap in a portfolio whose purpose is
   finding work. No layout fixes it.
-- **Below 1204px wide the row becomes a cascade** (§4.1), which is a visibly
-  different first impression on a 1024px laptop. Accepted: the alternative was
-  windows too narrow to read.
+- **Below 1204px wide there is no desktop at all** (§4.1): the site is the
+  stacked column of windows, which is a visibly different first impression on a
+  1024px laptop or a half-width browser window. Accepted: the alternatives were
+  windows too narrow to read, or a cascade that buries the navigation. A layout
+  that flexes the reading pane between, say, 900 and 1204, would recover the
+  desktop there and can be added later without undoing any of this.
 - **Section content that is hidden is still in the HTML.** Same trade as phase 2
   §7: a crawler sees it and weights it below visible text.
 
@@ -300,6 +327,9 @@ decoration.
 | `resolveSection`, `navFor` | `sections.test.mjs`, `node --test` |
 | `enterDelay`, `rowPositions` | `windows.test.mjs`, `node --test` |
 | The row lands where §4.1 says | CDP at 1440x900: read the three `getBoundingClientRect`, assert gaps of 16 and equal tops |
+| **The breakpoint, from both sides** | CDP at 1204x900 and 1203x900: at 1204 three windows in the row and `elementFromPoint` at the centre of a Menu link resolves inside `#window-nav`; at 1203 no desktop |
+| **One viewport between the two ends** | CDP at 1000x800: stacked, `.xp-window` is `position: relative` and the document reads |
+| **A section that is not the first** | Switch to About, Blog and a project: the visible section's computed `border-top-width` is `0px` |
 | The stagger, on a **repeat** visit | CDP with `boot_seen` already set: sample opacity at 700ms and 1600ms |
 | Switching | Click each Menu entry: assert the visible section, the window title, the taskbar button text and `aria-current` |
 | Deep link | Load `/#section-project-this-desktop` directly; assert that section is the visible one |

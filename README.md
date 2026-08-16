@@ -71,7 +71,8 @@ src/
 
 **A project:** copy `src/content/projects/_template.md`, rename it and set
 `draft: false`. Its section and its entry in the Projects list appear on their
-own; the filename becomes its section id (`hito.md` → `#section-project-hito`).
+own; the filename becomes its section id (`my-project.md` →
+`#section-project-my-project`).
 
 **A blog entry:** a `.md` in `src/content/blog/`. They are ordered by date,
 newest at the top.
@@ -84,13 +85,23 @@ Files with `draft: true` show up in `pnpm dev` but are **not published**.
 
 ## Two modes, and the order matters
 
-You do not drive a desktop with a finger. Below **720px** the windows stop being
-absolute, stack in a column with all of them open and the page scrolls; the three
-title bar buttons are hidden, and dragging is switched off.
+**Desktop mode means "the three-window row fits".** Below **1204px** the windows
+stop being absolute, stack in a column with all of them open and the page
+scrolls; the three title bar buttons are hidden, and dragging is switched off.
+
+1204 is derived, not chosen: `200 + 700 + 240` for the windows, `2 × 16` for the
+gaps between them and `2 × 16` for the margins at the ends — `DESKTOP_MIN_WIDTH`
+in `src/components/xp/windows.mjs`, pinned by a test that asserts the row fits at
+that width and does not one pixel below. A narrower desktop would have to cascade
+the three, and a cascade centres each window for its own width, which parks the
+200-wide Menu and the 240-wide Contact entirely inside the 700-wide reading pane
+— the site would load with its only navigation invisible. CSS cannot read a JS
+constant, so the number is written out in two media queries, each with the
+arithmetic in a comment beside it.
 
 **Stacked is the base and the desktop is the enhancement.** The desktop rules
-live inside `@media (min-width: 721px)` and hang off `html.js`, a class set by an
-inline script in the `<head>`. Intended consequence: **without JavaScript the
+live inside `@media (min-width: 1204px)` and hang off `html.js`, a class set by
+an inline script in the `<head>`. Intended consequence: **without JavaScript the
 whole site falls back to stacked mode**, on any screen, and it reads. Written the
 other way round it would take two copies of the same rules and a JS failure would
 leave the site blank.
@@ -114,9 +125,10 @@ Four things that break by themselves if left unattended:
 - **The row is `y = round((height − taskbar − tallest) × ABOVE_CENTRE)`**, with
   `ABOVE_CENTRE` (0.4) shared with `initialPosition` so the two cannot drift. At
   1440x900 that is `x = 134 / 350 / 1066` with 16px gaps, `y = 104` for all
-  three. Below **1204px** of desktop width the row does not fit,
-  `rowPositions` returns `null` rather than squeezing the windows, and the
-  caller falls back to a cascade instead.
+  three. The row's sizes live in `windows.mjs` and not in `index.astro` because
+  the desktop breakpoint is derived from them; `rowPositions` returns `null`
+  rather than squeezing the windows, which below `DESKTOP_MIN_WIDTH` is
+  unreachable — the media query has already sent the page to stacked mode.
 - **Closing keeps the taskbar button**, deliberately unlike XP. XP can afford to
   drop it because it has desktop icons and a Start menu; here the taskbar is the
   only way back, and the navigation lives inside a window.

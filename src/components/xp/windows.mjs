@@ -129,21 +129,59 @@ export const ROW_GAP = 16;
 /** The least space left at each end of the row, in px. */
 export const ROW_MARGIN = 16;
 
+/** The width the row occupies: every window plus one gap between each pair. */
+const rowWidth = (sizes) =>
+  sizes.reduce((n, s) => n + s.w, 0) + ROW_GAP * Math.max(0, sizes.length - 1);
+
+/**
+ * The three windows of the row, left to right: Menu, reading pane, Contact
+ * (phase 3 §4).
+ *
+ * They live here rather than in `index.astro` because the desktop breakpoint is
+ * derived from them. Authored somewhere else, a size could change without the
+ * breakpoint moving with it — and a breakpoint that does not match the row is
+ * exactly the failure this replaced: three windows in a space that cannot hold
+ * them, with the two small ones buried inside the reading pane.
+ */
+export const ROW_SIZES = [
+  { w: 200, h: 260 },
+  { w: 700, h: 600 },
+  { w: 240, h: 300 },
+];
+
+/**
+ * The narrowest desktop the row fits in: `200 + 700 + 240 + 2×ROW_GAP` for the
+ * row itself, plus `2×ROW_MARGIN` for the ends. 1204px today.
+ *
+ * **Desktop mode means "the row fits".** Below this the three windows cannot be
+ * laid out side by side, and the alternative — cascading them — puts the
+ * 200-wide Menu and the 240-wide Contact geometrically *inside* the 700-wide
+ * reading pane, which is in front. The site would load with its only navigation
+ * invisible and unclickable, so the honest line is to fall back to the stacked
+ * document instead.
+ *
+ * ⚠️ CSS `@media` cannot read this, so the literal is repeated in the media
+ * queries of `Window.astro` and `XP.astro`. The arithmetic is named in a comment
+ * at each of them, and `windows.test.mjs` pins the invariant — the row fits at
+ * this width and does not at one pixel less — so the two cannot drift silently.
+ */
+export const DESKTOP_MIN_WIDTH = rowWidth(ROW_SIZES) + ROW_MARGIN * 2;
+
 /**
  * Lays windows out as one centred row with their tops aligned.
  *
- * Returns `null` when the row plus its margins does not fit: the caller falls
- * back to `cascadePosition`. It gives up instead of shrinking the windows on
- * purpose — a reading pane narrow enough to fit a small laptop is not worth
- * reading, and a cascade is a layout the visitor can fix by dragging.
+ * Returns `null` when the row plus its margins does not fit, rather than
+ * shrinking the windows: a reading pane narrow enough to fit a small laptop is
+ * not worth reading. In practice desktop mode is gated on `DESKTOP_MIN_WIDTH`,
+ * which is that same arithmetic, so the three row windows never see the `null`;
+ * it is the belt to the media query's braces, and what the test asserts against.
  *
  * @param {Array<{w:number,h:number}>} sizes  in row order, left to right
  * @param {{vw:number,vh:number,barH:number}} desk
  * @returns {Array<{x:number,y:number}>|null}
  */
 export function rowPositions(sizes, desk) {
-  const total =
-    sizes.reduce((n, s) => n + s.w, 0) + ROW_GAP * Math.max(0, sizes.length - 1);
+  const total = rowWidth(sizes);
   if (total + ROW_MARGIN * 2 > desk.vw) return null;
 
   const bottom = desk.vh - desk.barH;

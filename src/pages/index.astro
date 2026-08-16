@@ -16,19 +16,18 @@ import Nav from "../components/xp/Nav.astro";
 import Sections from "../components/xp/Sections.astro";
 import Contact from "../components/xp/Contact.astro";
 import { PANE_ID } from "../components/xp/sections.mjs";
-import { rowPositions } from "../components/xp/windows.mjs";
+import { ROW_SIZES, rowPositions } from "../components/xp/windows.mjs";
 import { HEIGHT as BAR_H } from "../components/xp/taskbar-colors.mjs";
 
 /* The row, computed here against the same 1440x900 reference the rest of the
    build uses, and handed to each window as x/y. The script recomputes it
    against the real viewport, but this is what gets painted first, and the
-   closer it is the less there is to correct. */
-const SIZES = [
-  { w: 200, h: 260 },
-  { w: 700, h: 600 },
-  { w: 240, h: 300 },
-];
-const [nav, main, contact] = rowPositions(SIZES, { vw: 1440, vh: 900, barH: BAR_H }) ?? [];
+   closer it is the less there is to correct.
+
+   The sizes come from `windows.mjs` and not from here: the desktop breakpoint
+   is derived from them, so they cannot be authored in a file the breakpoint
+   does not read. */
+const [nav, main, contact] = rowPositions(ROW_SIZES, { vw: 1440, vh: 900, barH: BAR_H }) ?? [];
 ---
 
 <XP>
@@ -37,8 +36,8 @@ const [nav, main, contact] = rowPositions(SIZES, { vw: 1440, vh: 900, barH: BAR_
   <Window
     id="window-nav"
     title="Menu"
-    width={SIZES[0].w}
-    height={SIZES[0].h}
+    width={ROW_SIZES[0].w}
+    height={ROW_SIZES[0].h}
     x={nav?.x}
     y={nav?.y}
     order={0}
@@ -53,8 +52,8 @@ const [nav, main, contact] = rowPositions(SIZES, { vw: 1440, vh: 900, barH: BAR_
   <Window
     id={PANE_ID}
     title="Home"
-    width={SIZES[1].w}
-    height={SIZES[1].h}
+    width={ROW_SIZES[1].w}
+    height={ROW_SIZES[1].h}
     x={main?.x}
     y={main?.y}
     order={1}
@@ -67,8 +66,8 @@ const [nav, main, contact] = rowPositions(SIZES, { vw: 1440, vh: 900, barH: BAR_
   <Window
     id="window-contact"
     title="Contact"
-    width={SIZES[2].w}
-    height={SIZES[2].h}
+    width={ROW_SIZES[2].w}
+    height={ROW_SIZES[2].h}
     x={contact?.x}
     y={contact?.y}
     order={2}

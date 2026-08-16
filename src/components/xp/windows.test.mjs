@@ -13,6 +13,8 @@ import {
   KEEP_VISIBLE,
   ROW_GAP,
   ROW_MARGIN,
+  ROW_SIZES,
+  DESKTOP_MIN_WIDTH,
   TASKBAR_ENTER_MS,
 } from "./windows.mjs";
 
@@ -112,13 +114,6 @@ test("no window of the cascade falls off the desktop", () => {
   }
 });
 
-// The three windows of phase 3, in Menu / Main / Contact order.
-const ROW = [
-  { w: 200, h: 260 },
-  { w: 700, h: 600 },
-  { w: 240, h: 300 },
-];
-
 test("the first window waits for the taskbar to finish rising", () => {
   // The whole point of the sequence: desktop, then the bar, then the windows.
   // If the first window overlaps the bar's 800ms rise they arrive together and
@@ -136,24 +131,24 @@ test("each window in the sequence waits one step longer than the last", () => {
 });
 
 test("the row lays the three windows out with an exact gap between them", () => {
-  const p = rowPositions(ROW, DESK);
+  const p = rowPositions(ROW_SIZES, DESK);
   assert.ok(p, "the row should fit at 1440x900");
-  assert.equal(p[1].x - (p[0].x + ROW[0].w), ROW_GAP);
-  assert.equal(p[2].x - (p[1].x + ROW[1].w), ROW_GAP);
+  assert.equal(p[1].x - (p[0].x + ROW_SIZES[0].w), ROW_GAP);
+  assert.equal(p[2].x - (p[1].x + ROW_SIZES[1].w), ROW_GAP);
 });
 
 test("the row is centred and its tops are aligned", () => {
-  const p = rowPositions(ROW, DESK);
+  const p = rowPositions(ROW_SIZES, DESK);
   const left = p[0].x;
-  const right = DESK.vw - (p[2].x + ROW[2].w);
+  const right = DESK.vw - (p[2].x + ROW_SIZES[2].w);
   assert.ok(Math.abs(left - right) <= 1, `left=${left} right=${right}`);
   assert.equal(p[0].y, p[1].y);
   assert.equal(p[1].y, p[2].y);
 });
 
 test("the row sits above centre, like a window Windows just opened", () => {
-  const p = rowPositions(ROW, DESK);
-  const tallest = Math.max(...ROW.map((s) => s.h));
+  const p = rowPositions(ROW_SIZES, DESK);
+  const tallest = Math.max(...ROW_SIZES.map((s) => s.h));
   // The invariant the shared ABOVE_CENTRE constant exists for: a window of
   // the tallest height, opened on its own, lands at the same height as the row.
   // This was previously checked only by the weak assertion below, which passes
@@ -168,19 +163,43 @@ test("the row sits above centre, like a window Windows just opened", () => {
 test("the row gives up rather than squeezing, and says so with null", () => {
   // The caller falls back to cascadePosition. Shrinking the windows to fit
   // would leave a reading pane too narrow to read, which is worse.
-  assert.equal(rowPositions(ROW, { vw: 900, vh: 900, barH: 40 }), null);
+  assert.equal(rowPositions(ROW_SIZES, { vw: 900, vh: 900, barH: 40 }), null);
 });
 
 test("the threshold is the row plus one margin each side, to the pixel", () => {
-  const total = ROW.reduce((n, s) => n + s.w, 0) + ROW_GAP * (ROW.length - 1);
+  const total = ROW_SIZES.reduce((n, s) => n + s.w, 0) + ROW_GAP * (ROW_SIZES.length - 1);
   const min = total + ROW_MARGIN * 2;
-  assert.ok(rowPositions(ROW, { vw: min, vh: 900, barH: 40 }), `should fit at ${min}`);
-  assert.equal(rowPositions(ROW, { vw: min - 1, vh: 900, barH: 40 }), null);
+  assert.ok(rowPositions(ROW_SIZES, { vw: min, vh: 900, barH: 40 }), `should fit at ${min}`);
+  assert.equal(rowPositions(ROW_SIZES, { vw: min - 1, vh: 900, barH: 40 }), null);
+});
+
+test("the desktop breakpoint is exactly where the row starts fitting", () => {
+  // The invariant, not the number: desktop mode means "the row fits", so the
+  // media queries in Window.astro and XP.astro — which spell 1204 out because
+  // CSS cannot read a JS constant — must sit on the exact pixel where
+  // rowPositions stops returning null. Asserting DESKTOP_MIN_WIDTH === 1204
+  // would pin nothing: it would still pass if a window changed size.
+  //
+  // What breaks without this: below the breakpoint the three windows cascade,
+  // and the cascade centres each of them for its OWN width, which puts the
+  // 200-wide Menu and the 240-wide Contact entirely inside the 700-wide
+  // reading pane — and the pane is in front. The site loads with its only
+  // navigation invisible and unclickable.
+  const desk = (vw) => ({ vw, vh: 900, barH: 40 });
+  assert.ok(
+    rowPositions(ROW_SIZES, desk(DESKTOP_MIN_WIDTH)),
+    `the row must fit at DESKTOP_MIN_WIDTH (${DESKTOP_MIN_WIDTH})`,
+  );
+  assert.equal(
+    rowPositions(ROW_SIZES, desk(DESKTOP_MIN_WIDTH - 1)),
+    null,
+    `the row must NOT fit one pixel below DESKTOP_MIN_WIDTH`,
+  );
 });
 
 test("on a short desktop the row still lands inside the clamp", () => {
   const short = { vw: 1440, vh: 420, barH: 40 };
-  const p = rowPositions(ROW, short);
+  const p = rowPositions(ROW_SIZES, short);
   assert.ok(p, "the row fits horizontally");
   for (const q of p) {
     assert.ok(q.y >= 0, `y=${q.y}`);
