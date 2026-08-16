@@ -43,6 +43,12 @@ interface Props {
   open?: boolean;
   /** Position in the arrival sequence: 0 arrives first. */
   order?: number;
+  /**
+   * Skips the arrival stagger entirely: the window is there from the first
+   * frame. For `/404`, which mounts no boot screen (you reach a 404 by
+   * accident) and would otherwise show an empty desktop for the whole delay.
+   */
+  noEnter?: boolean;
   /** Whether it takes part in the row layout (phase 3 §4.1). */
   row?: boolean;
   /** Half the body padding. For the small windows, where 22px eats the content. */
@@ -59,6 +65,7 @@ const {
   height = 520,
   open = false,
   order = 0,
+  noEnter = false,
   row = false,
   tight = false,
   x,
@@ -81,7 +88,7 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
   data-row={row ? "true" : undefined}
   data-tight={tight ? "true" : undefined}
   tabindex="-1"
-  style={`--x:${pos.x}px;--y:${pos.y}px;--w:${width}px;--h:${height}px;--bar-h:${BAR_H}px;--enter-delay:${enterDelay(order)}ms`}
+  style={`--x:${pos.x}px;--y:${pos.y}px;--w:${width}px;--h:${height}px;--bar-h:${BAR_H}px;--enter-delay:${noEnter ? 0 : enterDelay(order)}ms`}
   aria-labelledby={`${id}-title`}
 >
   <div class="xp-titlebar">
@@ -203,9 +210,11 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
         win.dataset.open = "true";
         restore();
         // A window can be closed at one viewport size and reopened at another,
-        // and without this it comes back at coordinates that no longer exist —
-        // `reclamp()` skips closed/minimised windows on resize on purpose
-        // (they measure 0×0 under display:none), so nothing else catches it up.
+        // and without this it comes back at coordinates that no longer exist.
+        // The resize handler only reclamps windows with `data-open="true"`, so
+        // a closed one is never caught up; a minimised one still counts as open
+        // and IS reclamped, but under `display: none` it measures 0×0, so the
+        // numbers it was clamped against were meaningless. Both need this.
         if (DESKTOP.matches) reclamp();
         toFront();
         win.focus();
@@ -306,12 +315,32 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
       toFront();
     };
 
+    /**
+     * Undoes it. Everything `enterDesktop` puts on the window is desktop-only
+     * furniture, and its CSS lives inside the desktop media query, so leaving
+     * the mode with any of it still set strands the state: a taskbar button
+     * that survives into the stacked column toggles `.is-min`, whose
+     * `display: none` no longer applies — the button appears to do nothing, and
+     * the window disappears the next time the viewport grows.
+     *
+     * `is-front` has to go too, not only for the dimmed title bar: `toFront()`
+     * returns early when it is already set, so a window that kept it would
+     * re-enter the desktop with no z-index and no active taskbar button.
+     */
+    const leaveDesktop = () => {
+      task.remove();
+      task.classList.remove("xp-task-active");
+      win.dataset.open = "true";
+      win.classList.remove("is-min", "is-front");
+      btnMin.setAttribute("aria-pressed", "false");
+    };
+
     enterDesktop();
-    // Also when the viewport crosses 721px after load — a rotated phone, a
-    // resized window. Without this the desktop turns on with an empty taskbar,
-    // and since the taskbar is the only way back to a closed window, closing
-    // one would be irreversible.
-    DESKTOP.addEventListener("change", enterDesktop);
+    // Also when the viewport crosses DESKTOP_MIN_WIDTH after load — a rotated
+    // phone, a resized window. Without the entering half the desktop turns on
+    // with an empty taskbar, and since the taskbar is the only way back to a
+    // closed window, closing one would be irreversible.
+    DESKTOP.addEventListener("change", () => (DESKTOP.matches ? enterDesktop() : leaveDesktop()));
   });
 
   /**
@@ -335,7 +364,12 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
   const arriving = [...document.querySelectorAll<HTMLElement>('.xp-window[data-open="true"]')];
   let pending = arriving.length;
   const arrived = () => document.documentElement.classList.add("xp-arrived");
-  if (!pending) arrived();
+  // Nothing to wait for: no window is open, or the visitor asked for no motion
+  // and the rule that would animate does not exist. The `reduce` case matters
+  // because the preference can be turned OFF mid-session — the rule starts
+  // matching then, and without the marker all three windows replay the 900ms
+  // entrance in the middle of a visit.
+  if (!pending || matchMedia("(prefers-reduced-motion: reduce)").matches) arrived();
   for (const w of arriving) {
     const onEnd = (e: AnimationEvent) => {
       if (e.animationName !== "xp-window-enter") return;
@@ -534,7 +568,8 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
       touch-action: none;
     }
     /* The window that is not in front wears a dimmed title bar. It is how you
-       tell the active one apart in Windows, and with five windows you need it.
+       tell the active one apart in Windows, and with three side by side you
+       need it.
        A filter and not a second gradient: there is no capture of the inactive
        bar to measure, and approximating twice is worse than approximating
        once. */

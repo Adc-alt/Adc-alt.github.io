@@ -362,8 +362,11 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
     display: block;
     position: fixed;
     inset: 0;
-    /* Above everything, including the site's CRT layers (z 58-60) and the
-       skip-to-content link (z 100). */
+    /* Above everything the site puts on the desktop: the taskbar sits at 10 and
+       the windows start at 5, with `zTop` in `Window.astro` handing out one
+       more each time a window is raised. 200 leaves that counter all the room
+       it will ever need — the boot screen has to cover the site absolutely,
+       because it is also what hides the first frame of the layout. */
     z-index: 200;
     overflow: hidden;
   }

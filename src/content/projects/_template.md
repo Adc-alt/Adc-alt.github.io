@@ -11,9 +11,9 @@ draft: true
 ---
 
 > This is a template. It is `draft: true`, so it **does not get published**.
-> Copy the file, rename it (the name is its window id) and set `draft: false`.
-> Nothing else needs touching: the window and its link in the index appear on
-> their own.
+> Copy the file, rename it (the name is its section id: `my-project.md` becomes
+> `#section-project-my-project`) and set `draft: false`. Nothing else needs
+> touching: the section and its link in the index appear on their own.
 
 ## The problem
 
