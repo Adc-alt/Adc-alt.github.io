@@ -3,8 +3,9 @@
  * The Home section: the first thing the reading pane shows.
  *
  * It used to be a window of its own and the site's only navigation. The Menu
- * window is that now, so what is left here is the introduction — the shortcut
- * grid moved out rather than being duplicated.
+ * window is that now: `Nav.astro` renders a plain list of links, not a copy of
+ * the shortcut grid this section used to have — that grid was deleted, not
+ * moved, so what is left here is just the introduction.
  */
 import { SITE, SOCIAL } from "../../consts";
 ---
@@ -25,8 +26,10 @@ import { SITE, SOCIAL } from "../../consts";
   <hr />
 
   {/* Contact goes here and not tucked away in About: it is what someone
-      arriving from a job application is looking for, and this is the window
-      that is already open. */}
+      arriving from a job application is looking for, and Home is the section
+      already on screen when they land — the Contact window repeats it because
+      that one stays open even if this section, or this whole pane, gets
+      closed. */}
   <p class="row">
     {
       SOCIAL.map((s) => (

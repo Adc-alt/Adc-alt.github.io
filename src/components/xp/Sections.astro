@@ -73,6 +73,17 @@ const projects = (
   const links = [...document.querySelectorAll<HTMLAnchorElement>(".xp-navlink")];
   const ids = sections.map((s) => s.id);
 
+  // A click on the entry that is already current sets an identical hash, so no
+  // `hashchange` fires and nothing reopens a closed pane — the one click most
+  // likely to look broken. Re-running `show()` by hand covers it. No
+  // preventDefault: the anchor still does its own job, which is what keeps the
+  // back button and shareable section links working.
+  for (const a of links) {
+    a.addEventListener("click", () => {
+      if (location.hash === a.getAttribute("href")) show(location.hash, true);
+    });
+  }
+
   /**
    * Shows one section and hides the rest.
    *
@@ -110,8 +121,10 @@ const projects = (
     if (moveFocus) active.focus();
   }
 
-  // No click handler: the anchors set the hash themselves, which is what gives
-  // the back button and shareable section links for free (phase 3 §3).
+  // No click handler that intercepts: the anchors set the hash themselves,
+  // which is what gives the back button and shareable section links for free
+  // (phase 3 §3). The click listener above only ever runs `show()` again; it
+  // never calls `preventDefault`.
   addEventListener("hashchange", () => show(location.hash, true));
 
   // The first show() waits for DOMContentLoaded, which fires only after every

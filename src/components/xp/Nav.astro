@@ -34,34 +34,35 @@ import { NAV, sectionId } from "./sections.mjs";
   .xp-nav li {
     margin: 0;
   }
-  /* `:global` because the same class is used by the anchors this component
-     renders AND read by the switcher in Sections.astro, which sets
-     `aria-current` on them; the styling has to survive either way. */
-  .xp-nav :global(.xp-navlink) {
+  /* No `:global`: these links are rendered by this component, so they carry
+     its scope attribute — the switcher in Sections.astro only ever sets
+     `aria-current` on them at runtime, which does not strip it. Contrast
+     `Taskbar.astro`'s `.xp-task` buttons, which a script creates and so carry
+     no scope attribute at all; those genuinely need `:global`. */
+  .xp-nav .xp-navlink {
     display: block;
     padding: 7px 10px;
     color: #000000;
     font-size: 0.95rem;
     text-decoration: none;
   }
-  .xp-nav :global(.xp-navlink:visited) {
+  .xp-nav .xp-navlink:visited {
     color: #000000;
   }
-  .xp-nav :global(.xp-navlink:hover) {
+  .xp-nav .xp-navlink:hover {
     background: #d8e6f8;
   }
-  /* #316ac5 is the selection blue of Explorer, the same one the shortcuts in
-     xp-doc.css already use for their focus ring. */
-  .xp-nav :global(.xp-navlink[aria-current="page"]) {
+  /* #316ac5 is the selection blue of Windows Explorer. */
+  .xp-nav .xp-navlink[aria-current="page"] {
     background: #316ac5;
     color: #ffffff;
     font-weight: bold;
   }
-  .xp-nav :global(.xp-navlink:focus-visible) {
+  .xp-nav .xp-navlink:focus-visible {
     outline: 2px solid #316ac5;
     outline-offset: -2px;
   }
-  .xp-nav :global(.xp-navlink[aria-current="page"]:focus-visible) {
+  .xp-nav .xp-navlink[aria-current="page"]:focus-visible {
     outline-color: #ffffff;
   }
 </style>

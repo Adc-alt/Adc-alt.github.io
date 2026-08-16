@@ -208,9 +208,25 @@ The switcher script:
    `xp:title` on the window element. `Window.astro` owns the listener and updates
    **both** the title bar and the taskbar button, because the taskbar button text
    is copied once at start-up and would otherwise go stale.
-4. It marks the matching Menu entry with `aria-current="page"`. For a project
+4. It also dispatches `xp:show` on the window element, right after `xp:title`.
+   `Window.astro`'s listener reopens the pane if it was closed: closing it is
+   allowed (§4.3), and phase 3 does not intercept Menu clicks, so nothing else
+   would bring it back — neither the first click on an entry (which changes the
+   hash and fires `hashchange`) nor a click on the entry that is *already*
+   current (which sets an identical hash, fires no `hashchange`, and is handled
+   by a second, dedicated click listener that re-runs the switcher by hand,
+   without `preventDefault`).
+
+   A consequence worth naming: `xp:show` also brings the pane to the front, and
+   it fires once more on load (the switcher's first call, deferred to
+   `DOMContentLoaded`). Without it, whichever window is last in DOM order —
+   Contact — would be the one left in front once every window's own start-up
+   `toFront()` has run. With it, the reading pane ends up in front at load
+   instead, which is the more useful default: a visitor who has not touched
+   anything yet is almost certainly about to read.
+5. It marks the matching Menu entry with `aria-current="page"`. For a project
    section, `navFor()` maps it back to Projects.
-5. On `hashchange` it repeats, and then moves focus to the section (which carries
+6. On `hashchange` it repeats, and then moves focus to the section (which carries
    `tabindex="-1"`). **Not on the initial load** — focusing on load scrolls the
    page for someone who has not asked for it.
 

@@ -193,6 +193,11 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
       if (outOfSight || !win.classList.contains("is-front")) {
         win.dataset.open = "true";
         restore();
+        // A window can be closed at one viewport size and reopened at another,
+        // and without this it comes back at coordinates that no longer exist —
+        // `reclamp()` skips closed/minimised windows on resize on purpose
+        // (they measure 0×0 under display:none), so nothing else catches it up.
+        if (DESKTOP.matches) reclamp();
         toFront();
         win.focus();
       } else {
@@ -230,6 +235,7 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
     win.addEventListener("xp:show", () => {
       win.dataset.open = "true";
       restore();
+      if (DESKTOP.matches) reclamp();
       toFront();
     });
 
@@ -277,7 +283,9 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
       placeRow(win) ?? cascadePosition(index, size(), desk());
 
     // ── Start-up ──────────────────────────────────────────────────────────
-    if (win.dataset.open === "true" && DESKTOP.matches) {
+    /** Puts the window on the desktop: a taskbar button, a position, and the front. */
+    const enterDesktop = () => {
+      if (win.dataset.open !== "true" || !DESKTOP.matches || task.isConnected) return;
       // Counted BEFORE appending, as phase 2 did: it is the cascade's index,
       // and it has to be different for each window. Counting open windows
       // instead would give every one of them the same number at start-up,
@@ -287,7 +295,14 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
       tasks?.appendChild(task);
       move(placement(alreadyPlaced));
       toFront();
-    }
+    };
+
+    enterDesktop();
+    // Also when the viewport crosses 721px after load — a rotated phone, a
+    // resized window. Without this the desktop turns on with an empty taskbar,
+    // and since the taskbar is the only way back to a closed window, closing
+    // one would be irreversible.
+    DESKTOP.addEventListener("change", enterDesktop);
   });
 
   /**
@@ -316,9 +331,15 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
     const onEnd = (e: AnimationEvent) => {
       if (e.animationName !== "xp-window-enter") return;
       w.removeEventListener("animationend", onEnd);
+      w.removeEventListener("animationcancel", onEnd);
       if (pending > 0 && --pending === 0) arrived();
     };
+    // `animationcancel` too: taking a window to `display: none` — minimising it
+    // mid-arrival, which its taskbar button already allows — cancels the
+    // animation and fires only this. Counting just `animationend` leaves the
+    // marker off for ever and every later reopen replays the entrance.
     w.addEventListener("animationend", onEnd);
+    w.addEventListener("animationcancel", onEnd);
   }
 
   /**
