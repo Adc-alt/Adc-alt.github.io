@@ -118,7 +118,12 @@ const projects = (
       else a.removeAttribute("aria-current");
     }
 
-    if (moveFocus) active.focus();
+    // `preventScroll`: focusing a container scrolls it into view, and inside the
+    // pane that means scrolling past `.xp-winbody`'s own padding — the section
+    // arrived 18px down. The screen reader still lands on the new content; only
+    // the scroll is suppressed, and there is nothing to scroll to anyway, since
+    // the section is already at the top of a pane we just swapped.
+    if (moveFocus) active.focus({ preventScroll: true });
   }
 
   // No click handler that intercepts: the anchors set the hash themselves,
