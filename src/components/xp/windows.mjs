@@ -94,3 +94,64 @@ export function cascadePosition(openCount, win, desk) {
   const step = CASCADE_STEP * (openCount % CASCADE_WRAP);
   return clampPosition({ ...win, x: base.x + step, y: base.y + step }, desk);
 }
+
+/**
+ * How long the taskbar takes to finish arriving: 400ms waiting plus 400ms
+ * rising (phase 1 §8).
+ *
+ * ⚠️ The two numbers live in the CSS of `Taskbar.astro`. This constant exists so
+ * the window sequence can be written against them and a test can hold the order
+ * — desktop, then the bar, then the windows — rather than three magic numbers
+ * agreeing by luck. Change the bar's timing and change this too.
+ */
+export const TASKBAR_ENTER_MS = 800;
+
+/** When the first window arrives: just after the bar settles. */
+export const ENTER_BASE = TASKBAR_ENTER_MS + 100;
+
+/** The gap between one window arriving and the next. */
+export const ENTER_STEP = 260;
+
+/** The animation delay, in ms, for the window at position `order` in the sequence. */
+export const enterDelay = (order) => ENTER_BASE + ENTER_STEP * order;
+
+/** Gap between two windows of the row, in px. */
+export const ROW_GAP = 16;
+
+/** The least space left at each end of the row, in px. */
+export const ROW_MARGIN = 16;
+
+/**
+ * Lays windows out as one centred row with their tops aligned.
+ *
+ * Returns `null` when the row plus its margins does not fit: the caller falls
+ * back to `cascadePosition`. It gives up instead of shrinking the windows on
+ * purpose — a reading pane narrow enough to fit a small laptop is not worth
+ * reading, and a cascade is a layout the visitor can fix by dragging.
+ *
+ * @param {Array<{w:number,h:number}>} sizes  in row order, left to right
+ * @param {{vw:number,vh:number,barH:number}} desk
+ * @returns {Array<{x:number,y:number}>|null}
+ */
+export function rowPositions(sizes, desk) {
+  const total =
+    sizes.reduce((n, s) => n + s.w, 0) + ROW_GAP * Math.max(0, sizes.length - 1);
+  if (total + ROW_MARGIN * 2 > desk.vw) return null;
+
+  const bottom = desk.vh - desk.barH;
+  const tallest = Math.max(...sizes.map((s) => s.h));
+  // The same 0.35 as `initialPosition`: above centre, where Windows opens a
+  // window. Measured off the tallest so the aligned tops stay put whichever
+  // window happens to be the tall one.
+  const y = Math.round((bottom - tallest) * 0.35);
+
+  let x = Math.round((desk.vw - total) / 2);
+  return sizes.map((s) => {
+    // Through the same clamp as dragging. Horizontally it is a no-op — the row
+    // is known to fit — so the gaps survive; vertically it is what keeps a
+    // short desktop from putting the title bars under the taskbar.
+    const p = clampPosition({ ...s, x, y }, desk);
+    x += s.w + ROW_GAP;
+    return p;
+  });
+}

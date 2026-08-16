@@ -4,9 +4,16 @@ import {
   cascadePosition,
   clampPosition,
   initialPosition,
+  enterDelay,
+  rowPositions,
   CASCADE_STEP,
   CASCADE_WRAP,
+  ENTER_BASE,
+  ENTER_STEP,
   KEEP_VISIBLE,
+  ROW_GAP,
+  ROW_MARGIN,
+  TASKBAR_ENTER_MS,
 } from "./windows.mjs";
 
 // Reference desktop: 1440x900 with the 40px bar.
@@ -103,4 +110,78 @@ test("no window of the cascade falls off the desktop", () => {
     assert.ok(p.x >= KEEP_VISIBLE - WIN.w && p.x <= small.vw - KEEP_VISIBLE, `i=${i} x=${p.x}`);
     assert.ok(p.y >= 0 && p.y <= small.vh - small.barH - KEEP_VISIBLE, `i=${i} y=${p.y}`);
   }
+});
+
+// The three windows of phase 3, in Menu / Main / Contact order.
+const ROW = [
+  { w: 200, h: 260 },
+  { w: 700, h: 600 },
+  { w: 240, h: 300 },
+];
+
+test("the first window waits for the taskbar to finish rising", () => {
+  // The whole point of the sequence: desktop, then the bar, then the windows.
+  // If the first window overlaps the bar's 800ms rise they arrive together and
+  // it reads as an image instead of a machine starting up (phase 1 §8).
+  assert.ok(enterDelay(0) > TASKBAR_ENTER_MS, `${enterDelay(0)} <= ${TASKBAR_ENTER_MS}`);
+  assert.equal(enterDelay(0), ENTER_BASE);
+});
+
+test("each window in the sequence waits one step longer than the last", () => {
+  assert.equal(enterDelay(1) - enterDelay(0), ENTER_STEP);
+  assert.equal(enterDelay(2) - enterDelay(1), ENTER_STEP);
+  for (let i = 1; i < 6; i++) {
+    assert.ok(enterDelay(i) > enterDelay(i - 1), `i=${i}`);
+  }
+});
+
+test("the row lays the three windows out with an exact gap between them", () => {
+  const p = rowPositions(ROW, DESK);
+  assert.ok(p, "the row should fit at 1440x900");
+  assert.equal(p[1].x - (p[0].x + ROW[0].w), ROW_GAP);
+  assert.equal(p[2].x - (p[1].x + ROW[1].w), ROW_GAP);
+});
+
+test("the row is centred and its tops are aligned", () => {
+  const p = rowPositions(ROW, DESK);
+  const left = p[0].x;
+  const right = DESK.vw - (p[2].x + ROW[2].w);
+  assert.ok(Math.abs(left - right) <= 1, `left=${left} right=${right}`);
+  assert.equal(p[0].y, p[1].y);
+  assert.equal(p[1].y, p[2].y);
+});
+
+test("the row sits above centre, like a window Windows just opened", () => {
+  const p = rowPositions(ROW, DESK);
+  const tallest = Math.max(...ROW.map((s) => s.h));
+  assert.ok(p[0].y < (DESK.vh - DESK.barH - tallest) / 2, `y=${p[0].y}`);
+});
+
+test("the row gives up rather than squeezing, and says so with null", () => {
+  // The caller falls back to cascadePosition. Shrinking the windows to fit
+  // would leave a reading pane too narrow to read, which is worse.
+  assert.equal(rowPositions(ROW, { vw: 900, vh: 900, barH: 40 }), null);
+});
+
+test("the threshold is the row plus one margin each side, to the pixel", () => {
+  const total = ROW.reduce((n, s) => n + s.w, 0) + ROW_GAP * (ROW.length - 1);
+  const min = total + ROW_MARGIN * 2;
+  assert.ok(rowPositions(ROW, { vw: min, vh: 900, barH: 40 }), `should fit at ${min}`);
+  assert.equal(rowPositions(ROW, { vw: min - 1, vh: 900, barH: 40 }), null);
+});
+
+test("on a short desktop the row still lands inside the clamp", () => {
+  const short = { vw: 1440, vh: 420, barH: 40 };
+  const p = rowPositions(ROW, short);
+  assert.ok(p, "the row fits horizontally");
+  for (const q of p) {
+    assert.ok(q.y >= 0, `y=${q.y}`);
+    assert.ok(q.y <= short.vh - short.barH - KEEP_VISIBLE, `y=${q.y}`);
+  }
+});
+
+test("a row of one is just a centred window", () => {
+  const p = rowPositions([{ w: 700, h: 600 }], DESK);
+  assert.equal(p.length, 1);
+  assert.equal(p[0].x, (DESK.vw - 700) / 2);
 });
