@@ -66,10 +66,10 @@ const projects = (
 }
 
 <script>
-  import { navFor, resolveSection } from "./sections.mjs";
+  import { navFor, PANE_ID, resolveSection } from "./sections.mjs";
 
-  const pane = document.getElementById("window-main");
-  const sections = [...document.querySelectorAll<HTMLElement>("#window-main .xp-section")];
+  const pane = document.getElementById(PANE_ID);
+  const sections = [...document.querySelectorAll<HTMLElement>(`#${PANE_ID} .xp-section`)];
   const links = [...document.querySelectorAll<HTMLAnchorElement>(".xp-navlink")];
   const ids = sections.map((s) => s.id);
 
@@ -109,14 +109,16 @@ const projects = (
   // the back button and shareable section links for free (phase 3 §3).
   addEventListener("hashchange", () => show(location.hash, true));
 
-  // The FIRST show waits for DOMContentLoaded, which fires only after every
+  // The first show() waits for DOMContentLoaded, which fires only after every
   // deferred module script has run. Astro does not promise an order between two
   // bundled component scripts, and this one dispatches `xp:title` at a window
   // whose listener lives in Window.astro's script: run first and the event goes
   // nowhere, so a deep link would land on the right section under the title
-  // "Home". `hashchange` above is registered immediately — it cannot fire this
-  // early anyway.
-  const first = () => show(location.hash, false);
-  if (document.readyState === "loading") addEventListener("DOMContentLoaded", first);
-  else first();
+  // "Home".
+  //
+  // No `readyState` guard: a module script runs while readiness is already
+  // "interactive", so a `=== "loading"` test never fires and would silently
+  // give back the top-level call this exists to avoid. Registering
+  // unconditionally is safe precisely because this script always runs first.
+  addEventListener("DOMContentLoaded", () => show(location.hash, false));
 </script>

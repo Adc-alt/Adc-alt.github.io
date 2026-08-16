@@ -23,6 +23,9 @@ export const NAV = [
 /** A section's element id, which is also its hash. */
 export const sectionId = (name) => `section-${name}`;
 
+/** The id of the window the sections live in. Minted by `index.astro`, read by the switcher. */
+export const PANE_ID = "window-main";
+
 /** A project's section id, derived from its filename, as phase 2 did for windows. */
 export const projectSectionId = (fileId) => sectionId(`project-${fileId}`);
 

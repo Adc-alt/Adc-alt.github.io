@@ -13,6 +13,7 @@ import Boot from "../components/Boot.astro";
 import Window from "../components/xp/Window.astro";
 import Welcome from "../components/xp/Home.astro";
 import Sections from "../components/xp/Sections.astro";
+import { PANE_ID } from "../components/xp/sections.mjs";
 ---
 
 <XP>
@@ -35,7 +36,7 @@ import Sections from "../components/xp/Sections.astro";
     <Welcome />
   </Window>
 
-  <Window id="window-main" title="Home" width={700} height={600} order={1} open>
+  <Window id={PANE_ID} title="Home" width={700} height={600} order={1} open>
     <Sections />
   </Window>
 </XP>
