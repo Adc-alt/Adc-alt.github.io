@@ -228,36 +228,31 @@ const trayEdge = hex(TRAY_EDGE);
     letter-spacing: 0.02em;
   }
 
-  /* ── The entrance ────────────────────────────────────────────────────────
-     No JavaScript. The boot screen sets html[data-boot] while it is visible and
-     REMOVES it when it finishes (Boot.astro, finish()): the bar only reacts to
-     it going away.
+  /* ── The arrival ─────────────────────────────────────────────────────────
+     Same mechanism as the windows and for the same reason: an animation that
+     starts when the element first matches `html:not([data-boot])`, so it runs
+     when the boot screen leaves on a first visit AND from the first paint on a
+     repeat visit, which has no boot screen to leave. With phase 2's transition
+     a returning visitor found the bar already in place and the "desktop, then
+     the bar, then the windows" beat only existed once per browser.
 
-     The transition is declared on the VISIBLE state and not on the hidden one
-     on purpose: the browser reads the `transition` off the destination state,
-     so the bar animates when the attribute is removed, and does not animate
-     while it is set.
-
-     The 400ms delay is what sells the scene (§8): if the bar rises at the same
-     time as the wallpaper appears, it looks like an image; if it rises
-     afterwards, it looks like a machine starting up. */
-  .xp-taskbar {
-    transform: translateY(0);
-    transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1) 400ms;
-  }
-  :global(html[data-boot]) .xp-taskbar {
-    transform: translateY(100%);
-    /* No transition while the boot screen is up: otherwise the bar would slide
-       down on the first paint instead of already being hidden. */
-    transition: none;
-  }
-
-  /* No motion: the bar is already in place when the boot screen leaves. With the
-     preference set the boot screen also ends abruptly, with no tube shutdown, so
-     the two match. */
-  @media (prefers-reduced-motion: reduce) {
-    .xp-taskbar {
-      transition: none;
+     The 400ms delay is what sells the scene (phase 1 §8). Its total, 800ms, is
+     `TASKBAR_ENTER_MS` in windows.mjs, which is what the window sequence is
+     written against — change one and change the other. */
+  @media (prefers-reduced-motion: no-preference) {
+    :global(html[data-boot]) .xp-taskbar {
+      transform: translateY(100%);
+    }
+    :global(html:not([data-boot])) .xp-taskbar {
+      animation: xp-taskbar-enter 400ms cubic-bezier(0.16, 1, 0.3, 1) 400ms both;
+    }
+    @keyframes xp-taskbar-enter {
+      from {
+        transform: translateY(100%);
+      }
+      to {
+        transform: translateY(0);
+      }
     }
   }
 </style>
