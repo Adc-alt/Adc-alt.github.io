@@ -40,6 +40,7 @@ A pure module so the middle window can never end up blank and the Menu can never
   - `projectSectionId(fileId: string) => string` — `"this-desktop"` → `"section-project-this-desktop"`.
   - `resolveSection(ids: string[], hash: string) => string` — always returns a member of `ids`.
   - `navFor(sectionId: string) => string` — which Menu entry to mark current.
+  - `STATUS: Record<string, string>` — moved here from `projects.mjs`, which Task 4 deletes.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -174,6 +175,20 @@ export function resolveSection(ids, hash) {
  */
 export const navFor = (id) =>
   id.startsWith(sectionId("project-")) ? sectionId("projects") : id;
+
+/**
+ * How each `status` from the content schema reads.
+ *
+ * It used to live in `projects.mjs`, whose stated reason for existing was
+ * keeping a window id from drifting between the page that minted it and the
+ * index that linked it. Phase 3 has no per-project window, so that module has
+ * nothing left to hold and Task 4 deletes it.
+ */
+export const STATUS = {
+  live: "In use",
+  wip: "In progress",
+  archived: "Archived",
+};
 ```
 
 - [ ] **Step 4: Run the test to verify it passes**
@@ -213,19 +228,32 @@ Two pure functions in the module that already owns window arithmetic and already
 
 - [ ] **Step 1: Write the failing test**
 
-Append to `src/components/xp/windows.test.mjs`:
+In `src/components/xp/windows.test.mjs`, add the seven new names to the
+**existing** `import { … } from "./windows.mjs"` at the top of the file — do not
+add a second import statement for the same module:
 
 ```js
 import {
+  cascadePosition,
+  clampPosition,
+  initialPosition,
   enterDelay,
   rowPositions,
+  CASCADE_STEP,
+  CASCADE_WRAP,
   ENTER_BASE,
   ENTER_STEP,
+  KEEP_VISIBLE,
   ROW_GAP,
   ROW_MARGIN,
   TASKBAR_ENTER_MS,
 } from "./windows.mjs";
+```
 
+Then append the new tests to the end of the file. `DESK` and `KEEP_VISIBLE` are
+already defined at the top and are reused:
+
+```js
 // The three windows of phase 3, in Menu / Main / Contact order.
 const ROW = [
   { w: 200, h: 260 },
@@ -598,8 +626,14 @@ Then replace the `// ── Start-up ──` block at the end of the `forEach` w
     windows.set(win.id, open);
 
     if (win.dataset.open === "true" && DESKTOP.matches) {
+      // Counted BEFORE appending, as phase 2 did: it is the cascade's index,
+      // and it has to be different for each window. Counting open windows
+      // instead would give every one of them the same number at start-up,
+      // because they are all already `data-open="true"` in the HTML, and the
+      // cascade would stack them on one spot.
+      const alreadyPlaced = tasks?.children.length ?? 0;
       tasks?.appendChild(task);
-      move(placement());
+      move(placement(alreadyPlaced));
       toFront();
     }
   });
@@ -616,11 +650,14 @@ Then replace the `// ── Start-up ──` block at the end of the `forEach` w
     const row = [...document.querySelectorAll<HTMLElement>('.xp-window[data-row="true"]')];
     const index = row.indexOf(win);
     if (index < 0) return null;
+    // offsetWidth/offsetHeight and not getBoundingClientRect: the arrival
+    // animation holds a `scale(0.92)` on the window through its delay, which
+    // the rect would report and the offsets would not.
     const sizes = row.map((w) => ({ w: w.offsetWidth, h: w.offsetHeight }));
     const positions = rowPositions(sizes, {
       vw: innerWidth,
       vh: innerHeight,
-      barH: document.querySelector(".xp-taskbar")?.getBoundingClientRect().height ?? 0,
+      barH: barHeight(),
     });
     return positions ? positions[index] : null;
   }
@@ -630,9 +667,8 @@ and inside the `forEach`, just above the start-up block, add the local helper it
 
 ```ts
     /** The row if this window is in one and it fits; the cascade otherwise. */
-    const placement = () =>
-      placeRow(win) ??
-      cascadePosition(document.querySelectorAll('.xp-window[data-open="true"]').length - 1, size(), desk());
+    const placement = (index: number) =>
+      placeRow(win) ?? cascadePosition(index, size(), desk());
 ```
 
 - [ ] **Step 7: Give the taskbar the same arrival mechanism**
@@ -777,7 +813,9 @@ At the end of this task the site has two windows: phase 2's welcome window, whos
 - Create: `src/components/xp/Sections.astro`
 - Rename: `src/components/xp/Welcome.astro` → `src/components/xp/Home.astro`
 - Modify: `src/components/xp/Home.astro` (drop the shortcut grid, keep the intro and contact row; the colophon stays for now and moves in Task 5)
-- Modify: `src/components/xp/Project.astro` (add the back link)
+- Modify: `src/components/xp/Projects.astro` (link to sections, not to windows)
+- Modify: `src/components/xp/Project.astro` (add the back link, import `STATUS` from its new home)
+- Delete: `src/components/xp/projects.mjs`
 - Modify: `src/styles/xp-doc.css` (append the section rules)
 - Modify: `src/pages/index.astro`
 
@@ -808,13 +846,53 @@ const year = new Date().getFullYear();
 ---
 ```
 
-- [ ] **Step 2: Add the back link to a project**
+- [ ] **Step 2a: Point the project index at sections and retire `projects.mjs`**
 
-In `src/components/xp/Project.astro`, import the section helper and add the link above the `<h1>`:
+`Projects.astro` still links to `#window-project-<id>`, a window id that phase 3
+deletes — the link would resolve to nothing. Change its import and its `href`:
 
 ```astro
-import { sectionId } from "./sections.mjs";
+import { STATUS, projectSectionId } from "./sections.mjs";
 ```
+
+```astro
+            <a href={`#${projectSectionId(p.id)}`}>{p.data.title}</a>
+```
+
+and update its header comment, whose second paragraph describes window ids that
+no longer exist:
+
+```astro
+/**
+ * The project index, one section of the reading pane. Each title opens that
+ * project in the same pane, which is rendered at build time just like this one
+ * (phase 1 §13: the content is not generated by JavaScript).
+ *
+ * The section id is composed by `projectSectionId()` in one single place,
+ * because `Sections.astro` mints it and this file links it: if the two drift
+ * apart the link stops showing anything and the build does not fail.
+ */
+```
+
+With `windowIdFor` gone, `projects.mjs` holds only `STATUS`, which Task 1 moved
+into `sections.mjs`. Delete the module and repoint its other importer:
+
+```bash
+git rm src/components/xp/projects.mjs
+```
+
+In `src/components/xp/Project.astro` change `import { STATUS } from "./projects.mjs";`
+to import from `./sections.mjs` (combined with the next step's import).
+
+- [ ] **Step 2b: Add the back link to a project**
+
+In `src/components/xp/Project.astro`, the import line becomes:
+
+```astro
+import { STATUS, sectionId } from "./sections.mjs";
+```
+
+and the link goes above the `<h1>`:
 
 ```astro
 <div class="xp-doc">
@@ -852,7 +930,16 @@ import Blog from "./Blog.astro";
 import Project from "./Project.astro";
 import { NAV, projectSectionId, sectionId } from "./sections.mjs";
 
-const FIXED = { home: Home, projects: Projects, about: About, blog: Blog };
+/* Annotated because `FIXED[entry.id]` indexes with a `string`, and under
+   `astro/tsconfigs/strict` an un-annotated object literal makes that an
+   implicit-any index error that fails `astro check`. All four are Astro
+   component factories with no required props, so they share one type. */
+const FIXED: Record<string, typeof Home> = {
+  home: Home,
+  projects: Projects,
+  about: About,
+  blog: Blog,
+};
 
 const projects = (
   await getCollection("projects", ({ data }) => (import.meta.env.PROD ? !data.draft : true))
@@ -928,10 +1015,20 @@ const projects = (
     if (moveFocus) active.focus();
   }
 
-  show(location.hash, false);
   // No click handler: the anchors set the hash themselves, which is what gives
   // the back button and shareable section links for free (phase 3 §3).
   addEventListener("hashchange", () => show(location.hash, true));
+
+  // The FIRST show waits for DOMContentLoaded, which fires only after every
+  // deferred module script has run. Astro does not promise an order between two
+  // bundled component scripts, and this one dispatches `xp:title` at a window
+  // whose listener lives in Window.astro's script: run first and the event goes
+  // nowhere, so a deep link would land on the right section under the title
+  // "Home". `hashchange` above is registered immediately — it cannot fire this
+  // early anyway.
+  const first = () => show(location.hash, false);
+  if (document.readyState === "loading") addEventListener("DOMContentLoaded", first);
+  else first();
 </script>
 ```
 
@@ -990,7 +1087,20 @@ import Sections from "../components/xp/Sections.astro";
 <XP>
   <Boot slot="overlay" />
 
+  {/* Temporary nav, deleted in Task 5 when the Menu window takes over. It lives
+      here and NOT inside Home.astro on purpose: Home.astro renders inside
+      `#section-home`, which the switcher hides the moment you navigate away,
+      so a nav placed there would disappear with the first click. `xp-navlink`
+      is the real class, so the aria-current wiring is exercised now. */}
   <Window id="window-welcome" title="Welcome to my page" width={720} height={560} order={0} open>
+    <div class="xp-doc">
+      <p class="row">
+        <a class="xp-navlink" href="#section-home">Home</a>
+        <a class="xp-navlink" href="#section-projects">Projects</a>
+        <a class="xp-navlink" href="#section-about">About me</a>
+        <a class="xp-navlink" href="#section-blog">Blog</a>
+      </p>
+    </div>
     <Welcome />
   </Window>
 
@@ -1003,28 +1113,12 @@ import Sections from "../components/xp/Sections.astro";
 > This two-window state exists only so this task ends with a site that runs.
 > Task 5 replaces the welcome window with the Menu and Contact windows.
 
-- [ ] **Step 6: Point the welcome shortcuts at sections**
-
-Temporarily re-add a shortcut list to `Home.astro` so there is something to click, using section hashes:
-
-```astro
-  <p class="row">
-    <a class="xp-navlink" href="#section-home">Home</a>
-    <a class="xp-navlink" href="#section-projects">Projects</a>
-    <a class="xp-navlink" href="#section-about">About me</a>
-    <a class="xp-navlink" href="#section-blog">Blog</a>
-  </p>
-```
-
-> Deleted in Task 5, when `Nav.astro` takes over. The `xp-navlink` class is the
-> real one, so the `aria-current` wiring is exercised now rather than later.
-
-- [ ] **Step 7: Build**
+- [ ] **Step 6: Build**
 
 Run: `pnpm build`
 Expected: `0 errors, 0 warnings, 0 hints`.
 
-- [ ] **Step 8: Verify switching, deep links, a stale hash and the back button**
+- [ ] **Step 7: Verify switching, deep links, a stale hash and the back button**
 
 Start the preview and Chrome as in Task 3, then run a script whose body is:
 
@@ -1066,7 +1160,7 @@ Expected, in order:
 - after two clicks → `["section-blog"]`, title `Blog`, taskbar button `Blog`
 - back → `["section-about"]`
 
-- [ ] **Step 9: Verify the no-JavaScript story**
+- [ ] **Step 8: Verify the no-JavaScript story**
 
 ```js
 await send("Emulation.setScriptExecutionDisabled", { value: true });
@@ -1082,7 +1176,7 @@ console.log("sin js", await evalJs(`JSON.stringify({
 
 Expected: `ocultas === 0` and `caracteres` in the thousands.
 
-- [ ] **Step 10: Kill the servers and commit**
+- [ ] **Step 9: Kill the servers and commit**
 
 ```bash
 pkill -f "chrome.exe.*9224"; ps aux | grep "astro.mjs preview" | grep -v grep | awk '{print $2}' | xargs -r kill
@@ -1281,7 +1375,9 @@ const year = new Date().getFullYear();
 
 - [ ] **Step 4: Strip Home back to an introduction**
 
-In `src/components/xp/Home.astro`, delete the temporary `<p class="row">` of `xp-navlink`s added in Task 4 Step 6, and delete the colophon `<p class="note credits">` and the `<style>` block that targets `.credits`, and the now-unused `year` constant. Keep the `<h1>`, the `lede`, the descriptive paragraph, the `<hr />` and the contact `row` of `SOCIAL` links.
+In `src/components/xp/Home.astro`, delete the colophon `<p class="note credits">`, the `<style>` block that targets `.credits`, and the now-unused `year` constant. Keep the `<h1>`, the `lede`, the descriptive paragraph, the `<hr />` and the contact `row` of `SOCIAL` links.
+
+(The temporary `xp-navlink` row is not here — it lives in `index.astro`'s welcome window, which Step 6 replaces wholesale.)
 
 - [ ] **Step 5: Delete the window-opening link handler**
 
