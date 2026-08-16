@@ -142,22 +142,31 @@ Four things this buys that phase 2's transition did not:
   `both` fill the window holds opacity 0 through the delay, so the correction
   happens while it is invisible. Phase 2 had a visible jump here on repeat
   visits.
-- **It cannot strand the site invisible.** There is no base `opacity: 0`: the
-  hiding is `animation-fill-mode: both` plus one rule that only applies while the
-  boot screen is up. Under `prefers-reduced-motion: reduce` neither rule exists
-  and everything is simply visible — and `html.js` is what keeps a no-JS visitor
-  from waiting out a delay they cannot benefit from either: without JavaScript
-  the class is never set, so the animation rule never matches and the windows
-  that are open are visible immediately. This is the same discipline as
-  `Boot.astro` — nothing is hidden by a mechanism that can fail open.
+- **It fails open in every direction under its own control.** There is no base
+  `opacity: 0`: the hiding is `animation-fill-mode: both` plus one rule that only
+  applies while the boot screen is up. Under `prefers-reduced-motion: reduce`
+  neither rule exists and everything is simply visible, and `html.js` is what
+  keeps a no-JS visitor from waiting out a delay they cannot benefit from either:
+  without JavaScript the class is never set, so the animation rule never matches
+  and the windows that are open are visible immediately. The one thing this
+  depends on outside itself is `Boot.astro` removing `data-boot` — phase 1 and 2
+  had the same dependency, and `Boot.astro` installs its exit listeners before
+  anything that can throw, precisely so that removal is guaranteed.
 - **It does not replay on every open.** Taking an element out of `display: none`
   restarts every animation named on it, so a naive version of this rule would
   make closing and reopening — or minimising and restoring — a window replay the
   whole entrance, holding it at opacity 0 for the delay again. `:not(.xp-arrived)`
-  closes that door: the script adds `.xp-arrived` to `<html>` once the last
-  window's delay has passed, and from then on the rule stops matching. Nothing
-  moves when it stops: the animation's `to` state is the window's ordinary,
-  un-animated one.
+  closes that door, but the marker cannot be a timer: the animation's own clock
+  starts when `Boot.astro` removes `data-boot`, which on a first visit is
+  whenever the visitor presses a key (`AUTO_MS` is 0, so the boot screen waits
+  as long as it takes), and a timer anchored to page load would fire long before
+  that. Instead the script counts the windows that are open at start-up and
+  listens for `animationend` on each; once every one of them has fired for
+  `xp-window-enter`, `.xp-arrived` goes on `<html>` and the rule stops matching.
+  There is deliberately no fallback timer: if `animationend` never arrives the
+  marker just stays off, which only brings back the replay-on-reopen behaviour —
+  never an invisible window. Nothing moves when the rule stops matching: the
+  animation's `to` state is the window's ordinary, un-animated one.
 
 `Taskbar.astro` converts to the same mechanism for the same reason: otherwise the
 bar is already in place on a repeat visit and the "desktop, then the bar, then

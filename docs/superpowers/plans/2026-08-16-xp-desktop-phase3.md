@@ -535,10 +535,14 @@ In `Window.astro`'s `<style>`, delete the whole `/* ── The opening ── */
      never gets `.xp-arrived` — would sit through a delay the animation exists
      to hide a script re-laying, which they have no script to run.
 
-     Nothing here can strand the site invisible. There is no base `opacity: 0`
-     for a failed script to undo: the hiding is the animation's own backwards
-     fill plus one rule that only applies while the boot screen is on top. With
-     reduced motion neither rule exists and every window is simply visible. */
+     This fails open in every direction that is under this rule's own control:
+     there is no base `opacity: 0` for a failed script to undo, the hiding is
+     the animation's own backwards fill plus one rule that only applies while
+     the boot screen is on top, and under reduced motion neither rule exists so
+     every window is simply visible. The one thing it depends on outside itself
+     is `Boot.astro` removing `data-boot` — phase 1 and 2 had the same
+     dependency, and `Boot.astro` installs its exit listeners before anything
+     that can throw, precisely so that removal is guaranteed. */
   @media (prefers-reduced-motion: no-preference) {
     :global(html[data-boot]) .xp-window {
       opacity: 0;
@@ -652,22 +656,33 @@ Then replace the `// ── Start-up ──` block at the end of the `forEach` w
   });
 
   /**
-   * The arrival happens once. When it is over the marker goes on <html> and the
-   * animation rule stops matching — because taking an element out of
-   * `display: none` RESTARTS every animation named on it, and without this a
-   * window the visitor just clicked would sit invisible for the whole delay
-   * before fading in.
+   * The arrival happens once, and the marker that ends it has to be anchored to
+   * the animation and not to a clock. The animation starts when `Boot.astro`
+   * removes `data-boot`, which on a first visit is whenever the visitor presses
+   * a key — `AUTO_MS` is 0, so the boot screen waits as long as it takes. A
+   * timer started at page load fires long before that and switches the arrival
+   * off before it ever runs.
    *
-   * Removing the rule afterwards is not visible: the animation's `to` state is
-   * the window's natural state, so nothing moves when it stops applying.
+   * Only the windows that are open at start-up are counted: a window that is
+   * `display: none` runs no animation, so waiting for one from it would wait
+   * for ever.
+   *
+   * Why the marker exists at all: taking an element out of `display: none`
+   * RESTARTS every animation named on it, so without this a window the visitor
+   * just reopened would sit invisible for the whole delay before fading in.
+   * Removing the rule afterwards is not visible — the animation's `to` state is
+   * the window's natural state.
    */
-  const lastDelay = Math.max(
-    0,
-    ...[...document.querySelectorAll<HTMLElement>(".xp-window")].map(
-      (w) => parseFloat(getComputedStyle(w).getPropertyValue("--enter-delay")) || 0,
-    ),
-  );
-  setTimeout(() => document.documentElement.classList.add("xp-arrived"), lastDelay + 400);
+  const arriving = [...document.querySelectorAll<HTMLElement>('.xp-window[data-open="true"]')];
+  let pending = arriving.length;
+  const arrived = () => document.documentElement.classList.add("xp-arrived");
+  if (!pending) arrived();
+  for (const w of arriving) {
+    w.addEventListener("animationend", (e) => {
+      if ((e as AnimationEvent).animationName !== "xp-window-enter") return;
+      if (pending > 0 && --pending === 0) arrived();
+    });
+  }
 
   /**
    * Where a window goes when it first appears.
