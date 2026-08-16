@@ -84,9 +84,11 @@ Row width: `200 + 700 + 240 + 2 gaps of 16 = 1172`.
 ### 4.1 The row, and when it is abandoned
 
 `rowPositions(sizes, desk)` lays the three out as a row, horizontally centred,
-**tops aligned**, at `y = round((deskHeight - taskbar - tallest) * 0.35)` — the
-same 0.35 `initialPosition` already uses, so a docked window sits where a Windows
-window would.
+**tops aligned**, at `y = round((deskHeight - taskbar - tallest) * ABOVE_CENTRE)`,
+using the shared `ABOVE_CENTRE` constant (0.4), so a docked window sits where a
+Windows window would. The constant is shared with `initialPosition` precisely to
+prevent drift — a window that opened on its own must land at the same height as
+the row.
 
 If the row plus a 16px margin each side does not fit the viewport, the function
 returns `null` and the caller falls back to `cascadePosition`, which phase 2

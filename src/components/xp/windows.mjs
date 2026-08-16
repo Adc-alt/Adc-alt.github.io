@@ -56,13 +56,21 @@ export function clampPosition(win, desk) {
  * which is where Windows opens a new window. It goes through the same clamp as
  * dragging, so on a small screen it comes out already fitted.
  */
+/**
+ * How far down the free height a window opens: above centre, where Windows puts
+ * a new window. Shared by `initialPosition` and `rowPositions` so the two
+ * cannot drift — a docked window has to sit at the same height as a window that
+ * opened on its own, or the row looks like a different kind of thing.
+ */
+export const ABOVE_CENTRE = 0.4;
+
 export function initialPosition(win, desk) {
   const bottom = desk.vh - desk.barH;
   return clampPosition(
     {
       ...win,
       x: Math.round((desk.vw - win.w) / 2),
-      y: Math.round((bottom - win.h) * 0.4),
+      y: Math.round((bottom - win.h) * ABOVE_CENTRE),
     },
     desk,
   );
@@ -140,16 +148,17 @@ export function rowPositions(sizes, desk) {
 
   const bottom = desk.vh - desk.barH;
   const tallest = Math.max(...sizes.map((s) => s.h));
-  // The same 0.35 as `initialPosition`: above centre, where Windows opens a
+  // Use the shared ABOVE_CENTRE constant: above centre, where Windows opens a
   // window. Measured off the tallest so the aligned tops stay put whichever
   // window happens to be the tall one.
-  const y = Math.round((bottom - tallest) * 0.35);
+  const y = Math.round((bottom - tallest) * ABOVE_CENTRE);
 
   let x = Math.round((desk.vw - total) / 2);
   return sizes.map((s) => {
-    // Through the same clamp as dragging. Horizontally it is a no-op — the row
-    // is known to fit — so the gaps survive; vertically it is what keeps a
-    // short desktop from putting the title bars under the taskbar.
+    // Through the same clamp as dragging. Horizontally it is a no-op if all
+    // windows are wider than KEEP_VISIBLE — the row is known to fit — so the
+    // gaps survive; vertically it is what keeps a short desktop from putting
+    // the title bars under the taskbar.
     const p = clampPosition({ ...s, x, y }, desk);
     x += s.w + ROW_GAP;
     return p;

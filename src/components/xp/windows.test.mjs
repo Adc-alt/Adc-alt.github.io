@@ -6,6 +6,7 @@ import {
   initialPosition,
   enterDelay,
   rowPositions,
+  ABOVE_CENTRE,
   CASCADE_STEP,
   CASCADE_WRAP,
   ENTER_BASE,
@@ -154,6 +155,14 @@ test("the row is centred and its tops are aligned", () => {
 test("the row sits above centre, like a window Windows just opened", () => {
   const p = rowPositions(ROW, DESK);
   const tallest = Math.max(...ROW.map((s) => s.h));
+  // The invariant the shared ABOVE_CENTRE constant exists for: a window of
+  // the tallest height, opened on its own, lands at the same height as the row.
+  // This was previously checked only by the weak assertion below, which passes
+  // for any coefficient under 0.5 — including the now-fixed 0.4 that was being
+  // claimed as 0.35.
+  const solo = initialPosition({ w: 700, h: 600 }, DESK);
+  assert.equal(p[0].y, solo.y, `row y should match a solo window of tallest height`);
+  assert.equal(p[0].y, 104, `at 1440x900 with barH 40 and tallest 600`);
   assert.ok(p[0].y < (DESK.vh - DESK.barH - tallest) / 2, `y=${p[0].y}`);
 });
 
