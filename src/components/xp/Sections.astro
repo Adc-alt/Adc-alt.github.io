@@ -118,11 +118,18 @@ const projects = (
       else a.removeAttribute("aria-current");
     }
 
+    // The pane keeps its scroll position across a swap, so arriving from a long
+    // section read to the bottom put the new section's heading ~900px above the
+    // viewport. Nothing else resets it: the sections share one scrollport, and
+    // `focus()` cannot fix it either — a section taller than the pane already
+    // covers the scrollport, so scrolling it "into view" is a no-op.
+    pane?.querySelector(".xp-winbody")?.scrollTo(0, 0);
+
     // `preventScroll`: focusing a container scrolls it into view, and inside the
     // pane that means scrolling past `.xp-winbody`'s own padding — the section
     // arrived 18px down. The screen reader still lands on the new content; only
-    // the scroll is suppressed, and there is nothing to scroll to anyway, since
-    // the section is already at the top of a pane we just swapped.
+    // the scroll is suppressed, and the line above has already put the pane
+    // exactly where we want it.
     if (moveFocus) active.focus({ preventScroll: true });
   }
 

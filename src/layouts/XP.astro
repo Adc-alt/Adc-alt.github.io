@@ -105,8 +105,10 @@ const fullTitle = title ? `${title} — ${SITE.name}` : `${SITE.name} — ${SITE
 
   @media (prefers-reduced-motion: no-preference) {
     html {
-      /* The Menu entries are real anchors: in stacked mode they jump to the
-         section, and with this the jump is visible. */
+      /* The Menu entries are real anchors, so with JavaScript off they jump to
+         the section and this makes the jump visible. With JavaScript the
+         switcher hides every other section and there is nothing to scroll to —
+         this only ever fires on the no-JS page. */
       scroll-behavior: smooth;
     }
   }

@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   cascadePosition,
   clampPosition,
@@ -174,11 +175,14 @@ test("the threshold is the row plus one margin each side, to the pixel", () => {
 });
 
 test("the desktop breakpoint is exactly where the row starts fitting", () => {
-  // The invariant, not the number: desktop mode means "the row fits", so the
-  // media queries in Window.astro and XP.astro — which spell 1204 out because
-  // CSS cannot read a JS constant — must sit on the exact pixel where
-  // rowPositions stops returning null. Asserting DESKTOP_MIN_WIDTH === 1204
-  // would pin nothing: it would still pass if a window changed size.
+  // The invariant, not the number: desktop mode means "the row fits", so
+  // DESKTOP_MIN_WIDTH must sit on the exact pixel where rowPositions stops
+  // returning null.
+  //
+  // ⚠️ This half is a closed loop — DESKTOP_MIN_WIDTH is derived from the same
+  // ROW_SIZES that rowPositions measures, so it cannot fail. It documents the
+  // relation. The test that can actually fail is the next one, which reads the
+  // CSS.
   //
   // What breaks without this: below the breakpoint the three windows cascade,
   // and the cascade centres each of them for its OWN width, which puts the
@@ -195,6 +199,34 @@ test("the desktop breakpoint is exactly where the row starts fitting", () => {
     null,
     `the row must NOT fit one pixel below DESKTOP_MIN_WIDTH`,
   );
+});
+
+test("the CSS media queries spell out the same breakpoint as the code", () => {
+  // The one that bites. CSS cannot read a JS constant, so `@media (min-width:
+  // 1204px)` is a literal in two files, and the derived constant on its own
+  // protects nothing: change a window's size and DESKTOP_MIN_WIDTH follows
+  // while the two literals stay where they were. Then the media query turns the
+  // desktop on at a width where the row no longer fits, the windows cascade,
+  // and the cascade centres each of them for its OWN width — which puts the
+  // Menu and Contact entirely inside the reading pane, in front of them. The
+  // site loads with its only navigation invisible and unclickable. That is a
+  // bug this branch actually shipped and had to fix.
+  //
+  // So the test reads the files. Grepping source in a unit test is ugly; it is
+  // the only thing here that catches the drift.
+  const files = ["../../layouts/XP.astro", "./Window.astro"];
+  for (const rel of files) {
+    const css = readFileSync(new URL(rel, import.meta.url), "utf8");
+    const found = [...css.matchAll(/@media \(min-width: (\d+)px\)/g)].map((m) => Number(m[1]));
+    assert.ok(found.length > 0, `${rel} should carry a desktop media query`);
+    for (const px of found) {
+      assert.equal(
+        px,
+        DESKTOP_MIN_WIDTH,
+        `${rel}: @media (min-width: ${px}px) but DESKTOP_MIN_WIDTH is ${DESKTOP_MIN_WIDTH}`,
+      );
+    }
+  }
 });
 
 test("on a short desktop the row still lands inside the clamp", () => {
