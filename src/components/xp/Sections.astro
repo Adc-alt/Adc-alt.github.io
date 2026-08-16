@@ -96,6 +96,11 @@ const projects = (
     const title = active.dataset.title;
     if (title) pane?.dispatchEvent(new CustomEvent("xp:title", { detail: title }));
 
+    // Brings the pane back if a Menu click closed it and the visitor clicked
+    // again — phase 3 does not intercept those clicks, so nothing else would
+    // reopen it. Before the focus call below, so the section's own focus wins.
+    pane?.dispatchEvent(new CustomEvent("xp:show"));
+
     const current = `#${navFor(target)}`;
     for (const a of links) {
       if (a.getAttribute("href") === current) a.setAttribute("aria-current", "page");
@@ -119,6 +124,8 @@ const projects = (
   // No `readyState` guard: a module script runs while readiness is already
   // "interactive", so a `=== "loading"` test never fires and would silently
   // give back the top-level call this exists to avoid. Registering
-  // unconditionally is safe precisely because this script always runs first.
+  // unconditionally is safe because a non-async module script always finishes
+  // running before `DOMContentLoaded` fires, whatever order the bundle runs
+  // this script and Window.astro's in.
   addEventListener("DOMContentLoaded", () => show(location.hash, false));
 </script>

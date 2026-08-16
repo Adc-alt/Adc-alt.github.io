@@ -7,8 +7,6 @@
  * grid moved out rather than being duplicated.
  */
 import { SITE, SOCIAL } from "../../consts";
-
-const year = new Date().getFullYear();
 ---
 
 <div class="xp-doc">
@@ -38,23 +36,4 @@ const year = new Date().getFullYear();
       ))
     }
   </p>
-
-  {/* This is NOT decoration: the boot font is CC BY-SA 4.0 and the credit is
-      required. It used to live in the site footer, which disappeared with the
-      arcade look; it has to be somewhere visible, and this is the window that
-      is always open. */}
-  <p class="note credits">
-    © {year} {SITE.name}. Built with Astro, no analytics and no cookies.<br />
-    Boot typeface: AcPlus IBM VGA 8x16 by <a
-      href="https://int10h.org/oldschool-pc-fonts/"
-      rel="noopener">VileR</a
-    >, <a href="/fonts/LICENSE-oldschool-pc-fonts.txt">CC BY-SA 4.0</a>. The
-    wallpaper and the Start flag are Microsoft's, here as a homage.
-  </p>
 </div>
-
-<style>
-  .xp-doc .credits {
-    margin-bottom: 0;
-  }
-</style>

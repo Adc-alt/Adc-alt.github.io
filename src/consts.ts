@@ -11,12 +11,13 @@ export const SITE = {
 } as const;
 
 /**
- * There is no nav list here: since phase 2 the site is a single page and the
- * links are anchors to each window's `id`. The only navigation is assembled by
- * `Welcome.astro`, which is the one that knows what caption each shortcut gets.
+ * Contact, in the order the Contact window shows it. `value` is what is printed
+ * under the label — a label alone makes someone click to find out the address.
+ *
+ * LinkedIn is missing on purpose: the owner has not handed over the URL. Adding
+ * it is one entry here and nothing else, because the window renders this array.
  */
-
 export const SOCIAL = [
-  { href: 'https://github.com/Adc-alt', label: 'GitHub' },
-  { href: 'mailto:adelgadocriado@gmail.com', label: 'Email' },
+  { href: 'mailto:adelgadocriado@gmail.com', label: 'Email', value: 'adelgadocriado@gmail.com' },
+  { href: 'https://github.com/Adc-alt', label: 'GitHub', value: 'Adc-alt' },
 ] as const;

@@ -142,56 +142,6 @@
   font-size: 0.9rem;
 }
 
-/* The shortcuts in the welcome window: the only navigation on the site, so
-   they are drawn as big icons and not as a list of links. */
-.xp-doc .shortcuts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 10px;
-  margin: 0 0 1.4rem;
-  padding: 0;
-  list-style: none;
-}
-.xp-doc .shortcuts li {
-  margin: 0;
-}
-.xp-doc .shortcut {
-  display: block;
-  height: 100%;
-  padding: 10px 12px;
-  /* The raised button of Windows: light edge at the top and left, dark at the
-     bottom and right. Same relief as the taskbar, in grey. */
-  background: #ece9d8;
-  border: 1px solid #aca899;
-  box-shadow:
-    inset 1px 1px 0 #ffffff,
-    inset -1px -1px 0 #d4d0c8;
-  color: #000000;
-  text-decoration: none;
-}
-.xp-doc .shortcut:visited {
-  color: #000000;
-}
-.xp-doc .shortcut:hover {
-  background: #f5f3ea;
-  border-color: #316ac5;
-}
-.xp-doc .shortcut:focus-visible {
-  outline: 2px solid #316ac5;
-  outline-offset: 1px;
-}
-.xp-doc .shortcut b {
-  display: block;
-  margin-bottom: 0.15rem;
-  color: #0a246a;
-  font-size: 0.95rem;
-}
-.xp-doc .shortcut span {
-  display: block;
-  font-size: 0.8rem;
-  color: #3a3a32;
-}
-
 /* A list of things with a title and a summary: projects, and any other index. */
 .xp-doc .index {
   margin: 0;

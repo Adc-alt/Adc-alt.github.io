@@ -1,42 +1,80 @@
 ---
 /**
- * The site: a Windows XP desktop with the portfolio inside windows.
+ * The site: a Windows XP desktop with the portfolio inside three windows.
  *
- * Every window and every section is rendered here, at build time. The
- * JavaScript only opens, closes, drags and swaps — if it generated the content,
- * a search engine would see an empty desktop (phase 1 §13).
+ * Menu on the left, the reading pane in the middle, Contact on the right. They
+ * arrive in that order after the boot screen (phase 3 §4.2). Every window and
+ * every section is rendered here, at build time: if the JavaScript generated
+ * them, a search engine would see an empty desktop (phase 1 §13).
  *
  * Spec: docs/superpowers/specs/2026-08-16-xp-desktop-phase3-design.md
  */
 import XP from "../layouts/XP.astro";
 import Boot from "../components/Boot.astro";
 import Window from "../components/xp/Window.astro";
-import Welcome from "../components/xp/Home.astro";
+import Nav from "../components/xp/Nav.astro";
 import Sections from "../components/xp/Sections.astro";
-import { PANE_ID } from "../components/xp/sections.mjs";
+import Contact from "../components/xp/Contact.astro";
+import { rowPositions } from "../components/xp/windows.mjs";
+import { HEIGHT as BAR_H } from "../components/xp/taskbar-colors.mjs";
+
+/* The row, computed here against the same 1440x900 reference the rest of the
+   build uses, and handed to each window as x/y. The script recomputes it
+   against the real viewport, but this is what gets painted first, and the
+   closer it is the less there is to correct. */
+const SIZES = [
+  { w: 200, h: 260 },
+  { w: 700, h: 600 },
+  { w: 240, h: 300 },
+];
+const [nav, main, contact] = rowPositions(SIZES, { vw: 1440, vh: 900, barH: BAR_H }) ?? [];
 ---
 
 <XP>
   <Boot slot="overlay" />
 
-  {/* Temporary nav, deleted in Task 5 when the Menu window takes over. It lives
-      here and NOT inside Home.astro on purpose: Home.astro renders inside
-      `#section-home`, which the switcher hides the moment you navigate away,
-      so a nav placed there would disappear with the first click. `xp-navlink`
-      is the real class, so the aria-current wiring is exercised now. */}
-  <Window id="window-welcome" title="Welcome to my page" width={720} height={560} order={0} open>
-    <div class="xp-doc">
-      <p class="row">
-        <a class="xp-navlink" href="#section-home">Home</a>
-        <a class="xp-navlink" href="#section-projects">Projects</a>
-        <a class="xp-navlink" href="#section-about">About me</a>
-        <a class="xp-navlink" href="#section-blog">Blog</a>
-      </p>
-    </div>
-    <Welcome />
+  <Window
+    id="window-nav"
+    title="Menu"
+    width={SIZES[0].w}
+    height={SIZES[0].h}
+    x={nav?.x}
+    y={nav?.y}
+    order={0}
+    row
+    tight
+    open
+  >
+    <Nav />
   </Window>
 
-  <Window id={PANE_ID} title="Home" width={700} height={600} order={1} open>
+  {/* The title is the one the pane starts on; the switcher rewrites it. */}
+  <Window
+    id="window-main"
+    title="Home"
+    width={SIZES[1].w}
+    height={SIZES[1].h}
+    x={main?.x}
+    y={main?.y}
+    order={1}
+    row
+    open
+  >
     <Sections />
+  </Window>
+
+  <Window
+    id="window-contact"
+    title="Contact"
+    width={SIZES[2].w}
+    height={SIZES[2].h}
+    x={contact?.x}
+    y={contact?.y}
+    order={2}
+    row
+    tight
+    open
+  >
+    <Contact />
   </Window>
 </XP>

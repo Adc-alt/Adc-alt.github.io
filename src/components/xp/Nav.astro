@@ -1,0 +1,67 @@
+---
+/**
+ * The Menu window: the site's navigation, and the only one there is.
+ *
+ * The entries are real `<a href="#section-…">` and the click is NOT
+ * intercepted. The browser sets the hash, `Sections.astro` reacts to
+ * `hashchange`, and the back button and shareable links come for free
+ * (phase 3 §3). Without JavaScript they are anchors to sections that are all on
+ * the page, so they jump.
+ */
+import { NAV, sectionId } from "./sections.mjs";
+---
+
+<nav class="xp-nav" aria-label="Sections">
+  <ul>
+    {
+      NAV.map((entry) => (
+        <li>
+          <a class="xp-navlink" href={`#${sectionId(entry.id)}`}>
+            {entry.label}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>
+
+<style>
+  .xp-nav ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .xp-nav li {
+    margin: 0;
+  }
+  /* `:global` because the same class is used by the anchors this component
+     renders AND read by the switcher in Sections.astro, which sets
+     `aria-current` on them; the styling has to survive either way. */
+  .xp-nav :global(.xp-navlink) {
+    display: block;
+    padding: 7px 10px;
+    color: #000000;
+    font-size: 0.95rem;
+    text-decoration: none;
+  }
+  .xp-nav :global(.xp-navlink:visited) {
+    color: #000000;
+  }
+  .xp-nav :global(.xp-navlink:hover) {
+    background: #d8e6f8;
+  }
+  /* #316ac5 is the selection blue of Explorer, the same one the shortcuts in
+     xp-doc.css already use for their focus ring. */
+  .xp-nav :global(.xp-navlink[aria-current="page"]) {
+    background: #316ac5;
+    color: #ffffff;
+    font-weight: bold;
+  }
+  .xp-nav :global(.xp-navlink:focus-visible) {
+    outline: 2px solid #316ac5;
+    outline-offset: -2px;
+  }
+  .xp-nav :global(.xp-navlink[aria-current="page"]:focus-visible) {
+    outline-color: #ffffff;
+  }
+</style>

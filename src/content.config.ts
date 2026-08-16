@@ -4,7 +4,7 @@ import { z } from "astro/zod";
 
 /**
  * Each project is a .md in src/content/projects/.
- * The filename is its window id: `hito.md` → #window-project-hito
+ * The filename is its section id: `hito.md` → #section-project-hito
  *
  * The schema is not decoration: if a project is missing a field, or has a
  * `status` that does not exist, `pnpm build` FAILS. Shipping a half-written

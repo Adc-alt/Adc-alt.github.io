@@ -120,9 +120,6 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
 
   const tasks = document.querySelector(".xp-tasks");
 
-  /** window id → how to open it. The link handler looks it up here. */
-  const windows = new Map<string, () => void>();
-
   /** Depth counter. It goes up and never down: last clicked, front-most. */
   let zTop = 5;
 
@@ -167,26 +164,6 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
     const restore = () => {
       win.classList.remove("is-min");
       btnMin.setAttribute("aria-pressed", "false");
-    };
-
-    const open = () => {
-      if (win.dataset.open !== "true") {
-        // Counted BEFORE opening this one: the cascade places it behind the
-        // ones already there. And `data-open` is set before measuring, because
-        // a window in display:none measures 0x0.
-        const alreadyOpen = document.querySelectorAll('.xp-window[data-open="true"]').length;
-        win.dataset.open = "true";
-        restore();
-        if (DESKTOP.matches) {
-          // appendChild on a node that is already a child MOVES it: without the
-          // guard, re-opening a window that close() left in the bar would jump
-          // its button to the end instead of leaving it where it was.
-          if (DESKTOP.matches && !task.isConnected) tasks?.appendChild(task);
-          move(cascadePosition(alreadyOpen, size(), desk()));
-        }
-      }
-      toFront();
-      win.focus();
     };
 
     const close = () => {
@@ -245,6 +222,17 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
       task.textContent = next;
     });
 
+    // Brings the window back without knowing anything about who asked. The
+    // reading pane needs it: closing it is allowed, and a Menu click has to
+    // work afterwards — phase 3 does not intercept those clicks, so nothing
+    // else would reopen it. Idempotent, and deliberately does not take focus:
+    // whoever dispatched this knows better what the visitor should land on.
+    win.addEventListener("xp:show", () => {
+      win.dataset.open = "true";
+      restore();
+      toFront();
+    });
+
     // Pressing anywhere in the window brings it to the front, like in Windows.
     // On capture so it lands before the buttons inside.
     win.addEventListener("pointerdown", () => toFront(), true);
@@ -289,8 +277,6 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
       placeRow(win) ?? cascadePosition(index, size(), desk());
 
     // ── Start-up ──────────────────────────────────────────────────────────
-    windows.set(win.id, open);
-
     if (win.dataset.open === "true" && DESKTOP.matches) {
       // Counted BEFORE appending, as phase 2 did: it is the cascade's index,
       // and it has to be different for each window. Counting open windows
@@ -327,10 +313,12 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
   const arrived = () => document.documentElement.classList.add("xp-arrived");
   if (!pending) arrived();
   for (const w of arriving) {
-    w.addEventListener("animationend", (e) => {
-      if ((e as AnimationEvent).animationName !== "xp-window-enter") return;
+    const onEnd = (e: AnimationEvent) => {
+      if (e.animationName !== "xp-window-enter") return;
+      w.removeEventListener("animationend", onEnd);
       if (pending > 0 && --pending === 0) arrived();
-    });
+    };
+    w.addEventListener("animationend", onEnd);
   }
 
   /**
@@ -360,23 +348,6 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
     });
     return positions ? positions[index] : null;
   }
-
-  // ── The links that open windows ─────────────────────────────────────────
-  // Delegated on the document: it covers the links that exist now and any that
-  // live inside a window. In stacked mode it does NOT intercept: there the
-  // anchor does its usual job, which is jumping to the window, which is
-  // visible. That is what gives navigation without JavaScript.
-  document.addEventListener("click", (e) => {
-    if (!DESKTOP.matches) return;
-    const link = (e.target as HTMLElement | null)?.closest?.("a[href]");
-    if (!(link instanceof HTMLAnchorElement)) return;
-    const href = link.getAttribute("href") ?? "";
-    if (!href.startsWith("#")) return;
-    const open = windows.get(href.slice(1));
-    if (!open) return;
-    e.preventDefault();
-    open();
-  });
 </script>
 
 <style>
