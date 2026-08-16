@@ -5,9 +5,11 @@ that drag, minimise and close.
 Live at: **https://adc-alt.github.io/**
 
 A static site generated with Astro. **All the HTML comes out of the build**,
-windows included: the JavaScript only opens, moves and closes them. If it does
-not run, the site reads the same (see *Two modes*). The only two scripts are the
-boot screen (inline) and the window manager with the tray clock.
+windows and sections included: the JavaScript only opens, moves and closes
+windows, and swaps which section the reading pane shows. If it does not run,
+the site reads the same (see *Two modes*). The only three scripts are the boot
+screen (inline), the window manager with the tray clock, and the section
+switcher.
 
 ## Routes
 
@@ -18,6 +20,7 @@ The site is **a single page**.
 | `/` | The desktop, with every window inside it. **With the boot screen** on a first visit |
 | `/404` | XP error window |
 | `/work/`, `/xp/`, `/proyectos/`, `/perfil/` | Redirects to `/` |
+| `/#section-<name>` | A section of the reading pane. `home`, `projects`, `about`, `blog`, or `project-<filename>`. Shareable and back-button friendly; not a separate URL, so not in the sitemap |
 
 The redirects are the previous version's routes. They are not a courtesy:
 `/work/` is the URL printed on the CV. On a static build Astro generates a `meta
@@ -43,7 +46,7 @@ pnpm dev          # http://localhost:4321
 src/
 ├── consts.ts                 name, URL and social links
 ├── content.config.ts         Zod schemas for projects and blog
-├── content/projects/*.md     one file = one project = one window
+├── content/projects/*.md     one file = one project = one section
 ├── content/blog/*.md         one file = one entry
 ├── styles/xp-doc.css         the document inside a window
 ├── layouts/XP.astro          <head>, wallpaper and taskbar
@@ -51,10 +54,14 @@ src/
 │   ├── Boot.astro            the boot screen
 │   └── xp/
 │       ├── Window.astro      the frame and the window manager
-│       ├── windows.mjs       the position arithmetic (with tests)
+│       ├── windows.mjs       position, row and entrance arithmetic (with tests)
 │       ├── Taskbar.astro     taskbar + clock
 │       ├── taskbar-colors.mjs  measured colours (with tests)
-│       └── Welcome | Projects | Project | About | Blog
+│       ├── sections.mjs      the Menu and the section registry (with tests)
+│       ├── Nav.astro         the Menu window
+│       ├── Sections.astro    the reading pane and its switcher
+│       ├── Contact.astro     the Contact window, and the licence colophon
+│       └── Home | Projects | Project | About | Blog
 └── pages/
     ├── index.astro           mounts the desktop and every window
     └── 404.astro
@@ -63,8 +70,8 @@ src/
 ## Adding content
 
 **A project:** copy `src/content/projects/_template.md`, rename it and set
-`draft: false`. Its window and its link in the index appear on their own; the
-filename is the window's `id`.
+`draft: false`. Its section and its entry in the Projects list appear on their
+own; the filename becomes its section id (`hito.md` → `#section-project-hito`).
 
 **A blog entry:** a `.md` in `src/content/blog/`. They are ordered by date,
 newest at the top.
@@ -94,38 +101,51 @@ would block page scrolling as you drag the title.
 
 ## The windows
 
-`src/components/xp/Window.astro` — the frame and the whole manager. They open
-from the links in the welcome window, which are real `<a href="#window-id">`:
-with JS the manager intercepts them, and without JS they are anchors that jump to
-the window, which is visible. **There are no desktop icons and no Start menu**,
-so the welcome window is the site's only navigation: if it runs out of links,
-nothing can be reached.
+Three of them: `Menu` on the left, the reading pane in the middle, `Contact` on
+the right. They arrive in that order after the boot screen. `Contact` never
+changes; the Menu swaps what the middle one shows.
 
 Four things that break by themselves if left unattended:
 
 - **Position always goes through `clampPosition`** (`windows.mjs`, with tests).
   The classic failure of a homemade manager is letting you drag until the title
-  bar is off the screen: from there it cannot be recovered. `KEEP_VISIBLE` is
-  110px and not 60 because the three buttons take ~70 at the right end of the
-  bar: with 60, what pokes out when you push it left is buttons only.
-- **Closing hides, it does not destroy.** With a single window that never
-  reopened, `remove()` was fine. With five, a destroyed window cannot be opened
-  again.
-- **The cascade wraps every five** (`CASCADE_WRAP`). Without it the clamp ends up
-  leaving every window from the sixth onwards on identical pixels, which is worse
-  than not cascading.
-- **The window arrives 900ms after the keypress**, that is, after the bar
-  (400+400). It is a transition on the visible state, not a `@keyframes` with a
-  delay: an animation would count from page load and the window would open behind
-  the boot screen.
+  bar is off the screen. `KEEP_VISIBLE` is 110px and not 60 because the three
+  buttons take ~70 at the right end of the bar.
+- **The row is `y = round((height − taskbar − tallest) × ABOVE_CENTRE)`**, with
+  `ABOVE_CENTRE` (0.4) shared with `initialPosition` so the two cannot drift. At
+  1440x900 that is `x = 134 / 350 / 1066` with 16px gaps, `y = 104` for all
+  three. Below **1204px** of desktop width the row does not fit,
+  `rowPositions` returns `null` rather than squeezing the windows, and the
+  caller falls back to a cascade instead.
+- **Closing keeps the taskbar button**, deliberately unlike XP. XP can afford to
+  drop it because it has desktop icons and a Start menu; here the taskbar is the
+  only way back, and the navigation lives inside a window.
+- **The arrival is a CSS animation, not a transition**, gated on
+  `html.js:not([data-boot]):not(.xp-arrived)`. An animation starts the moment
+  its element first matches the rule, so it fires when `Boot.astro` removes
+  `data-boot` on a first visit, and at first paint on a repeat one — the
+  sequence plays every visit, not only the first. Taking an element out of
+  `display: none` restarts its animations, so a script adds `.xp-arrived` once
+  every arriving window's `animationend` has fired; without that marker every
+  later reopen would replay the delay. `html.js` in the selector is what stops a
+  no-JS visitor waiting out a delay they have no script to benefit from.
 
 ⚠️ **The window colours are NOT measured**, unlike the taskbar's. They are the
 public Luna approximation that circulates around, eyeballed against memory. The
 component header says so.
 
+Two custom events drive a window from outside: **`xp:title`** (detail: a
+string) retitles the title bar and the taskbar button together, and
+**`xp:show`** reopens, restores and fronts a window without taking focus.
+
+Sections are `#hash` links and clicks are **not** intercepted: the browser sets
+the hash and the switcher runs off `hashchange`, which is where the back button
+and shareable section links come from. `resolveSection` falls back to Home for a
+hash nobody recognises, so a stale link never leaves the pane blank.
+
 The blog has no per-entry URL: they all render one after another inside their
-window. With two entries that would be two pages of one paragraph; the filename
-already works as a slug the day it is needed.
+section. With two entries that would be two pages of one paragraph; the
+filename already works as a slug the day it is needed.
 
 ## Deploy
 
@@ -141,8 +161,10 @@ not committed.
 - Focus is always visible; never `outline: none` without a replacement.
 - The three buttons on each window are `<button>` with an `aria-label`, and
   minimise/maximise carry `aria-pressed`.
-- Opening a window moves focus into it; closing it returns focus to the link that
-  opened it.
+- Reopening a window from the taskbar moves focus into it; closing it returns
+  focus to the taskbar button. Switching sections moves focus to the new one,
+  except on the page's first load, which does not scroll a visitor who has not
+  asked for it.
 - The wallpaper and the bar's ornaments carry `aria-hidden`.
 
 The XP colours **do not reach AA for body text**: white on the Start button green
@@ -210,9 +232,10 @@ To see it again: delete `boot_seen` from `localStorage`.
 
 The **AcPlus IBM VGA 8x16** typeface is by
 [VileR](https://int10h.org/oldschool-pc-fonts/), CC BY-SA 4.0, in `public/fonts/`
-with its licence next to it. **The credit the licence requires is in the welcome
-window**, which is the one that is always open — it used to live in the site
-footer, which went away with the arcade look. The `.woff2` was taken from the
+with its licence next to it. **The credit the licence requires is in the Contact
+window**, the one pane whose content never changes — it lived in the site
+footer before the arcade look went away, then in the welcome window before
+phase 3 removed it. The `.woff2` was taken from the
 `_win` pack (the `Ac` ones are not in the web pack) by converting the TTF with
 `fonttools`.
 
@@ -258,8 +281,8 @@ measurements and colours, which are facts and not work.
 
 ## What is still in Spanish
 
-The three design specs under `docs/superpowers/specs/` — the boot screen and the
-two desktop phases — are translated, because code comments point at them.
+The four design specs under `docs/superpowers/specs/` — the boot screen and the
+three desktop phases — are translated, because code comments point at them.
 
 Two things stay in Spanish on purpose:
 
