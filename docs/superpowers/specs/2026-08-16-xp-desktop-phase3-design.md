@@ -116,10 +116,10 @@ the whole trick:**
 
 ```css
 @media (prefers-reduced-motion: no-preference) {
-  :global(html:not([data-boot])) .xp-window {
+  :global(html[data-boot]) .xp-window { opacity: 0; }
+  :global(html.js:not([data-boot]):not(.xp-arrived)) .xp-window {
     animation: xp-window-enter 260ms cubic-bezier(0.16, 1, 0.3, 1) var(--enter-delay) both;
   }
-  :global(html[data-boot]) .xp-window { opacity: 0; }
 }
 ```
 
@@ -130,7 +130,7 @@ the boot screen is up the rule does not match, so no animation is running; when
 `Boot.astro` removes the attribute the element starts matching and the clock
 starts then.
 
-Three things this buys that phase 2's transition did not:
+Four things this buys that phase 2's transition did not:
 
 - **The sequence plays on a repeat visit too.** A returning visitor gets no boot
   screen — `data-boot` is never set, the rule matches from the first paint, and
@@ -145,8 +145,19 @@ Three things this buys that phase 2's transition did not:
 - **It cannot strand the site invisible.** There is no base `opacity: 0`: the
   hiding is `animation-fill-mode: both` plus one rule that only applies while the
   boot screen is up. Under `prefers-reduced-motion: reduce` neither rule exists
-  and everything is simply visible. This is the same discipline as
+  and everything is simply visible — and `html.js` is what keeps a no-JS visitor
+  from waiting out a delay they cannot benefit from either: without JavaScript
+  the class is never set, so the animation rule never matches and the windows
+  that are open are visible immediately. This is the same discipline as
   `Boot.astro` — nothing is hidden by a mechanism that can fail open.
+- **It does not replay on every open.** Taking an element out of `display: none`
+  restarts every animation named on it, so a naive version of this rule would
+  make closing and reopening — or minimising and restoring — a window replay the
+  whole entrance, holding it at opacity 0 for the delay again. `:not(.xp-arrived)`
+  closes that door: the script adds `.xp-arrived` to `<html>` once the last
+  window's delay has passed, and from then on the rule stops matching. Nothing
+  moves when it stops: the animation's `to` state is the window's ordinary,
+  un-animated one.
 
 `Taskbar.astro` converts to the same mechanism for the same reason: otherwise the
 bar is already in place on a repeat visit and the "desktop, then the bar, then

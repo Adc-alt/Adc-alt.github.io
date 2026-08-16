@@ -178,7 +178,10 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
         win.dataset.open = "true";
         restore();
         if (DESKTOP.matches) {
-          tasks?.appendChild(task);
+          // appendChild on a node that is already a child MOVES it: without the
+          // guard, re-opening a window that close() left in the bar would jump
+          // its button to the end instead of leaving it where it was.
+          if (DESKTOP.matches && !task.isConnected) tasks?.appendChild(task);
           move(cascadePosition(alreadyOpen, size(), desk()));
         }
       }
@@ -302,6 +305,24 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
   });
 
   /**
+   * The arrival happens once. When it is over the marker goes on <html> and the
+   * animation rule stops matching — because taking an element out of
+   * `display: none` RESTARTS every animation named on it, and without this a
+   * window the visitor just clicked would sit invisible for the whole delay
+   * before fading in.
+   *
+   * Removing the rule afterwards is not visible: the animation's `to` state is
+   * the window's natural state, so nothing moves when it stops applying.
+   */
+  const lastDelay = Math.max(
+    0,
+    ...[...document.querySelectorAll<HTMLElement>(".xp-window")].map(
+      (w) => parseFloat(getComputedStyle(w).getPropertyValue("--enter-delay")) || 0,
+    ),
+  );
+  setTimeout(() => document.documentElement.classList.add("xp-arrived"), lastDelay + 400);
+
+  /**
    * Where a window goes when it first appears.
    *
    * Row windows are laid out together: each one reads every `[data-row]` window
@@ -313,10 +334,14 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
     const row = [...document.querySelectorAll<HTMLElement>('.xp-window[data-row="true"]')];
     const index = row.indexOf(win);
     if (index < 0) return null;
-    // offsetWidth/offsetHeight and not getBoundingClientRect: the arrival
-    // animation holds a `scale(0.92)` on the window through its delay, which
-    // the rect would report and the offsets would not.
-    const sizes = row.map((w) => ({ w: w.offsetWidth, h: w.offsetHeight }));
+    // The authored --w/--h and not offsetWidth/offsetHeight: those are correct
+    // even while the window is display:none or mid-animation, and they are the
+    // exact numbers index.astro measured against when it computed the
+    // build-time row.
+    const sizes = row.map((w) => ({
+      w: parseFloat(getComputedStyle(w).getPropertyValue("--w")) || w.offsetWidth,
+      h: parseFloat(getComputedStyle(w).getPropertyValue("--h")) || w.offsetHeight,
+    }));
     const positions = rowPositions(sizes, {
       vw: innerWidth,
       vh: innerHeight,
@@ -353,6 +378,9 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
     margin: 0 auto 14px;
     display: flex;
     flex-direction: column;
+    /* Where the arrival animation scales FROM: the bottom edge, like a window
+       rising off the taskbar, not the centre. */
+    transform-origin: 50% 100%;
     /* The Luna frame: 3px of blue at the sides and the bottom, rounded corners
        at the top and square ones at the bottom. */
     background: #0831d9;
@@ -538,6 +566,17 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
      invisible while the script re-lays it against the real viewport, and the
      correction is never seen.
 
+     `.xp-arrived` and `html.js`: taking an element out of `display: none`
+     RESTARTS every animation named on it, so without a way to stop matching
+     the rule, closing and reopening (or minimising and restoring) a window
+     would replay the whole entrance and hold it at opacity 0 for the delay
+     again. The script adds `.xp-arrived` once the sequence is over, and from
+     then on the rule stops applying — nothing moves when it does, because the
+     animation's `to` state is already the window's natural, un-animated one.
+     `html.js` is not decoration either: without it, a no-JS visitor — who
+     never gets `.xp-arrived` — would sit through a delay the animation exists
+     to hide a script re-laying, which they have no script to run.
+
      Nothing here can strand the site invisible. There is no base `opacity: 0`
      for a failed script to undo: the hiding is the animation's own backwards
      fill plus one rule that only applies while the boot screen is on top. With
@@ -546,7 +585,7 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
     :global(html[data-boot]) .xp-window {
       opacity: 0;
     }
-    :global(html:not([data-boot])) .xp-window {
+    :global(html.js:not([data-boot]):not(.xp-arrived)) .xp-window {
       animation: xp-window-enter 260ms cubic-bezier(0.16, 1, 0.3, 1) var(--enter-delay, 900ms)
         both;
     }

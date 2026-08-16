@@ -6,7 +6,6 @@ import {
   initialPosition,
   enterDelay,
   rowPositions,
-  ABOVE_CENTRE,
   CASCADE_STEP,
   CASCADE_WRAP,
   ENTER_BASE,

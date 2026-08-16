@@ -524,6 +524,17 @@ In `Window.astro`'s `<style>`, delete the whole `/* ── The opening ── */
      invisible while the script re-lays it against the real viewport, and the
      correction is never seen.
 
+     `.xp-arrived` and `html.js`: taking an element out of `display: none`
+     RESTARTS every animation named on it, so without a way to stop matching
+     the rule, closing and reopening (or minimising and restoring) a window
+     would replay the whole entrance and hold it at opacity 0 for the delay
+     again. The script adds `.xp-arrived` once the sequence is over, and from
+     then on the rule stops applying — nothing moves when it does, because the
+     animation's `to` state is already the window's natural, un-animated one.
+     `html.js` is not decoration either: without it, a no-JS visitor — who
+     never gets `.xp-arrived` — would sit through a delay the animation exists
+     to hide a script re-laying, which they have no script to run.
+
      Nothing here can strand the site invisible. There is no base `opacity: 0`
      for a failed script to undo: the hiding is the animation's own backwards
      fill plus one rule that only applies while the boot screen is on top. With
@@ -532,7 +543,7 @@ In `Window.astro`'s `<style>`, delete the whole `/* ── The opening ── */
     :global(html[data-boot]) .xp-window {
       opacity: 0;
     }
-    :global(html:not([data-boot])) .xp-window {
+    :global(html.js:not([data-boot]):not(.xp-arrived)) .xp-window {
       animation: xp-window-enter 260ms cubic-bezier(0.16, 1, 0.3, 1) var(--enter-delay, 900ms)
         both;
     }
@@ -548,6 +559,8 @@ In `Window.astro`'s `<style>`, delete the whole `/* ── The opening ── */
     }
   }
 ```
+
+Also restore `transform-origin: 50% 100%` on the base `.xp-window` rule (outside this media query, next to its other base rules): it was in phase 2's block and is what makes the animation scale from the bottom edge instead of the centre.
 
 - [ ] **Step 4: Give the small windows a tighter body**
 
@@ -639,6 +652,24 @@ Then replace the `// ── Start-up ──` block at the end of the `forEach` w
   });
 
   /**
+   * The arrival happens once. When it is over the marker goes on <html> and the
+   * animation rule stops matching — because taking an element out of
+   * `display: none` RESTARTS every animation named on it, and without this a
+   * window the visitor just clicked would sit invisible for the whole delay
+   * before fading in.
+   *
+   * Removing the rule afterwards is not visible: the animation's `to` state is
+   * the window's natural state, so nothing moves when it stops applying.
+   */
+  const lastDelay = Math.max(
+    0,
+    ...[...document.querySelectorAll<HTMLElement>(".xp-window")].map(
+      (w) => parseFloat(getComputedStyle(w).getPropertyValue("--enter-delay")) || 0,
+    ),
+  );
+  setTimeout(() => document.documentElement.classList.add("xp-arrived"), lastDelay + 400);
+
+  /**
    * Where a window goes when it first appears.
    *
    * Row windows are laid out together: each one reads every `[data-row]` window
@@ -650,10 +681,14 @@ Then replace the `// ── Start-up ──` block at the end of the `forEach` w
     const row = [...document.querySelectorAll<HTMLElement>('.xp-window[data-row="true"]')];
     const index = row.indexOf(win);
     if (index < 0) return null;
-    // offsetWidth/offsetHeight and not getBoundingClientRect: the arrival
-    // animation holds a `scale(0.92)` on the window through its delay, which
-    // the rect would report and the offsets would not.
-    const sizes = row.map((w) => ({ w: w.offsetWidth, h: w.offsetHeight }));
+    // The authored --w/--h and not offsetWidth/offsetHeight: those are correct
+    // even while the window is display:none or mid-animation, and they are the
+    // exact numbers index.astro measured against when it computed the
+    // build-time row.
+    const sizes = row.map((w) => ({
+      w: parseFloat(getComputedStyle(w).getPropertyValue("--w")) || w.offsetWidth,
+      h: parseFloat(getComputedStyle(w).getPropertyValue("--h")) || w.offsetHeight,
+    }));
     const positions = rowPositions(sizes, {
       vw: innerWidth,
       vh: innerHeight,
