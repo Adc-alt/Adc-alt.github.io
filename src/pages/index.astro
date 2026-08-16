@@ -2,59 +2,40 @@
 /**
  * The site: a Windows XP desktop with the portfolio inside windows.
  *
- * Every window is rendered here, at build time. The JavaScript only opens,
- * closes and drags them — if it generated the content, a search engine would
- * see an empty desktop (phase 1 §13).
+ * Every window and every section is rendered here, at build time. The
+ * JavaScript only opens, closes, drags and swaps — if it generated the content,
+ * a search engine would see an empty desktop (phase 1 §13).
  *
- * Spec: docs/superpowers/specs/2026-08-15-xp-desktop-phase2-design.md
+ * Spec: docs/superpowers/specs/2026-08-16-xp-desktop-phase3-design.md
  */
-import { getCollection } from "astro:content";
 import XP from "../layouts/XP.astro";
 import Boot from "../components/Boot.astro";
 import Window from "../components/xp/Window.astro";
-import Welcome from "../components/xp/Welcome.astro";
-import Projects from "../components/xp/Projects.astro";
-import Project from "../components/xp/Project.astro";
-import About from "../components/xp/About.astro";
-import Blog from "../components/xp/Blog.astro";
-import { windowIdFor } from "../components/xp/projects.mjs";
-
-const projects = (
-  await getCollection("projects", ({ data }) => (import.meta.env.PROD ? !data.draft : true))
-).sort((a, b) => a.data.order - b.data.order || b.data.year - a.data.year);
+import Welcome from "../components/xp/Home.astro";
+import Sections from "../components/xp/Sections.astro";
 ---
 
 <XP>
   <Boot slot="overlay" />
 
-  {/* The only one that opens by itself, and the only navigation there is: no
-      icons and no Start menu, everything else opens from inside this one. */}
-  {/* 560 is not a round number: measured in the browser, the welcome content
-      takes 515px and the usable well is 33 less than the window height. It is
-      the only window that cares — the rest are documents and scroll by nature —
-      because a scrollbar on the first screen of the site says "this does not
-      fit here" before anyone has read a word. */}
-  <Window id="window-welcome" title="Welcome to my page" width={720} height={560} open>
+  {/* Temporary nav, deleted in Task 5 when the Menu window takes over. It lives
+      here and NOT inside Home.astro on purpose: Home.astro renders inside
+      `#section-home`, which the switcher hides the moment you navigate away,
+      so a nav placed there would disappear with the first click. `xp-navlink`
+      is the real class, so the aria-current wiring is exercised now. */}
+  <Window id="window-welcome" title="Welcome to my page" width={720} height={560} order={0} open>
+    <div class="xp-doc">
+      <p class="row">
+        <a class="xp-navlink" href="#section-home">Home</a>
+        <a class="xp-navlink" href="#section-projects">Projects</a>
+        <a class="xp-navlink" href="#section-about">About me</a>
+        <a class="xp-navlink" href="#section-blog">Blog</a>
+      </p>
+    </div>
     <Welcome />
   </Window>
 
-  <Window id="window-projects" title="Projects" width={660} height={480}>
-    <Projects />
+  <Window id="window-main" title="Home" width={700} height={600} order={1} open>
+    <Sections />
   </Window>
-
-  <Window id="window-about" title="About me" width={640} height={520}>
-    <About />
-  </Window>
-
-  <Window id="window-blog" title="Blog" width={740} height={560}>
-    <Blog />
-  </Window>
-
-  {
-    projects.map((p) => (
-      <Window id={windowIdFor(p.id)} title={p.data.title} width={720} height={560}>
-        <Project project={p} />
-      </Window>
-    ))
-  }
 </XP>

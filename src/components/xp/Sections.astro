@@ -1,0 +1,122 @@
+---
+/**
+ * The contents of the reading pane: every section, rendered into the build.
+ *
+ * Phase 1 §13 still governs — if JavaScript produced these, a crawler would see
+ * an empty pane. The script only decides which one is visible. Without it every
+ * section is on the page, one after another, which is the whole no-JavaScript
+ * story (phase 3 §6).
+ *
+ * The four fixed sections are rendered FROM `NAV`, not written out by hand, so a
+ * Menu entry cannot end up pointing at a section that does not exist.
+ *
+ * Spec: docs/superpowers/specs/2026-08-16-xp-desktop-phase3-design.md
+ */
+import { getCollection } from "astro:content";
+import Home from "./Home.astro";
+import Projects from "./Projects.astro";
+import About from "./About.astro";
+import Blog from "./Blog.astro";
+import Project from "./Project.astro";
+import { NAV, projectSectionId, sectionId } from "./sections.mjs";
+
+/* Annotated because `FIXED[entry.id]` indexes with a `string`, and under
+   `astro/tsconfigs/strict` an un-annotated object literal makes that an
+   implicit-any index error that fails `astro check`. All four are Astro
+   component factories with no required props, so they share one type. */
+const FIXED: Record<string, typeof Home> = {
+  home: Home,
+  projects: Projects,
+  about: About,
+  blog: Blog,
+};
+
+const projects = (
+  await getCollection("projects", ({ data }) => (import.meta.env.PROD ? !data.draft : true))
+).sort((a, b) => a.data.order - b.data.order || b.data.year - a.data.year);
+---
+
+{
+  NAV.map((entry) => {
+    const Body = FIXED[entry.id];
+    return (
+      <section
+        class="xp-section"
+        id={sectionId(entry.id)}
+        data-title={entry.label}
+        tabindex="-1"
+      >
+        <Body />
+      </section>
+    );
+  })
+}
+
+{
+  projects.map((p) => (
+    <section
+      class="xp-section"
+      id={projectSectionId(p.id)}
+      data-title={p.data.title}
+      tabindex="-1"
+    >
+      <Project project={p} />
+    </section>
+  ))
+}
+
+<script>
+  import { navFor, resolveSection } from "./sections.mjs";
+
+  const pane = document.getElementById("window-main");
+  const sections = [...document.querySelectorAll<HTMLElement>("#window-main .xp-section")];
+  const links = [...document.querySelectorAll<HTMLAnchorElement>(".xp-navlink")];
+  const ids = sections.map((s) => s.id);
+
+  /**
+   * Shows one section and hides the rest.
+   *
+   * Runs in BOTH modes, not just on a desktop: on a phone with JavaScript, one
+   * section at a time beats a single column holding the entire site.
+   *
+   * `moveFocus` is false on the first call on purpose. Focusing an element
+   * scrolls it into view, and nobody asked to be scrolled just for arriving.
+   */
+  function show(hash: string, moveFocus: boolean) {
+    if (!sections.length) return;
+    const target = resolveSection(ids, hash);
+    const active = sections.find((s) => s.id === target);
+    if (!active) return;
+
+    for (const s of sections) s.hidden = s !== active;
+
+    // Through the event and not by writing to `.xp-titletext` directly: the
+    // taskbar button's text is a copy made at start-up and `Window.astro` is
+    // what knows about it.
+    const title = active.dataset.title;
+    if (title) pane?.dispatchEvent(new CustomEvent("xp:title", { detail: title }));
+
+    const current = `#${navFor(target)}`;
+    for (const a of links) {
+      if (a.getAttribute("href") === current) a.setAttribute("aria-current", "page");
+      else a.removeAttribute("aria-current");
+    }
+
+    if (moveFocus) active.focus();
+  }
+
+  // No click handler: the anchors set the hash themselves, which is what gives
+  // the back button and shareable section links for free (phase 3 §3).
+  addEventListener("hashchange", () => show(location.hash, true));
+
+  // The FIRST show waits for DOMContentLoaded, which fires only after every
+  // deferred module script has run. Astro does not promise an order between two
+  // bundled component scripts, and this one dispatches `xp:title` at a window
+  // whose listener lives in Window.astro's script: run first and the event goes
+  // nowhere, so a deep link would land on the right section under the title
+  // "Home". `hashchange` above is registered immediately — it cannot fire this
+  // early anyway.
+  const first = () => show(location.hash, false);
+  if (document.readyState === "loading") addEventListener("DOMContentLoaded", first);
+  else first();
+</script>

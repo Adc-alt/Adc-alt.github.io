@@ -1,43 +1,14 @@
 ---
 /**
- * The contents of the window that opens by itself: the front door of the site.
+ * The Home section: the first thing the reading pane shows.
  *
- * There are no desktop icons and no Start menu (owner's call, phase 2 §3), so
- * THIS WINDOW IS THE ONLY NAVIGATION. If it runs out of links, the site runs
- * out of ways to reach anything.
- *
- * The shortcuts are real `<a href="#window-id">` and not buttons: with
- * JavaScript the window manager intercepts them and opens the window, and
- * without it they are anchors that jump to the window, which in stacked mode
- * is visible (§3.1).
+ * It used to be a window of its own and the site's only navigation. The Menu
+ * window is that now, so what is left here is the introduction — the shortcut
+ * grid moved out rather than being duplicated.
  */
-import { getCollection } from "astro:content";
 import { SITE, SOCIAL } from "../../consts";
 
 const year = new Date().getFullYear();
-
-const projects = await getCollection("projects", ({ data }) =>
-  import.meta.env.PROD ? !data.draft : true,
-);
-const entries = await getCollection("blog", ({ data }) =>
-  import.meta.env.PROD ? !data.draft : true,
-);
-
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-
-const shortcuts = [
-  {
-    href: "#window-projects",
-    title: "Projects",
-    caption: plural(projects.length, "project", "projects") + ", from the inside",
-  },
-  { href: "#window-about", title: "About me", caption: "Who I am and what I work with" },
-  {
-    href: "#window-blog",
-    title: "Blog",
-    caption: plural(entries.length, "post", "posts") + " about what I build",
-  },
-];
 ---
 
 <div class="xp-doc">
@@ -52,19 +23,6 @@ const shortcuts = [
     own window. They drag by the title bar, minimise to the bar at the bottom
     and close.
   </p>
-
-  <ul class="shortcuts">
-    {
-      shortcuts.map((s) => (
-        <li>
-          <a class="shortcut" href={s.href}>
-            <b>{s.title}</b>
-            <span>{s.caption}</span>
-          </a>
-        </li>
-      ))
-    }
-  </ul>
 
   <hr />
 

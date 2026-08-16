@@ -205,3 +205,27 @@
   margin: 0 0 0.15rem;
   font-size: 1.05rem;
 }
+
+/* ── The sections of the reading pane ──────────────────────────────────── */
+
+/* Belt and braces over the UA's `[hidden] { display: none }`: the rule is easy
+   to lose to any `display` set on an ancestor, and losing it means every
+   section on screen at once. */
+.xp-section[hidden] {
+  display: none;
+}
+/* The switcher focuses the section so a screen reader lands on the new content.
+   It is a container, not a control: no focus ring. */
+.xp-section:focus {
+  outline: none;
+}
+/* Only ever seen with JavaScript off, where every section is stacked. */
+.xp-section + .xp-section {
+  margin-top: 2rem;
+  padding-top: 1.6rem;
+  border-top: 1px solid #aca899;
+}
+
+.xp-doc .back {
+  margin-bottom: 0.6rem;
+}
