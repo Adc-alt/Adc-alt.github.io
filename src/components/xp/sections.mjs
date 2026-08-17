@@ -18,7 +18,6 @@ export const NAV = [
   { id: "projects", label: "Projects" },
   { id: "about", label: "About me" },
   { id: "blog", label: "Blog" },
-  { id: "games", label: "Games" },
 ];
 
 /** A section's element id, which is also its hash. */
@@ -31,12 +30,12 @@ export const PANE_ID = "window-main";
 export const projectSectionId = (fileId) => sectionId(`project-${fileId}`);
 
 /**
- * The three games, in the order the Games index lists them. Same job as `NAV`:
- * `Sections.astro` renders a section per entry and `Games.astro` renders the
- * links, so a game cannot be listed without existing.
+ * The three games, in the order the Games window lists them. Same job as `NAV`:
+ * `GamesFolder.astro` renders both the list and a panel per entry out of this
+ * array, so a game cannot be listed without existing.
  *
- * `title` is what the pane's title bar says while the game is open — the game's
- * own name, not "Games", because that is what Windows put there.
+ * `title` is what the window's title bar says while that game is open — the
+ * game's own name, not "Games", because that is what Windows put there.
  */
 export const GAMES = [
   { id: "minesweeper", label: "Minesweeper", title: "Minesweeper" },
@@ -44,8 +43,22 @@ export const GAMES = [
   { id: "pinball", label: "3D Pinball: Space Cadet", title: "3D Pinball for Windows" },
 ];
 
-/** A game's section id. Parallel to `projectSectionId` and for the same reason. */
-export const gameSectionId = (id) => sectionId(`game-${id}`);
+/** The window the games live in. Minted by `index.astro`, opened by the desktop icon. */
+export const GAMES_WINDOW_ID = "window-games";
+
+/** What the Games window is called when no game is open. */
+export const GAMES_TITLE = "Games";
+
+/**
+ * A game panel's element id.
+ *
+ * Deliberately NOT prefixed `section-`. These are panels inside the Games
+ * window, switched by that window's own script; they are not sections of the
+ * reading pane and they are not hashes. Sharing the prefix would invite
+ * someone to link one, and `resolveSection` does not know these ids — the pane
+ * would answer such a link by falling back to Home.
+ */
+export const gamePanelId = (id) => `game-${id}`;
 
 /**
  * Which section a hash asks for, guaranteed to be one that exists.
@@ -63,15 +76,11 @@ export function resolveSection(ids, hash) {
 /**
  * Which Menu entry is the current one for a given section.
  *
- * A project is reached from Projects and belongs under it, and a game from
- * Games, so drilling into either must not leave the Menu with nothing
- * highlighted.
+ * A project is reached from Projects and belongs under it, so drilling into one
+ * must not leave the Menu with nothing highlighted.
  */
-export function navFor(id) {
-  if (id.startsWith(sectionId("project-"))) return sectionId("projects");
-  if (id.startsWith(sectionId("game-"))) return sectionId("games");
-  return id;
-}
+export const navFor = (id) =>
+  id.startsWith(sectionId("project-")) ? sectionId("projects") : id;
 
 /**
  * How each `status` from the content schema reads.

@@ -1,0 +1,197 @@
+---
+/**
+ * The inside of the Games window: an index and a panel per game, with a
+ * switcher of its own.
+ *
+ * ⚠️ The switching here is NOT hash-driven, and that is deliberate. The reading
+ * pane owns `location.hash`, and `resolveSection` answers a hash it does not
+ * know by falling back to Home — so an `<a href="#game-solitaire">` in this
+ * window would open Solitaire here AND silently throw the reading pane back to
+ * Home behind it. Buttons and local state cost a shareable link to a game,
+ * which is a thing nobody shares, and buy no coupling between two windows.
+ *
+ * Every panel is rendered at build time and the script hides them (phase 1
+ * §13). Without JavaScript this is the whole folder, one game after another —
+ * each of which says it needs JavaScript, because all three do.
+ */
+import Minesweeper from "./Minesweeper.astro";
+import Solitaire from "./Solitaire.astro";
+import Pinball from "./Pinball.astro";
+import { GAMES, GAMES_TITLE, gamePanelId } from "./sections.mjs";
+
+/* Annotated for the same reason as `FIXED` in `Sections.astro`: indexing an
+   un-annotated object literal with a `string` is an implicit-any error under
+   `astro/tsconfigs/strict`, and `astro check` fails the build on it. */
+const BODIES: Record<string, typeof Minesweeper> = {
+  minesweeper: Minesweeper,
+  solitaire: Solitaire,
+  pinball: Pinball,
+};
+
+const BLURB: Record<string, string> = {
+  minesweeper:
+    "Beginner, Intermediate and Expert, the three boards Windows shipped. Written for this site; the rules are a module of their own with tests, because a flood fill that stops one cell short still looks perfectly fine on screen.",
+  solitaire:
+    "Klondike, with drag and drop. Turning one card at a time rather than the three Windows defaulted to — draw-three makes most deals unwinnable, which is a poor thing to put in front of a visitor.",
+  pinball:
+    "The real one, running on WebAssembly. Not mine and not hosted here: it is a decompilation of the original by k4zmu2a, ported by alula, and the frame stays empty until you ask for it.",
+};
+---
+
+<div class="games" data-title={GAMES_TITLE}>
+  <div class="xp-doc games-index" id="games-index">
+    <p class="lede">
+      The three that came with the machine. Two of them I wrote; the third is
+      somebody else's build of the original, framed rather than copied.
+    </p>
+
+    <ul class="index">
+      {
+        GAMES.map((game) => (
+          <li>
+            <h2>
+              <button type="button" class="games-open" data-game={game.id}>
+                {game.label}
+              </button>
+            </h2>
+            <p>{BLURB[game.id]}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+
+  {
+    GAMES.map((game) => {
+      const Body = BODIES[game.id];
+      return (
+        /* `data-title` is the game's own name and not "Games": while a game is
+           open the title bar says what the window it came out of said. */
+        <div class="games-panel" id={gamePanelId(game.id)} data-title={game.title} tabindex="-1">
+          {/* `xp-game` widens the document: a board is as wide as it is, not as
+              wide as a column of prose. */}
+          <div class="xp-doc xp-game">
+            <p class="note back">
+              <button type="button" class="games-back">← Games</button>
+            </p>
+            <h1>{game.label}</h1>
+            <Body />
+          </div>
+        </div>
+      );
+    })
+  }
+</div>
+
+<script>
+  import { GAMES_WINDOW_ID, gamePanelId } from "./sections.mjs";
+
+  const root = document.querySelector<HTMLElement>(".games");
+  const win = document.getElementById(GAMES_WINDOW_ID);
+  const index = root?.querySelector<HTMLElement>(".games-index");
+
+  if (root && index) {
+    const panels = [...root.querySelectorAll<HTMLElement>(".games-panel")];
+
+    /** Retitles the window. Through the event and not by writing to the title
+        bar: the taskbar button's text is a copy made at start-up, and only
+        `Window.astro` knows about it. */
+    const retitle = (title: string | undefined) => {
+      if (title) win?.dispatchEvent(new CustomEvent("xp:title", { detail: title }));
+    };
+
+    /** `id` names a game, or null for the index. */
+    const show = (id: string | null) => {
+      // Through `gamePanelId` and not by pasting the prefix: the markup above
+      // mints these ids with it, and the two cannot be allowed to drift.
+      const wanted = id === null ? null : gamePanelId(id);
+      index.hidden = wanted !== null;
+      for (const panel of panels) panel.hidden = panel.id !== wanted;
+
+      const open = wanted ? panels.find((p) => p.id === wanted) : null;
+      retitle(open?.dataset.title ?? root.dataset.title);
+
+      // The window keeps its scroll across a swap, so arriving from a game read
+      // to the bottom would put the index's first line above the viewport.
+      win?.querySelector(".xp-winbody")?.scrollTo(0, 0);
+      // `preventScroll`: focusing a container scrolls it into view, which
+      // inside the window means scrolling past the body's own padding. The
+      // screen reader still lands on the new content; only the scroll goes.
+      open?.focus({ preventScroll: true });
+    };
+
+    for (const button of root.querySelectorAll<HTMLButtonElement>(".games-open")) {
+      button.addEventListener("click", () => show(button.dataset.game ?? null));
+    }
+    for (const button of root.querySelectorAll<HTMLButtonElement>(".games-back")) {
+      button.addEventListener("click", () => {
+        show(null);
+        index.querySelector<HTMLButtonElement>(".games-open")?.focus({ preventScroll: true });
+      });
+    }
+
+    // The folder opens on the index. Doing it here and not in the markup is
+    // what leaves the whole folder readable with JavaScript off.
+    show(null);
+  }
+</script>
+
+<style>
+  .games-panel[hidden],
+  .games-index[hidden] {
+    display: none;
+  }
+  /* The panel is a container the script focuses so a screen reader lands on the
+     new content, not something you tab to. */
+  .games-panel:focus {
+    outline: none;
+  }
+
+  /* A game's title in the index. It has to be a button, not a link — see the
+     comment at the top of this file — so it is a button painted as a link. */
+  .games-index .games-open {
+    padding: 0;
+    background: none;
+    border: 0;
+    color: #0000ee;
+    font: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    text-align: left;
+    text-decoration: underline;
+    cursor: default;
+  }
+  .games-index .games-open:hover {
+    color: #0000aa;
+  }
+  .games-index .games-open:focus-visible {
+    outline: 2px solid #316ac5;
+    outline-offset: 2px;
+  }
+
+  /* Same, for the way back out of a game. */
+  .games-back {
+    padding: 0;
+    background: none;
+    border: 0;
+    color: #0000ee;
+    font: inherit;
+    text-decoration: underline;
+    cursor: default;
+  }
+  .games-back:focus-visible {
+    outline: 2px solid #316ac5;
+    outline-offset: 2px;
+  }
+
+  /* Without JavaScript every panel is on the page one after another, and they
+     need telling apart. `:not([hidden])` on the LEFT half is the whole rule:
+     `A + B` matches on the preceding ELEMENT sibling, and `hidden` takes a
+     panel out of rendering but not out of the sibling chain. */
+  .games-index:not([hidden]) + .games-panel,
+  .games-panel:not([hidden]) + .games-panel {
+    margin-top: 2rem;
+    padding-top: 1.6rem;
+    border-top: 1px solid #aca899;
+  }
+</style>

@@ -15,7 +15,9 @@ import Window from "../components/xp/Window.astro";
 import Nav from "../components/xp/Nav.astro";
 import Sections from "../components/xp/Sections.astro";
 import Contact from "../components/xp/Contact.astro";
-import { PANE_ID } from "../components/xp/sections.mjs";
+import DesktopIcon from "../components/xp/DesktopIcon.astro";
+import GamesFolder from "../components/xp/GamesFolder.astro";
+import { GAMES_TITLE, GAMES_WINDOW_ID, PANE_ID } from "../components/xp/sections.mjs";
 import { ROW_SIZES, rowPositions } from "../components/xp/windows.mjs";
 import { HEIGHT as BAR_H } from "../components/xp/taskbar-colors.mjs";
 
@@ -77,4 +79,20 @@ const [nav, main, contact] = rowPositions(ROW_SIZES, { vw: 1440, vh: 900, barH: 
   >
     <Contact />
   </Window>
+
+  {/* Closed at load and not part of the row: the games are not the portfolio,
+      they are the thing on the desktop you can go and open. `row` is what puts
+      a window in the three-across layout, and a fourth in it would break the
+      arithmetic the 1204px breakpoint is derived from.
+
+      In stacked mode `data-open="false"` is not honoured — that CSS lives
+      inside the desktop media query — so a phone gets the whole folder in the
+      column, which is the only place it can go there. */}
+  <Window id={GAMES_WINDOW_ID} title={GAMES_TITLE} width={660} height={580} order={3}>
+    <GamesFolder />
+  </Window>
+
+  {/* Last, so it is the final child of the desktop; it draws under the windows
+      anyway, on a lower z-index. */}
+  <DesktopIcon target={GAMES_WINDOW_ID} label={GAMES_TITLE} />
 </XP>

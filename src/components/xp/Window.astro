@@ -253,6 +253,10 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
     win.addEventListener("xp:show", () => {
       win.dataset.open = "true";
       restore();
+      // A window that was closed at load has never been through `enterDesktop`,
+      // so this is where it gets its taskbar button and its first position.
+      // Idempotent for the windows that already have both.
+      ensurePlaced();
       if (DESKTOP.matches) reclamp();
       toFront();
     });
@@ -301,9 +305,19 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
       placeRow(win) ?? cascadePosition(index, size(), desk());
 
     // ── Start-up ──────────────────────────────────────────────────────────
-    /** Puts the window on the desktop: a taskbar button, a position, and the front. */
-    const enterDesktop = () => {
-      if (win.dataset.open !== "true" || !DESKTOP.matches || task.isConnected) return;
+    /**
+     * Gives the window the furniture the desktop needs: a taskbar button and a
+     * position. Runs at most once — the connected button is the record that it
+     * has — so calling it on a window already on the desktop cannot move one
+     * the visitor has dragged somewhere.
+     *
+     * Not folded into `enterDesktop`, because a window that starts CLOSED never
+     * goes through it: `xp:show` is that window's first appearance, and without
+     * this it would arrive with no taskbar button at all — and the taskbar
+     * button is the only way to bring a window back once it is closed.
+     */
+    const ensurePlaced = () => {
+      if (!DESKTOP.matches || task.isConnected) return;
       // Counted BEFORE appending, as phase 2 did: it is the cascade's index,
       // and it has to be different for each window. Counting open windows
       // instead would give every one of them the same number at start-up,
@@ -312,6 +326,12 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
       const alreadyPlaced = tasks?.children.length ?? 0;
       tasks?.appendChild(task);
       move(placement(alreadyPlaced));
+    };
+
+    /** Puts an open window on the desktop and brings it to the front. */
+    const enterDesktop = () => {
+      if (win.dataset.open !== "true" || !DESKTOP.matches || task.isConnected) return;
+      ensurePlaced();
       toFront();
     };
 

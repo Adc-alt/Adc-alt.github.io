@@ -1,0 +1,155 @@
+---
+/**
+ * A shortcut on the wallpaper: an icon, a label under it, and a double click
+ * that opens a window.
+ *
+ * DESKTOP ONLY, and not out of neatness. In stacked mode there are no windows
+ * to open — every one of them is already on the page, one after another — so an
+ * icon whose whole job is opening one would do nothing. Its CSS therefore lives
+ * inside the same `@media (min-width: 1204px)` + `html.js` pair as the windows.
+ *
+ * Opening goes through the `xp:show` event rather than by touching the window:
+ * that event is `Window.astro`'s own front door and already does the four
+ * things opening means — un-hide, un-minimise, re-clamp, bring to the front.
+ */
+import { HEIGHT as BAR_H } from "./taskbar-colors.mjs";
+
+interface Props {
+  /** The window this opens. */
+  target: string;
+  label: string;
+}
+
+const { target, label } = Astro.props;
+---
+
+{/* A real <button>: it is a control, and this is what gives it the keyboard and
+    the accessible name for free. XP opens a shortcut on DOUBLE click and
+    selects on single — both are wired below, and Enter opens it too, because a
+    keyboard has no double click. */}
+<button
+  type="button"
+  class="xp-icon"
+  data-target={target}
+  aria-pressed="false"
+  style={`--bar-h:${BAR_H}px`}
+>
+  <span class="xp-icon-art" aria-hidden="true">
+    {/* The Windows folder, drawn rather than copied: the back flap, the front
+        face over it, and one light edge along the top. */}
+    <svg viewBox="0 0 32 32" width="32" height="32">
+      <path d="M2 7a2 2 0 0 1 2-2h8l3 3h11a2 2 0 0 1 2 2v3H2z" fill="#dfa000" />
+      <path d="M2 10h28v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z" fill="#ffc84a" />
+      <path d="M2 10h28v2H2z" fill="#ffe9a8" />
+      <path d="M4 26a2 2 0 0 1-2-2V12h26v12a2 2 0 0 1-2 2z" fill="#fdbe30" />
+    </svg>
+  </span>
+  <span class="xp-icon-label">{label}</span>
+</button>
+
+<script>
+  const icons = [...document.querySelectorAll<HTMLButtonElement>(".xp-icon")];
+
+  /** XP shows one shortcut selected at a time, and clicking the wallpaper clears it. */
+  const select = (icon: HTMLButtonElement | null) => {
+    for (const other of icons) other.setAttribute("aria-pressed", String(other === icon));
+  };
+
+  const open = (icon: HTMLButtonElement) => {
+    const target = icon.dataset.target;
+    const win = target ? document.getElementById(target) : null;
+    if (!win) return;
+    win.dispatchEvent(new CustomEvent("xp:show"));
+    // `xp:show` deliberately does not take focus — whoever asked knows better
+    // where the visitor should land — and here that is the window itself.
+    win.focus();
+  };
+
+  for (const icon of icons) {
+    icon.addEventListener("click", () => select(icon));
+    icon.addEventListener("dblclick", () => open(icon));
+    // A keyboard has no double click, so Enter and Space are the single way in.
+    // On `keydown` and not `click`, because Space already fires `click` on a
+    // button and that path is the one that only selects.
+    icon.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+      select(icon);
+      open(icon);
+    });
+  }
+
+  // Anywhere that is not an icon clears the selection, as the desktop does.
+  addEventListener("pointerdown", (e) => {
+    const el = e.target;
+    if (el instanceof Element && el.closest(".xp-icon")) return;
+    select(null);
+  });
+</script>
+
+<style>
+  /* Stacked mode gets nothing: there is no window to open there. */
+  .xp-icon {
+    display: none;
+  }
+
+  /* 1204 = DESKTOP_MIN_WIDTH in `windows.mjs`, spelled out because a media
+     query cannot read a JS constant — the same pair of conditions the windows
+     themselves hang off, so the icon exists exactly when a window can be
+     opened. `windows.test.mjs` pins the number against the constant. */
+  @media (min-width: 1204px) {
+    :global(html.js) .xp-icon {
+      position: absolute;
+      /* Bottom left, clear of the taskbar. `--bar-h` is set on the element
+         itself out of `taskbar-colors.mjs`, so the gap survives a change to the
+         bar's height instead of drifting from a number copied here. */
+      left: 16px;
+      bottom: calc(var(--bar-h, 40px) + 16px);
+      z-index: 1;
+
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      width: 76px;
+      padding: 4px 2px 2px;
+      background: none;
+      border: 0;
+      cursor: default;
+    }
+
+    :global(html.js) .xp-icon-art {
+      display: block;
+      /* The drop shadow XP put under every desktop icon. */
+      filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.55));
+    }
+
+    :global(html.js) .xp-icon-label {
+      padding: 1px 3px;
+      color: #ffffff;
+      font: 11px/1.25 Tahoma, "DejaVu Sans", Verdana, sans-serif;
+      text-align: center;
+      /* Not a shadow for looks: the wallpaper runs from white cloud to dark
+         green, and white text on the clouds is unreadable without it. */
+      text-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.9),
+        0 0 3px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Selected: the icon takes a blue wash and the label the selection blue of
+       Explorer, which is what XP does. */
+    :global(html.js) .xp-icon[aria-pressed="true"] .xp-icon-art {
+      filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.55)) brightness(0.75)
+        sepia(1) hue-rotate(180deg) saturate(2.2);
+    }
+    :global(html.js) .xp-icon[aria-pressed="true"] .xp-icon-label {
+      background: #316ac5;
+      text-shadow: none;
+    }
+
+    :global(html.js) .xp-icon:focus-visible {
+      outline: 1px dotted #ffffff;
+      outline-offset: -1px;
+    }
+  }
+</style>

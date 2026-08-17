@@ -17,31 +17,18 @@ import Home from "./Home.astro";
 import Projects from "./Projects.astro";
 import About from "./About.astro";
 import Blog from "./Blog.astro";
-import Games from "./Games.astro";
 import Project from "./Project.astro";
-import Minesweeper from "./Minesweeper.astro";
-import Solitaire from "./Solitaire.astro";
-import Pinball from "./Pinball.astro";
-import { GAMES, NAV, gameSectionId, projectSectionId, sectionId } from "./sections.mjs";
+import { NAV, projectSectionId, sectionId } from "./sections.mjs";
 
 /* Annotated because `FIXED[entry.id]` indexes with a `string`, and under
    `astro/tsconfigs/strict` an un-annotated object literal makes that an
-   implicit-any index error that fails `astro check`. All five are Astro
+   implicit-any index error that fails `astro check`. All four are Astro
    component factories with no required props, so they share one type. */
 const FIXED: Record<string, typeof Home> = {
   home: Home,
   projects: Projects,
   about: About,
   blog: Blog,
-  games: Games,
-};
-
-/* The playable half of `GAMES`. Kept apart from the list itself because
-   `sections.mjs` has no DOM and no imports, and it is what the tests read. */
-const GAME_BODIES: Record<string, typeof Home> = {
-  minesweeper: Minesweeper,
-  solitaire: Solitaire,
-  pinball: Pinball,
 };
 
 const projects = (
@@ -76,32 +63,6 @@ const projects = (
       <Project project={p} />
     </section>
   ))
-}
-
-{
-  GAMES.map((game) => {
-    const Body = GAME_BODIES[game.id];
-    return (
-      /* `data-title` is the game's own name and not "Games": the title bar
-         says what the window it came out of used to say. */
-      <section
-        class="xp-section"
-        id={gameSectionId(game.id)}
-        data-title={game.title}
-        tabindex="-1"
-      >
-        {/* `xp-game` widens the document: a board is as wide as it is, not as
-            wide as a column of prose. */}
-        <div class="xp-doc xp-game">
-          <p class="note back">
-            <a href={`#${sectionId("games")}`}>← Games</a>
-          </p>
-          <h1>{game.label}</h1>
-          <Body />
-        </div>
-      </section>
-    );
-  })
 }
 
 <script>

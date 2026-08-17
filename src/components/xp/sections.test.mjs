@@ -2,8 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   GAMES,
+  GAMES_TITLE,
+  GAMES_WINDOW_ID,
   NAV,
-  gameSectionId,
+  gamePanelId,
   navFor,
   projectSectionId,
   resolveSection,
@@ -15,19 +17,19 @@ const IDS = [
   "section-projects",
   "section-about",
   "section-blog",
-  "section-games",
   "section-project-this-desktop",
-  "section-game-minesweeper",
 ];
 
-test("the Menu is the five entries the spec names, in order", () => {
+test("the Menu is the four entries the spec names, in order", () => {
+  // Games is NOT one of them: it lives behind the desktop icon, in a window of
+  // its own, so the Menu is the portfolio and nothing else.
   assert.deepEqual(
     NAV.map((n) => n.id),
-    ["home", "projects", "about", "blog", "games"],
+    ["home", "projects", "about", "blog"],
   );
   assert.deepEqual(
     NAV.map((n) => n.label),
-    ["Home", "Projects", "About me", "Blog", "Games"],
+    ["Home", "Projects", "About me", "Blog"],
   );
 });
 
@@ -71,40 +73,39 @@ test("a project section marks Projects as the current Menu entry", () => {
   assert.equal(navFor("section-project-this-desktop"), "section-projects");
 });
 
-test("a game section marks Games as the current Menu entry", () => {
-  // Otherwise opening a game leaves the Menu with nothing highlighted and no
-  // clue where you are.
-  assert.equal(navFor("section-game-minesweeper"), "section-games");
-  assert.equal(navFor("section-game-pinball"), "section-games");
-});
-
 test("any other section marks itself", () => {
   assert.equal(navFor("section-about"), "section-about");
   assert.equal(navFor("section-projects"), "section-projects");
-  assert.equal(navFor("section-games"), "section-games");
 });
 
-test("a game's section id is derived from its own id", () => {
-  assert.equal(gameSectionId("minesweeper"), "section-game-minesweeper");
+test("a game's panel id is derived from its own id", () => {
+  assert.equal(gamePanelId("minesweeper"), "game-minesweeper");
 });
 
-test("every game has a distinct section id and a title for the title bar", () => {
-  const ids = GAMES.map((g) => gameSectionId(g.id));
+test("every game has a distinct panel id, a label and a title for the title bar", () => {
+  const ids = GAMES.map((g) => gamePanelId(g.id));
   assert.equal(new Set(ids).size, GAMES.length);
-  for (const id of ids) assert.match(id, /^section-game-[a-z-]+$/);
+  for (const id of ids) assert.match(id, /^game-[a-z-]+$/);
   for (const game of GAMES) {
     assert.ok(game.label, `${game.id} has no label for the index`);
     assert.ok(game.title, `${game.id} has no title for the title bar`);
   }
 });
 
-test("no game collides with a Menu entry's section", () => {
-  // Both lists mint ids into the same namespace, and a collision would render
-  // two sections with the same id — the switcher would only ever find one.
-  const nav = NAV.map((n) => sectionId(n.id));
-  for (const game of GAMES) assert.equal(nav.includes(gameSectionId(game.id)), false);
+test("a game panel id is not a section id, so it cannot be mistaken for a hash", () => {
+  // The reading pane answers a hash it does not recognise by falling back to
+  // Home. If a panel id looked like a section id somebody would link one, and
+  // the link would quietly reset the pane behind the Games window.
+  for (const game of GAMES) {
+    assert.equal(gamePanelId(game.id).startsWith("section-"), false);
+    assert.equal(resolveSection(IDS, `#${gamePanelId(game.id)}`), "section-home");
+  }
 });
 
-test("a game hash resolves to that game and not to the index", () => {
-  assert.equal(resolveSection(IDS, "#section-game-minesweeper"), "section-game-minesweeper");
+test("the Games window has an id of its own and a title", () => {
+  assert.equal(GAMES_WINDOW_ID, "window-games");
+  assert.equal(GAMES_TITLE, "Games");
+  // A window id is not a section id — the pane must not answer to it.
+  assert.equal(resolveSection(IDS, `#${GAMES_WINDOW_ID}`), "section-home");
+  assert.equal(NAV.some((n) => sectionId(n.id) === GAMES_WINDOW_ID), false);
 });
