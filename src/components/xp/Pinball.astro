@@ -1,0 +1,117 @@
+---
+/**
+ * 3D Pinball: Space Cadet — the only game here that is not mine and not hosted
+ * here either.
+ *
+ * The engine is a decompilation of the original, compiled to WebAssembly
+ * (k4zmu2a's work, ported to Emscripten by alula). The engine is MIT. The GAME
+ * — the table, the sprites, the sounds — is Microsoft's and is not
+ * redistributable, which is why upstream ships the code without it and why
+ * there is no copy of it in this repository. What is here is a frame around
+ * somebody else's build.
+ *
+ * It does NOT load on its own. The frame appears only when the visitor asks for
+ * it, for two reasons: it is several megabytes off a stranger's bandwidth, and
+ * loading a third party unasked would quietly hand them the IP address of
+ * everyone who so much as glances at this page — which the colophon in the
+ * Contact window promises not to do.
+ */
+const SRC = "https://pinball.alula.me/";
+---
+
+<div class="pin">
+  <div class="pin-stage">
+    {/* The URL rides on the button rather than in the script: the script is
+        bundled and shared, the markup is where this component's own data goes. */}
+    <button type="button" class="pin-play" data-src={SRC}>
+      <span class="pin-play-icon" aria-hidden="true">▶</span>
+      <span>Load the game</span>
+      <span class="pin-play-note">Runs from pinball.alula.me, not from here</span>
+    </button>
+  </div>
+
+  <p class="note">
+    Arrow keys or <kbd>Z</kbd> and <kbd>/</kbd> for the flippers, hold
+    <kbd>Space</kbd> to pull the plunger. Click inside the frame first, or the
+    keys go to this page instead.
+  </p>
+</div>
+
+<script>
+  const stage = document.querySelector<HTMLElement>(".pin-stage");
+  const button = stage?.querySelector<HTMLButtonElement>(".pin-play");
+
+  button?.addEventListener("click", () => {
+    const frame = document.createElement("iframe");
+    frame.src = button.dataset.src ?? "";
+    frame.title = "3D Pinball: Space Cadet";
+    frame.allow = "autoplay; fullscreen";
+    frame.className = "pin-frame";
+    stage?.replaceChildren(frame);
+    frame.focus();
+  });
+</script>
+
+<style>
+  /* The 600x416 the original window opened at, kept as a ratio so the frame
+     shrinks with the pane instead of pushing it sideways. */
+  .pin-stage {
+    position: relative;
+    aspect-ratio: 600 / 416;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 0 0.9rem;
+    background: #000000;
+    border: 2px solid;
+    border-color: #808080 #ffffff #ffffff #808080;
+  }
+
+  .pin-play {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    background: none;
+    border: 0;
+    color: #ffffff;
+    font: inherit;
+    cursor: default;
+  }
+  .pin-play-icon {
+    font-size: 2.4rem;
+    line-height: 1;
+  }
+  .pin-play-note {
+    font-size: 0.75rem;
+    color: #b9c7d8;
+  }
+  .pin-play:hover .pin-play-icon {
+    color: #ffc83d;
+  }
+  .pin-play:focus-visible {
+    outline: 2px solid #ffc83d;
+    outline-offset: -4px;
+  }
+
+  /* Created by the script, so it carries no scope attribute of its own. */
+  .pin-stage :global(.pin-frame) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+
+  .pin kbd {
+    padding: 0 4px;
+    background: #f4f2ec;
+    border: 1px solid #aca899;
+    border-bottom-width: 2px;
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: 0.85em;
+  }
+</style>

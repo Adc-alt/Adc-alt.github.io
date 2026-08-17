@@ -18,6 +18,7 @@ export const NAV = [
   { id: "projects", label: "Projects" },
   { id: "about", label: "About me" },
   { id: "blog", label: "Blog" },
+  { id: "games", label: "Games" },
 ];
 
 /** A section's element id, which is also its hash. */
@@ -28,6 +29,23 @@ export const PANE_ID = "window-main";
 
 /** A project's section id, derived from its filename, as phase 2 did for windows. */
 export const projectSectionId = (fileId) => sectionId(`project-${fileId}`);
+
+/**
+ * The three games, in the order the Games index lists them. Same job as `NAV`:
+ * `Sections.astro` renders a section per entry and `Games.astro` renders the
+ * links, so a game cannot be listed without existing.
+ *
+ * `title` is what the pane's title bar says while the game is open — the game's
+ * own name, not "Games", because that is what Windows put there.
+ */
+export const GAMES = [
+  { id: "minesweeper", label: "Minesweeper", title: "Minesweeper" },
+  { id: "solitaire", label: "Solitaire", title: "Solitaire" },
+  { id: "pinball", label: "3D Pinball: Space Cadet", title: "3D Pinball for Windows" },
+];
+
+/** A game's section id. Parallel to `projectSectionId` and for the same reason. */
+export const gameSectionId = (id) => sectionId(`game-${id}`);
 
 /**
  * Which section a hash asks for, guaranteed to be one that exists.
@@ -45,11 +63,15 @@ export function resolveSection(ids, hash) {
 /**
  * Which Menu entry is the current one for a given section.
  *
- * A project is reached from Projects and belongs under it, so drilling into one
- * must not leave the Menu with nothing highlighted.
+ * A project is reached from Projects and belongs under it, and a game from
+ * Games, so drilling into either must not leave the Menu with nothing
+ * highlighted.
  */
-export const navFor = (id) =>
-  id.startsWith(sectionId("project-")) ? sectionId("projects") : id;
+export function navFor(id) {
+  if (id.startsWith(sectionId("project-"))) return sectionId("projects");
+  if (id.startsWith(sectionId("game-"))) return sectionId("games");
+  return id;
+}
 
 /**
  * How each `status` from the content schema reads.

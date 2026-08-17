@@ -1,0 +1,447 @@
+---
+/**
+ * Minesweeper: the screen only. Every rule lives in `minesweeper.mjs`, and this
+ * file is allowed to know two things about the game — how a cell looks and what
+ * a click means.
+ *
+ * The grid is built by the script and not rendered here, because it changes
+ * size with the difficulty. That is why the cell rules below are wrapped in
+ * `:global()`: a JS-created element carries no scope attribute, so a plain
+ * `.ms-cell` would compile to `.ms-cell[data-astro-cid-…]` and match nothing.
+ * The `.ms-grid` on the left of each rule is in this file's markup, so the
+ * scoping still holds — the rules cannot leak past this component's grid.
+ */
+import { LEVELS } from "./minesweeper.mjs";
+
+const LABELS = {
+  beginner: "Beginner",
+  intermediate: "Intermediate",
+  expert: "Expert",
+};
+---
+
+<div class="ms">
+  <div class="ms-levels" role="group" aria-label="Difficulty">
+    {
+      Object.keys(LEVELS).map((name) => (
+        <button type="button" class="ms-level" data-level={name}>
+          {LABELS[name as keyof typeof LABELS]}
+        </button>
+      ))
+    }
+  </div>
+
+  <div class="ms-frame">
+    <div class="ms-head">
+      <output class="ms-led ms-mines" aria-label="Mines left">010</output>
+      <button type="button" class="ms-face" aria-label="New game"></button>
+      <output class="ms-led ms-time" aria-label="Seconds">000</output>
+    </div>
+    {/* Rows exist for `role="row"`, which a grid needs. `display: contents`
+        keeps them out of the layout so the cells are still the grid's own
+        children and the columns line up. */}
+    <div class="ms-grid" role="grid" aria-label="Minefield"></div>
+  </div>
+
+  <p class="ms-status note" role="status"></p>
+  <p class="note">
+    Left click opens, right click cycles flag and question mark. With the
+    keyboard: arrows to move, Enter to open, F to flag.
+  </p>
+  <noscript>
+    <p class="note">Minesweeper needs JavaScript, and it is switched off.</p>
+  </noscript>
+</div>
+
+<script>
+  import {
+    LEVELS,
+    createBoard,
+    cycleMark,
+    faceOf,
+    isWon,
+    remaining,
+    reveal,
+  } from "./minesweeper.mjs";
+
+  const root = document.querySelector<HTMLElement>(".ms");
+  const grid = root?.querySelector<HTMLElement>(".ms-grid");
+  const minesOut = root?.querySelector<HTMLElement>(".ms-mines");
+  const timeOut = root?.querySelector<HTMLElement>(".ms-time");
+  const faceBtn = root?.querySelector<HTMLButtonElement>(".ms-face");
+  const status = root?.querySelector<HTMLElement>(".ms-status");
+
+  if (root && grid && minesOut && timeOut && faceBtn && status) {
+    /** The four faces, drawn rather than typed: an emoji would come out as
+        whatever the visitor's system has, which is never a Windows smiley. */
+    const FACES: Record<string, string> = {
+      smile: '<circle cx="9" cy="12" r="1.2"/><circle cx="15" cy="12" r="1.2"/><path d="M7.5 15.5a5 5 0 0 0 9 0" fill="none" stroke="#000" stroke-width="1.4"/>',
+      ooh: '<circle cx="9" cy="11.5" r="1.2"/><circle cx="15" cy="11.5" r="1.2"/><circle cx="12" cy="16" r="2.2" fill="none" stroke="#000" stroke-width="1.4"/>',
+      dead: '<path d="M7 10l3.4 3.4M10.4 10L7 13.4M13.6 10L17 13.4M17 10l-3.4 3.4" stroke="#000" stroke-width="1.4" fill="none"/><path d="M7.5 17.5a5 5 0 0 1 9 0" fill="none" stroke="#000" stroke-width="1.4"/>',
+      win: '<path d="M5 11h6v3.5a2 2 0 0 1-6 0zM13 11h6v3.5a2 2 0 0 1-6 0zM11 12h2" fill="#000"/><path d="M7.5 16.5a5 5 0 0 0 9 0" fill="none" stroke="#000" stroke-width="1.4"/>',
+    };
+    const drawFace = (name: string) => {
+      faceBtn.innerHTML = `<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#ffff00" stroke="#000" stroke-width="1.4"/>${FACES[name]}</svg>`;
+    };
+
+    /** A flag and a mine, drawn once and stamped into whichever cell needs them. */
+    const FLAG =
+      '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M6 3l5 2.5L6 8z" fill="#ff0000"/><path d="M6 3v9" stroke="#000" stroke-width="1.3"/><path d="M3 13h10" stroke="#000" stroke-width="2"/></svg>';
+    const MINE =
+      '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 2v12M2 8h12M3.8 3.8l8.4 8.4M12.2 3.8l-8.4 8.4" stroke="#000" stroke-width="1.2"/><circle cx="8" cy="8" r="3.4" fill="#000"/><rect x="6" y="6" width="1.6" height="1.6" fill="#fff"/></svg>';
+    /** A mine that was never there: the flag was wrong, and Windows struck the
+        mine through in red to say so. */
+    const WRONG =
+      '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 2v12M2 8h12M3.8 3.8l8.4 8.4M12.2 3.8l-8.4 8.4" stroke="#000" stroke-width="1.2"/><circle cx="8" cy="8" r="3.4" fill="#000"/><path d="M2.5 2.5l11 11M13.5 2.5l-11 11" stroke="#ff0000" stroke-width="1.6"/></svg>';
+
+    let level = "beginner";
+    let board = createBoard(level);
+    let timer = 0;
+    let ticking: ReturnType<typeof setInterval> | null = null;
+    /** Which cell the keyboard is on. Only this one is tabbable, so an expert
+        board is one tab stop rather than four hundred and eighty. */
+    let cursor = 0;
+
+    const pad = (n: number) => (n < 0 ? "-" : "") + String(Math.min(999, Math.abs(n))).padStart(n < 0 ? 2 : 3, "0");
+
+    const stopClock = () => {
+      if (ticking) clearInterval(ticking);
+      ticking = null;
+    };
+
+    const startClock = () => {
+      if (ticking) return;
+      ticking = setInterval(() => {
+        timer++;
+        timeOut.textContent = pad(timer);
+        if (timer >= 999) stopClock();
+      }, 1000);
+    };
+
+    /* Arrow functions and not declarations, all three of them. A `function`
+       declaration is hoisted, so TypeScript will not carry the narrowing from
+       the `if` above into its body and every use of `grid` or `status` inside
+       it is "possibly null". An arrow assigned to a const is created here, and
+       keeps it. */
+
+    /** The accessible name of a cell: what a screen reader says instead of a colour. */
+    const describe = (face: string, i: number) => {
+      const x = (i % board.cols) + 1;
+      const y = Math.floor(i / board.cols) + 1;
+      const what =
+        face === "hidden"
+          ? "unopened"
+          : face === "flag"
+            ? "flagged"
+            : face === "question"
+              ? "question mark"
+              : face === "empty"
+                ? "empty"
+                : face === "mine"
+                  ? "mine"
+                  : face === "boom"
+                    ? "the mine you stepped on"
+                    : face === "wrong"
+                      ? "wrong flag"
+                      : `${face} mines nearby`;
+      return `Column ${x}, row ${y}: ${what}`;
+    };
+
+    const paint = () => {
+      const cells = grid.querySelectorAll<HTMLButtonElement>(".ms-cell");
+      for (let i = 0; i < cells.length; i++) {
+        const face = faceOf(board, i);
+        const el = cells[i];
+        el.dataset.face = face;
+        el.setAttribute("aria-label", describe(face, i));
+        el.tabIndex = i === cursor ? 0 : -1;
+        if (face === "flag") el.innerHTML = FLAG;
+        else if (face === "wrong") el.innerHTML = WRONG;
+        else if (face === "mine" || face === "boom") el.innerHTML = MINE;
+        else if (face === "question") el.textContent = "?";
+        else if (face === "hidden" || face === "empty") el.textContent = "";
+        else el.textContent = face; // a number, 1 to 8
+      }
+      minesOut.textContent = pad(remaining(board));
+
+      if (board.dead) {
+        stopClock();
+        drawFace("dead");
+        status.textContent = "Boom. Click the face for a new game.";
+      } else if (isWon(board)) {
+        stopClock();
+        drawFace("win");
+        status.textContent = `Cleared in ${timer} second${timer === 1 ? "" : "s"}.`;
+      } else {
+        drawFace("smile");
+        status.textContent = "";
+      }
+    };
+
+    const build = () => {
+      board = createBoard(level);
+      timer = 0;
+      cursor = 0;
+      stopClock();
+      timeOut.textContent = pad(0);
+      grid.style.setProperty("--cols", String(board.cols));
+
+      const rows = document.createDocumentFragment();
+      for (let y = 0; y < board.rows; y++) {
+        const row = document.createElement("div");
+        row.setAttribute("role", "row");
+        for (let x = 0; x < board.cols; x++) {
+          const cell = document.createElement("button");
+          cell.type = "button";
+          cell.className = "ms-cell";
+          cell.setAttribute("role", "gridcell");
+          cell.dataset.i = String(y * board.cols + x);
+          row.append(cell);
+        }
+        rows.append(row);
+      }
+      grid.replaceChildren(rows);
+      paint();
+    };
+
+    const indexOf = (target: EventTarget | null) => {
+      const el = target instanceof Element ? target.closest<HTMLElement>(".ms-cell") : null;
+      return el ? Number(el.dataset.i) : -1;
+    };
+
+    const open = (i: number) => {
+      if (board.dead || isWon(board)) return;
+      startClock();
+      reveal(board, i);
+      paint();
+    };
+
+    grid.addEventListener("click", (e) => {
+      const i = indexOf(e.target);
+      if (i >= 0) {
+        cursor = i;
+        open(i);
+      }
+    });
+
+    grid.addEventListener("contextmenu", (e) => {
+      const i = indexOf(e.target);
+      if (i < 0) return;
+      e.preventDefault();
+      cursor = i;
+      cycleMark(board, i);
+      paint();
+    });
+
+    // The face goes "ooh" while the button is held, exactly as it did in
+    // Windows. `pointerdown` on the grid rather than on a cell so it also fires
+    // on the gaps between them.
+    grid.addEventListener("pointerdown", () => {
+      if (!board.dead && !isWon(board)) drawFace("ooh");
+    });
+    addEventListener("pointerup", () => {
+      if (!board.dead && !isWon(board)) drawFace("smile");
+    });
+
+    grid.addEventListener("keydown", (e) => {
+      const i = indexOf(e.target);
+      if (i < 0) return;
+      const step: Record<string, number> = {
+        ArrowLeft: -1,
+        ArrowRight: 1,
+        ArrowUp: -board.cols,
+        ArrowDown: board.cols,
+      };
+      if (e.key in step) {
+        // Left and right must not slide onto the next row: the grid is one flat
+        // array, so `i - 1` from the first column lands on the last of the row
+        // above and the cursor appears to teleport.
+        const next = i + step[e.key];
+        const sameRow = Math.abs(step[e.key]) === 1;
+        if (next >= 0 && next < board.cells.length) {
+          if (!sameRow || Math.floor(next / board.cols) === Math.floor(i / board.cols)) {
+            e.preventDefault();
+            cursor = next;
+            paint();
+            grid.querySelector<HTMLElement>(`[data-i="${cursor}"]`)?.focus();
+          }
+        }
+      } else if (e.key === "f" || e.key === "F") {
+        e.preventDefault();
+        cycleMark(board, i);
+        paint();
+      }
+    });
+
+    faceBtn.addEventListener("click", build);
+
+    for (const btn of root.querySelectorAll<HTMLButtonElement>(".ms-level")) {
+      btn.addEventListener("click", () => {
+        level = btn.dataset.level ?? "beginner";
+        for (const b of root.querySelectorAll<HTMLButtonElement>(".ms-level")) {
+          b.setAttribute("aria-pressed", String(b === btn));
+        }
+        build();
+      });
+      btn.setAttribute("aria-pressed", String(btn.dataset.level === level));
+    }
+
+    build();
+  }
+</script>
+
+<style>
+  /* The Windows control palette: #d4d0c8 face, white highlight top-left, dark
+     shadow bottom-right. Every raised thing here is that, and every sunken one
+     is the same two colours swapped. */
+  .ms {
+    --face: #d4d0c8;
+    --light: #ffffff;
+    --dark: #808080;
+    --darker: #404040;
+  }
+
+  .ms-levels {
+    display: flex;
+    gap: 6px;
+    margin: 0 0 0.9rem;
+  }
+  .ms-level {
+    padding: 3px 12px;
+    background: var(--face);
+    border: 1px solid var(--darker);
+    box-shadow:
+      inset 1px 1px 0 var(--light),
+      inset -1px -1px 0 var(--dark);
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: default;
+  }
+  .ms-level[aria-pressed="true"] {
+    box-shadow:
+      inset 1px 1px 0 var(--dark),
+      inset -1px -1px 0 var(--light);
+    font-weight: bold;
+  }
+
+  .ms-frame {
+    display: inline-block;
+    max-width: 100%;
+    padding: 6px;
+    background: var(--face);
+    border: 3px solid;
+    border-color: var(--light) var(--dark) var(--dark) var(--light);
+    /* The expert board is 30 cells wide. Wider than the pane on a narrow
+       screen, so it scrolls rather than pushing the whole document sideways. */
+    overflow-x: auto;
+  }
+
+  .ms-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    padding: 4px;
+    border: 2px solid;
+    border-color: var(--dark) var(--light) var(--light) var(--dark);
+  }
+  .ms-led {
+    min-width: 42px;
+    padding: 1px 3px;
+    background: #000000;
+    color: #ff0000;
+    font-family: "Courier New", monospace;
+    font-size: 1.15rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-align: center;
+  }
+  .ms-face {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: var(--face);
+    border: 2px solid;
+    border-color: var(--light) var(--dark) var(--dark) var(--light);
+    cursor: default;
+  }
+  .ms-face:active {
+    border-color: var(--dark) var(--light) var(--light) var(--dark);
+  }
+
+  .ms-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 9), 16px);
+    border: 2px solid;
+    border-color: var(--dark) var(--light) var(--light) var(--dark);
+  }
+  /* The rows are there for `role="row"` only; the cells have to stay direct
+     children of the grid or every row would be one column. */
+  .ms-grid :global([role="row"]) {
+    display: contents;
+  }
+
+  .ms-grid :global(.ms-cell) {
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    background: #c0c0c0;
+    border: 2px solid;
+    border-color: var(--light) var(--dark) var(--dark) var(--light);
+    font-family: "Courier New", monospace;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 1;
+    text-align: center;
+    cursor: default;
+  }
+  .ms-grid :global(.ms-cell svg) {
+    display: block;
+    margin: -2px;
+  }
+  /* An opened cell loses the bevel and keeps a single hairline, which is what
+     draws the grid you can see across the cleared area. */
+  .ms-grid :global(.ms-cell[data-face="empty"]),
+  .ms-grid :global(.ms-cell[data-face="1"]),
+  .ms-grid :global(.ms-cell[data-face="2"]),
+  .ms-grid :global(.ms-cell[data-face="3"]),
+  .ms-grid :global(.ms-cell[data-face="4"]),
+  .ms-grid :global(.ms-cell[data-face="5"]),
+  .ms-grid :global(.ms-cell[data-face="6"]),
+  .ms-grid :global(.ms-cell[data-face="7"]),
+  .ms-grid :global(.ms-cell[data-face="8"]),
+  .ms-grid :global(.ms-cell[data-face="mine"]),
+  .ms-grid :global(.ms-cell[data-face="boom"]),
+  .ms-grid :global(.ms-cell[data-face="wrong"]) {
+    border: 1px solid #808080;
+    border-width: 1px 0 0 1px;
+    padding: 1px 0 0 1px;
+  }
+  /* The colours Windows used, in order. */
+  .ms-grid :global(.ms-cell[data-face="1"]) { color: #0000ff; }
+  .ms-grid :global(.ms-cell[data-face="2"]) { color: #008000; }
+  .ms-grid :global(.ms-cell[data-face="3"]) { color: #ff0000; }
+  .ms-grid :global(.ms-cell[data-face="4"]) { color: #000080; }
+  .ms-grid :global(.ms-cell[data-face="5"]) { color: #800000; }
+  .ms-grid :global(.ms-cell[data-face="6"]) { color: #008080; }
+  .ms-grid :global(.ms-cell[data-face="7"]) { color: #000000; }
+  .ms-grid :global(.ms-cell[data-face="8"]) { color: #808080; }
+  /* Only the mine that went off. The other nine stay grey, which is what lets
+     you see which one you actually stepped on. */
+  .ms-grid :global(.ms-cell[data-face="boom"]) {
+    background: #ff0000;
+  }
+  .ms-grid :global(.ms-cell:focus-visible) {
+    outline: 2px solid #0a246a;
+    outline-offset: -2px;
+  }
+
+  .ms-status {
+    min-height: 1.2em;
+    margin: 0.7rem 0 0.4rem;
+    font-weight: bold;
+    color: #0a246a;
+  }
+</style>

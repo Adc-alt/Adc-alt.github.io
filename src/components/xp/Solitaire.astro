@@ -1,0 +1,446 @@
+---
+/**
+ * Klondike: the screen only. Every rule is in `solitaire.mjs` — what a pile
+ * will accept, what a double click does, when the game is over — and this file
+ * knows two things: how a card is drawn and where the pointer let go.
+ *
+ * Cards are built by the script, so every rule that styles one is written as
+ * `.sol :global(…)`. A JS-created element carries no scope attribute, so a
+ * plain `.sol-card` would compile to `.sol-card[data-astro-cid-…]` and match
+ * nothing at all; `.sol` is in this file's markup, which is what keeps the
+ * global halves from leaking out of the component.
+ *
+ * Not here, on purpose: the cascade of bouncing cards XP played when you won.
+ * It is animation and nothing else, and the game is finished without it.
+ */
+---
+
+<div class="sol">
+  <div class="sol-bar">
+    <button type="button" class="sol-new">New game</button>
+    <span class="sol-moves note">Moves: 0</span>
+  </div>
+
+  <div class="sol-table">
+    <div class="sol-top">
+      <div class="sol-slot" data-pile="stock"></div>
+      <div class="sol-slot" data-pile="waste"></div>
+      <div class="sol-slot" data-pile="f0"></div>
+      <div class="sol-slot" data-pile="f1"></div>
+      <div class="sol-slot" data-pile="f2"></div>
+      <div class="sol-slot" data-pile="f3"></div>
+    </div>
+    <div class="sol-cols">
+      <div class="sol-col" data-pile="t0"></div>
+      <div class="sol-col" data-pile="t1"></div>
+      <div class="sol-col" data-pile="t2"></div>
+      <div class="sol-col" data-pile="t3"></div>
+      <div class="sol-col" data-pile="t4"></div>
+      <div class="sol-col" data-pile="t5"></div>
+      <div class="sol-col" data-pile="t6"></div>
+    </div>
+  </div>
+
+  {/* In the markup and not created by the script, so it carries the scope
+      attribute the `:global()` rules below hang off. */}
+  <div class="sol-ghost" hidden></div>
+
+  <p class="sol-status note" role="status"></p>
+  <p class="note">
+    Drag a card onto another, double click to send it to a pile at the top, and
+    click the deck to turn a card over. With the keyboard: Tab to a card and
+    press Enter, which does the same as a double click.
+  </p>
+  <noscript>
+    <p class="note">Solitaire needs JavaScript, and it is switched off.</p>
+  </noscript>
+</div>
+
+<script>
+  import {
+    RANKS,
+    SUITS,
+    autoMove,
+    drawStock,
+    isRed,
+    isWon,
+    move,
+    newGame,
+    pile,
+    runFrom,
+  } from "./solitaire.mjs";
+
+  interface Card {
+    id: string;
+    suit: number;
+    rank: number;
+    up: boolean;
+  }
+
+  const root = document.querySelector<HTMLElement>(".sol");
+  const table = root?.querySelector<HTMLElement>(".sol-table");
+  const ghost = root?.querySelector<HTMLElement>(".sol-ghost");
+  const status = root?.querySelector<HTMLElement>(".sol-status");
+  const movesOut = root?.querySelector<HTMLElement>(".sol-moves");
+
+  if (root && table && ghost && status && movesOut) {
+    let game = newGame();
+
+    /* Read out of the stylesheet rather than repeated here. A card height that
+       agrees with the CSS by coincidence is one edit away from a column whose
+       last card hangs out of its own pile. */
+    const px = (name: string) =>
+      parseFloat(getComputedStyle(root).getPropertyValue(name)) || 0;
+    const CARD_H = px("--card-h");
+    const STEP_UP = px("--step-up");
+    const STEP_DOWN = px("--step-down");
+
+    /** How far apart the pointer has to travel before a click becomes a drag.
+        Without it every click is a one-pixel drag, the board repaints under the
+        pointer, and the second half of a double click lands on a dead element. */
+    const SLOP = 4;
+
+    let held: { from: string; index: number; dx: number; dy: number; sx: number; sy: number } | null =
+      null;
+    let dragging = false;
+
+    /* Arrows and not `function` declarations: a declaration is hoisted, so
+       TypeScript will not carry the narrowing from the `if` above into its
+       body and `table`, `ghost` and the rest read as possibly null inside.
+       An arrow assigned to a const is created here, and keeps it. */
+    const cardEl = (card: Card, pileId: string, index: number) => {
+      const el = document.createElement(card.up ? "button" : "div");
+      if (el instanceof HTMLButtonElement) el.type = "button";
+      el.className = `sol-card${card.up ? "" : " is-down"}${
+        card.up && isRed(card) ? " is-red" : ""
+      }`;
+      el.dataset.pile = pileId;
+      el.dataset.index = String(index);
+      if (card.up) {
+        const rank = RANKS[card.rank];
+        const glyph = SUITS[card.suit].glyph;
+        el.setAttribute("aria-label", `${rank} of ${SUITS[card.suit].name}`);
+        el.innerHTML =
+          `<span class="sol-corner">${rank}<br>${glyph}</span>` +
+          `<span class="sol-pip">${glyph}</span>`;
+      } else {
+        el.setAttribute("aria-hidden", "true");
+      }
+      return el;
+    };
+
+    const paint = () => {
+      for (const slot of table.querySelectorAll<HTMLElement>("[data-pile]")) {
+        const id = slot.dataset.pile ?? "";
+        const cards = (pile(game, id) ?? []) as Card[];
+        const frag = document.createDocumentFragment();
+
+        if (id[0] === "t") {
+          // A column spreads downwards: a face-down card shows only its edge, a
+          // face-up one shows its corner.
+          let top = 0;
+          let last = 0;
+          for (let i = 0; i < cards.length; i++) {
+            const el = cardEl(cards[i], id, i);
+            el.style.top = `${top}px`;
+            frag.append(el);
+            last = top;
+            top += cards[i].up ? STEP_UP : STEP_DOWN;
+          }
+          slot.style.height = `${last + CARD_H}px`;
+        } else if (id === "stock") {
+          // One back for the whole deck: it is a stack, not a spread, and fifty
+          // stacked elements is fifty hit targets on the same square.
+          if (cards.length) {
+            frag.append(cardEl({ ...cards[cards.length - 1], up: false }, id, cards.length - 1));
+          }
+        } else if (cards.length) {
+          frag.append(cardEl(cards[cards.length - 1], id, cards.length - 1));
+        }
+
+        slot.replaceChildren(frag);
+        slot.classList.toggle("is-empty", cards.length === 0);
+      }
+
+      movesOut.textContent = `Moves: ${game.moves}`;
+      status.textContent = isWon(game) ? "All four piles complete. That is a win." : "";
+    };
+
+    /** Which card an event landed on: its pile and its place in it. */
+    const locate = (target: EventTarget | null) => {
+      const el = target instanceof Element ? target.closest<HTMLElement>(".sol-card") : null;
+      if (!el?.dataset.pile) return null;
+      return { from: el.dataset.pile, index: Number(el.dataset.index), el };
+    };
+
+    /** Which pile an event landed on, card or bare slot. */
+    const pileOf = (target: EventTarget | null) =>
+      (target instanceof Element ? target.closest<HTMLElement>("[data-pile]") : null)?.dataset
+        .pile ?? null;
+
+    /** Which pile is under a point. The ghost is pointer-transparent, so it
+        cannot be the answer, and an empty column answers through its slot. */
+    const pileAt = (x: number, y: number) => {
+      const el = document.elementFromPoint(x, y);
+      return (el instanceof Element ? el.closest<HTMLElement>("[data-pile]") : null)?.dataset
+        .pile ?? null;
+    };
+
+    table.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return;
+
+      // The deck, whether there is a card on it or not: an empty stock is the
+      // click that puts the waste back, and it has no card to aim at.
+      if (pileOf(e.target) === "stock") {
+        drawStock(game);
+        paint();
+        return;
+      }
+
+      const hit = locate(e.target);
+      if (!hit || !runFrom(game, hit.from, hit.index).length) return;
+
+      const box = hit.el.getBoundingClientRect();
+      held = {
+        from: hit.from,
+        index: hit.index,
+        dx: e.clientX - box.left,
+        dy: e.clientY - box.top,
+        sx: e.clientX,
+        sy: e.clientY,
+      };
+      hit.el.setPointerCapture(e.pointerId);
+    });
+
+    table.addEventListener("pointermove", (e) => {
+      if (!held) return;
+
+      if (!dragging) {
+        if (Math.hypot(e.clientX - held.sx, e.clientY - held.sy) < SLOP) return;
+        dragging = true;
+        const run = runFrom(game, held.from, held.index) as Card[];
+        ghost.replaceChildren(
+          ...run.map((card, n) => {
+            const el = cardEl(card, "ghost", n);
+            el.style.top = `${n * STEP_UP}px`;
+            return el;
+          }),
+        );
+        ghost.hidden = false;
+        // The cards stay where they were, dimmed, so the column does not
+        // re-flow under the pointer and the drop lands where it looked like it
+        // would.
+        for (const el of table.querySelectorAll<HTMLElement>(
+          `[data-pile="${held.from}"] .sol-card`,
+        )) {
+          if (Number(el.dataset.index) >= held.index) el.classList.add("is-held");
+        }
+      }
+
+      ghost.style.left = `${e.clientX - held.dx}px`;
+      ghost.style.top = `${e.clientY - held.dy}px`;
+    });
+
+    const endDrag = (e: PointerEvent) => {
+      if (!held) return;
+      const wasDragging = dragging;
+      const drop = wasDragging ? pileAt(e.clientX, e.clientY) : null;
+      const { from, index } = held;
+      held = null;
+      dragging = false;
+      ghost.hidden = true;
+      ghost.replaceChildren();
+
+      // A click that never became a drag repaints nothing, which is what lets
+      // the second half of a double click find the same element still there.
+      if (!wasDragging) return;
+      if (drop && drop !== from) move(game, from, index, drop);
+      paint();
+    };
+
+    table.addEventListener("pointerup", endDrag);
+    table.addEventListener("pointercancel", endDrag);
+
+    table.addEventListener("dblclick", (e) => {
+      const hit = locate(e.target);
+      if (!hit || hit.from === "stock") return;
+      autoMove(game, hit.from, hit.index);
+      paint();
+    });
+
+    // Enter on a focused card does what a double click does, which makes the
+    // whole game playable without a pointer.
+    table.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      const hit = locate(e.target);
+      if (!hit) return;
+      e.preventDefault();
+      if (hit.from === "stock") drawStock(game);
+      else autoMove(game, hit.from, hit.index);
+      paint();
+    });
+
+    root.querySelector<HTMLButtonElement>(".sol-new")?.addEventListener("click", () => {
+      game = newGame();
+      paint();
+    });
+
+    paint();
+  }
+</script>
+
+<style>
+  .sol {
+    --card-w: 62px;
+    --card-h: 88px;
+    /* How far a card in a column is offset from the one above it. Read by the
+       script out of the computed style, so these are the only two copies. */
+    --step-up: 18px;
+    --step-down: 8px;
+  }
+
+  .sol-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 0.7rem;
+  }
+  .sol-new {
+    padding: 3px 12px;
+    background: #d4d0c8;
+    border: 1px solid #404040;
+    box-shadow:
+      inset 1px 1px 0 #ffffff,
+      inset -1px -1px 0 #808080;
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: default;
+  }
+  .sol-new:active {
+    box-shadow:
+      inset 1px 1px 0 #808080,
+      inset -1px -1px 0 #ffffff;
+  }
+  .sol-moves {
+    margin: 0;
+  }
+
+  /* The baize. #008000 is the green Windows dealt on. */
+  .sol-table {
+    padding: 10px;
+    background: #008000;
+    border: 2px solid;
+    border-color: #808080 #ffffff #ffffff #808080;
+    overflow-x: auto;
+  }
+
+  .sol-top,
+  .sol-cols {
+    display: grid;
+    grid-template-columns: repeat(7, var(--card-w));
+    gap: 8px;
+    min-width: max-content;
+  }
+  .sol-top {
+    margin-bottom: 12px;
+  }
+  /* Stock and waste on the left, the four foundations on the right, with the
+     third column left empty between them — the layout Windows dealt. */
+  .sol-top [data-pile="f0"] {
+    grid-column: 4;
+  }
+
+  .sol-slot,
+  .sol-col {
+    position: relative;
+    width: var(--card-w);
+    min-height: var(--card-h);
+  }
+  /* A column grows past its row; without this the seven of them would all
+     stretch to the height of the longest. */
+  .sol-col {
+    align-self: start;
+  }
+  /* An empty pile is an outline, so you can see there is somewhere to drop. */
+  .sol-slot.is-empty,
+  .sol-col.is-empty {
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 4px;
+  }
+
+  .sol :global(.sol-card) {
+    position: absolute;
+    left: 0;
+    display: block;
+    width: var(--card-w);
+    height: var(--card-h);
+    padding: 3px 4px;
+    background: #ffffff;
+    border: 1px solid #000000;
+    border-radius: 4px;
+    color: #000000;
+    font: inherit;
+    line-height: 1.05;
+    text-align: left;
+    cursor: default;
+  }
+  /* The stock, the waste and the foundations show one card, filling the slot. */
+  .sol-slot :global(.sol-card) {
+    top: 0;
+  }
+
+  .sol :global(.sol-corner) {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: bold;
+  }
+  .sol :global(.sol-pip) {
+    position: absolute;
+    right: 5px;
+    bottom: 2px;
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+  .sol :global(.sol-card.is-red) {
+    color: #cc0000;
+  }
+
+  /* The back: the blue weave of the default XP deck, as two crossed gradients. */
+  .sol :global(.sol-card.is-down) {
+    background-color: #2a5fb0;
+    background-image: repeating-linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.22) 0 2px,
+        transparent 2px 5px
+      ),
+      repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.22) 0 2px, transparent 2px 5px);
+    border-color: #10306b;
+  }
+
+  .sol :global(.sol-card.is-held) {
+    opacity: 0.3;
+  }
+  .sol :global(.sol-card:focus-visible) {
+    outline: 2px solid #ffff00;
+    outline-offset: 1px;
+    z-index: 1;
+  }
+
+  .sol-ghost {
+    position: fixed;
+    z-index: 20;
+    /* Pointer-transparent, or `elementFromPoint` on release would answer with
+       the card in your hand instead of the pile you dropped it on. */
+    pointer-events: none;
+  }
+  .sol-ghost :global(.sol-card) {
+    box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.4);
+  }
+
+  .sol-status {
+    min-height: 1.2em;
+    margin: 0.7rem 0 0.4rem;
+    font-weight: bold;
+    color: #0a246a;
+  }
+</style>
