@@ -44,8 +44,11 @@ const MENUS: Menu[] = [
          this key, so here it is. */
       { label: "Full Screen", cmd: "full", key: "F4", mark: "check", checked: false },
       { sep: true },
-      { label: "Player Controls...", disabled: true },
-      { label: "Sounds", disabled: true },
+      /* Named exactly as the game names them, because these are pointers to
+         the real ones: they live in the identical menu drawn inside the frame,
+         both ticked, and that is the only place they can be switched. */
+      { label: "Player Controls...", key: "F8", disabled: true },
+      { label: "Sound", disabled: true },
       { label: "Music", disabled: true },
     ],
   },
@@ -83,11 +86,12 @@ const MENUS: Menu[] = [
       keys go to this page instead. <kbd>Esc</kbd> leaves full screen.
     </p>
     <p>
-      <strong>The sound is the game's, not this page's.</strong> Turn the music
-      or the effects off in the game's own <em>Options</em> menu, the one drawn
-      inside the frame — a page cannot reach into a frame it does not own, so
-      the copies of those items in the menu above are greyed. Leaving the game
-      does stop it: the frame is thrown away when it goes off screen.
+      <strong>The sound is the game's, not this page's.</strong> It starts with
+      both <em>Sound</em> and <em>Music</em> on; turn either off in the game's
+      own <em>Options</em> menu, the one drawn inside the frame. A page cannot
+      reach into a frame it does not own, which is why the same two items are
+      greyed in the menu above. Leaving the game does stop it, though: the
+      frame is thrown away the moment it goes off screen.
     </p>
     <p>
       <strong>Not mine and not hosted here.</strong> The engine is a
