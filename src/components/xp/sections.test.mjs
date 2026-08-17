@@ -17,7 +17,7 @@ const IDS = [
   "section-projects",
   "section-about",
   "section-blog",
-  "section-project-this-desktop",
+  "section-project-smart-car",
 ];
 
 test("the Menu is the four entries the spec names, in order", () => {
@@ -40,7 +40,7 @@ test("every Menu entry points at a distinct section id", () => {
 });
 
 test("a project's section id is derived from its filename", () => {
-  assert.equal(projectSectionId("this-desktop"), "section-project-this-desktop");
+  assert.equal(projectSectionId("smart-car"), "section-project-smart-car");
 });
 
 test("a known hash resolves to itself, with or without the #", () => {
@@ -70,7 +70,7 @@ test("an empty or missing hash resolves to the first section", () => {
 });
 
 test("a project section marks Projects as the current Menu entry", () => {
-  assert.equal(navFor("section-project-this-desktop"), "section-projects");
+  assert.equal(navFor("section-project-smart-car"), "section-projects");
 });
 
 test("any other section marks itself", () => {

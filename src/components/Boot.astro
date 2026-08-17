@@ -60,6 +60,15 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
   })();
 </script>
 
+{/* ⚠️ An HTML comment and not a JSX one, on purpose: this one has to SHIP. It
+    is the attribution CC BY-SA 4.0 requires for the boot typeface, and it lives
+    in the served markup because a CSS comment does not survive minification and
+    the visible colophon that used to carry it was removed at the owner's
+    request. There is a test that fails if it stops appearing in the build. */}
+<Fragment
+  set:html={`<!-- Boot typeface: AcPlus IBM VGA 8x16 by VileR (https://int10h.org/oldschool-pc-fonts/), CC BY-SA 4.0. Full licence: /fonts/LICENSE-oldschool-pc-fonts.txt -->`}
+/>
+
 {/* `data-*` is the bridge to the inline script: an `is:inline` cannot see the
     frontmatter variables, so the value travels through the DOM. */}
 <div id="boot" data-auto={AUTO_MS} data-seen-key={seenKey}>
@@ -331,9 +340,12 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
 
 <style>
   /* AcPlus IBM VGA 8x16 — VileR, https://int10h.org/oldschool-pc-fonts/ (CC BY-SA 4.0).
-     The full licence travels with the file, in /fonts/, and the credit it
-     requires is in the Contact window (the site footer it used to live in went
-     away with the arcade look).
+     ⚠️ That line is a licence obligation, not a note. The visible credit used
+     to be the colophon in the Contact window and was removed at the owner's
+     request, so THIS is now one of the three places the attribution lives — the
+     other two being the README and the full licence shipped beside the file at
+     /fonts/LICENSE-oldschool-pc-fonts.txt. Do not tidy it away: while the site
+     serves this font, dropping the credit puts it in breach.
 
      ⚠️ It has to be the **AcPlus** variant (aspect-corrected), not Web/WebPlus.
      The original 8x16 was seen on a 720x400 VGA stretched onto a 4:3 screen —

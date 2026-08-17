@@ -1,17 +1,18 @@
 ---
 /**
- * The Contact window: the one pane in phase 3 whose content never changes.
+ * The Contact window: the one pane whose content never changes.
  *
- * ⚠️ The colophon at the bottom is NOT decoration. The boot typeface is
- * CC BY-SA 4.0 and the credit is a licence obligation. This is its third home —
- * it was in the site footer, which the arcade removal deleted, then in the
- * welcome window, which phase 3 deleted — and it was nearly dropped both times.
- * It lives here because this is the only content that is always on screen: Home
- * is not, you can switch away from it.
+ * ⚠️ The colophon that used to close this window is gone at the owner's
+ * request. Part of it was not decoration: the boot typeface is CC BY-SA 4.0 and
+ * the credit is a licence obligation, not a courtesy. It has NOT been deleted,
+ * only moved out of the visitor's way — the credit and the licence now travel
+ * with the work itself, in the page's own source next to the `@font-face` that
+ * loads it, in the README, and in the full licence shipped at
+ * `/fonts/LICENSE-oldschool-pc-fonts.txt`. Deleting any of those three, while
+ * the site still serves the font, would put it in breach. The only clean way to
+ * carry no credit at all is to stop serving the font.
  */
-import { SITE, SOCIAL } from "../../consts";
-
-const year = new Date().getFullYear();
+import { SOCIAL } from "../../consts";
 ---
 
 <div class="xp-doc">
@@ -28,17 +29,6 @@ const year = new Date().getFullYear();
     }
   </ul>
 
-  <hr />
-
-  <p class="note colophon">
-    © {year} {SITE.name}. Built with Astro, no analytics and no cookies.<br />
-    Boot typeface: AcPlus IBM VGA 8x16 by <a
-      href="https://int10h.org/oldschool-pc-fonts/"
-      rel="noopener">VileR</a
-    >, <a href="/fonts/LICENSE-oldschool-pc-fonts.txt">CC BY-SA 4.0</a>. The
-    wallpaper, the Start flag, the click and the icons are Microsoft's, here as
-    a homage.
-  </p>
 </div>
 
 <style>
@@ -56,10 +46,5 @@ const year = new Date().getFullYear();
     color: #6b675c;
     /* An address is one long unbreakable token in a 240px window. */
     overflow-wrap: anywhere;
-  }
-  .xp-doc .colophon {
-    margin-bottom: 0;
-    font-size: 0.7rem;
-    line-height: 1.4;
   }
 </style>

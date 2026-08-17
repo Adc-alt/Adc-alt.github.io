@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   HEAD, LOADING, SPECS, COUNT, DEVICES, TAIL, PROMPT, T, AUTO_MS,
 } from "./boot-data.mjs";
@@ -92,4 +93,18 @@ test("the identity is this portfolio's and not the reference's", () => {
   assert.ok(/ADCSOFT/.test(HEAD.copy));
   assert.ok(!/senna/i.test(text), "traces of the reference's name are left");
   assert.ok(!/SENNASOFT/i.test(text));
+});
+
+test("the typeface credit is in markup that ships, not only in a comment", () => {
+  // CC BY-SA 4.0 asks for attribution, and the visible colophon that used to
+  // carry it was removed at the owner's request. A CSS comment does not
+  // survive minification, so the credit is an HTML comment in the markup —
+  // which does. Delete it while the site still serves the font and the site is
+  // in breach.
+  const src = readFileSync(new URL("./Boot.astro", import.meta.url), "utf8");
+  const shipped = src.match(/set:html=\{`<!--([\s\S]*?)-->`\}/)?.[1] ?? "";
+  assert.match(shipped, /AcPlus IBM VGA 8x16/);
+  assert.match(shipped, /VileR/);
+  assert.match(shipped, /CC BY-SA 4\.0/);
+  assert.match(shipped, /LICENSE-oldschool-pc-fonts\.txt/);
 });
