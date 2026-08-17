@@ -16,11 +16,12 @@ import { SOCIAL } from "../../consts";
 ---
 
 <div class="xp-doc">
-  {/* Two machines passing an envelope, in the sixteen colours a VGA card had.
-      Drawn here rather than fetched: the 90s clipart this echoes carries no
-      licence anyone can point at, and this repo is public. Vector, so it stays
-      sharp; `crispEdges` is what keeps it looking like pixels and not like a
-      drawing of pixels. */}
+  {/* The two machines and the envelope are the reference sprite, pixel for
+      pixel: read out of the GIF's frames and re-emitted as rects, one per run
+      of identical pixels. Six colours, straight off a VGA palette. Rebuilt as
+      vector rather than copied as a file so it stays sharp at any size, keeps
+      its transparency over the window's beige, and can be stopped — a GIF
+      ignores anyone who asked for less motion. */}
   <svg
     class="mailer"
     viewBox="0 0 100 32"
@@ -32,31 +33,102 @@ import { SOCIAL } from "../../consts";
   >
     <defs>
       <g id="pc">
-        <rect x="4" y="1" width="24" height="17"></rect>
-        <rect x="5" y="2" width="22" height="15" fill="#bebebe"></rect>
-        <rect x="5" y="2" width="22" height="1" fill="#fff"></rect>
-        <rect x="5" y="2" width="1" height="15" fill="#fff"></rect>
-        <rect x="26" y="3" width="1" height="14" fill="#7e7e7e"></rect>
-        <rect x="5" y="16" width="22" height="1" fill="#7e7e7e"></rect>
-        <rect x="8" y="4" width="16" height="11" fill="#7e7e7e"></rect>
-        <rect x="9" y="5" width="14" height="9" fill="#047e7e"></rect>
-        <rect x="12" y="17" width="8" height="3"></rect>
-        <rect x="13" y="17" width="6" height="3" fill="#bebebe"></rect>
-        <rect x="0" y="20" width="30" height="10"></rect>
-        <rect x="1" y="21" width="28" height="8" fill="#bebebe"></rect>
-        <rect x="1" y="21" width="28" height="1" fill="#fff"></rect>
-        <rect x="1" y="28" width="28" height="1" fill="#7e7e7e"></rect>
-        <rect x="24" y="24" width="2" height="2" fill="#7e0000"></rect>
+        <rect y="16" width="5" height="1" fill="#000000"></rect>
+        <rect y="17" width="1" height="11" fill="#000000"></rect>
+        <rect x="1" y="28" width="1" height="1" fill="#000000"></rect>
+        <rect x="2" y="29" width="1" height="1" fill="#000000"></rect>
+        <rect x="3" y="30" width="1" height="1" fill="#000000"></rect>
+        <rect x="4" y="1" width="1" height="15" fill="#000000"></rect>
+        <rect x="4" y="31" width="27" height="1" fill="#000000"></rect>
+        <rect x="5" width="19" height="1" fill="#000000"></rect>
+        <rect x="5" y="17" width="1" height="1" fill="#000000"></rect>
+        <rect x="6" y="18" width="1" height="1" fill="#000000"></rect>
+        <rect x="7" y="19" width="19" height="1" fill="#000000"></rect>
+        <rect x="9" y="5" width="16" height="1" fill="#000000"></rect>
+        <rect x="9" y="6" width="1" height="11" fill="#000000"></rect>
+        <rect x="9" y="17" width="16" height="1" fill="#000000"></rect>
+        <rect x="24" y="1" width="1" height="1" fill="#000000"></rect>
+        <rect x="24" y="6" width="1" height="11" fill="#000000"></rect>
+        <rect x="25" y="2" width="1" height="1" fill="#000000"></rect>
+        <rect x="26" y="3" width="1" height="15" fill="#000000"></rect>
+        <rect x="26" y="18" width="2" height="1" fill="#000000"></rect>
+        <rect x="28" y="19" width="1" height="1" fill="#000000"></rect>
+        <rect x="29" y="20" width="1" height="1" fill="#000000"></rect>
+        <rect x="30" y="21" width="1" height="10" fill="#000000"></rect>
+        <rect x="2" y="17" width="3" height="1" fill="#bebebe"></rect>
+        <rect x="3" y="18" width="3" height="1" fill="#bebebe"></rect>
+        <rect x="4" y="19" width="3" height="1" fill="#bebebe"></rect>
+        <rect x="5" y="20" width="24" height="1" fill="#bebebe"></rect>
+        <rect x="5" y="22" width="25" height="1" fill="#bebebe"></rect>
+        <rect x="5" y="23" width="21" height="2" fill="#bebebe"></rect>
+        <rect x="5" y="25" width="25" height="6" fill="#bebebe"></rect>
+        <rect x="6" y="1" width="18" height="1" fill="#bebebe"></rect>
+        <rect x="7" y="2" width="18" height="1" fill="#bebebe"></rect>
+        <rect x="8" y="4" width="18" height="1" fill="#bebebe"></rect>
+        <rect x="8" y="5" width="1" height="13" fill="#bebebe"></rect>
+        <rect x="8" y="18" width="18" height="1" fill="#bebebe"></rect>
+        <rect x="25" y="5" width="1" height="13" fill="#bebebe"></rect>
+        <rect x="26" y="19" width="2" height="1" fill="#bebebe"></rect>
+        <rect x="28" y="23" width="2" height="2" fill="#bebebe"></rect>
+        <rect x="1" y="18" width="1" height="1" fill="#7e7e7e"></rect>
+        <rect x="1" y="19" width="2" height="1" fill="#7e7e7e"></rect>
+        <rect x="1" y="20" width="3" height="1" fill="#7e7e7e"></rect>
+        <rect x="1" y="21" width="4" height="7" fill="#7e7e7e"></rect>
+        <rect x="2" y="28" width="3" height="1" fill="#7e7e7e"></rect>
+        <rect x="3" y="29" width="2" height="1" fill="#7e7e7e"></rect>
+        <rect x="4" y="30" width="1" height="1" fill="#7e7e7e"></rect>
+        <rect x="5" y="2" width="1" height="1" fill="#7e7e7e"></rect>
+        <rect x="5" y="3" width="2" height="14" fill="#7e7e7e"></rect>
+        <rect x="6" y="17" width="1" height="1" fill="#7e7e7e"></rect>
+        <rect x="1" y="17" width="1" height="1" fill="#ffffff"></rect>
+        <rect x="2" y="18" width="1" height="1" fill="#ffffff"></rect>
+        <rect x="3" y="19" width="1" height="1" fill="#ffffff"></rect>
+        <rect x="4" y="20" width="1" height="1" fill="#ffffff"></rect>
+        <rect x="5" y="1" width="1" height="1" fill="#ffffff"></rect>
+        <rect x="5" y="21" width="25" height="1" fill="#ffffff"></rect>
+        <rect x="6" y="2" width="1" height="1" fill="#ffffff"></rect>
+        <rect x="7" y="3" width="19" height="1" fill="#ffffff"></rect>
+        <rect x="7" y="4" width="1" height="15" fill="#ffffff"></rect>
+        <rect x="10" y="6" width="14" height="11" fill="#047e7e"></rect>
+        <rect x="26" y="23" width="2" height="2" fill="#7e0000"></rect>
       </g>
     </defs>
-    {/* The right-hand one is the same drawing flipped, so the two face each
-        other and their power lights sit on the inside. */}
-    <use href="#pc" y="1"></use>
-    <use href="#pc" y="1" transform="translate(100,0) scale(-1,1)"></use>
-    <g class="envelope">
-      <rect x="8" y="9" width="16" height="11"></rect>
-      <rect x="9" y="10" width="14" height="9" fill="#dbdb29"></rect>
-      <path d="M9.5 10.5 16 15 22.5 10.5" fill="none" stroke="#000"></path>
+    {/* The right-hand one is the same drawing flipped: the sprite is mirror
+        symmetric in the original too, so the two face each other and their
+        power lights sit on the inside. */}
+    <use href="#pc"></use>
+    <use href="#pc" transform="translate(100,0) scale(-1,1)"></use>
+    {/* Two groups because a CSS transform and a `transform` attribute are the
+        same property: the outer one parks the envelope where it leaves the
+        left screen, the inner one is the only thing that animates. */}
+    <g transform="translate(18 6)">
+      <g class="envelope">
+        <rect y="2" width="2" height="1" fill="#dbdb29"></rect>
+        <rect y="3" width="3" height="1" fill="#dbdb29"></rect>
+        <rect y="4" width="5" height="1" fill="#dbdb29"></rect>
+        <rect y="5" width="7" height="2" fill="#dbdb29"></rect>
+        <rect y="7" width="16" height="2" fill="#dbdb29"></rect>
+        <rect x="2" y="1" width="12" height="1" fill="#dbdb29"></rect>
+        <rect x="3" y="2" width="10" height="1" fill="#dbdb29"></rect>
+        <rect x="5" y="3" width="6" height="1" fill="#dbdb29"></rect>
+        <rect x="7" y="4" width="2" height="1" fill="#dbdb29"></rect>
+        <rect x="9" y="5" width="7" height="2" fill="#dbdb29"></rect>
+        <rect x="11" y="4" width="5" height="1" fill="#dbdb29"></rect>
+        <rect x="13" y="3" width="3" height="1" fill="#dbdb29"></rect>
+        <rect x="14" y="2" width="2" height="1" fill="#dbdb29"></rect>
+        <rect width="17" height="1" fill="#000000"></rect>
+        <rect y="1" width="2" height="1" fill="#000000"></rect>
+        <rect y="9" width="17" height="1" fill="#000000"></rect>
+        <rect x="2" y="2" width="1" height="1" fill="#000000"></rect>
+        <rect x="3" y="3" width="2" height="1" fill="#000000"></rect>
+        <rect x="5" y="4" width="2" height="1" fill="#000000"></rect>
+        <rect x="9" y="4" width="2" height="1" fill="#000000"></rect>
+        <rect x="11" y="3" width="2" height="1" fill="#000000"></rect>
+        <rect x="13" y="2" width="1" height="1" fill="#000000"></rect>
+        <rect x="14" y="1" width="3" height="1" fill="#000000"></rect>
+        <rect x="16" y="2" width="1" height="7" fill="#000000"></rect>
+        <rect x="7" y="5" width="2" height="2" fill="#7e0000"></rect>
+      </g>
     </g>
   </svg>
 
@@ -88,7 +160,7 @@ import { SOCIAL } from "../../consts";
   /* Stepped, not smooth: a sliding envelope at 2× shimmers along its own
      edges, and the thing being imitated moved in whole pixels anyway. */
   .envelope {
-    animation: mail 4s steps(17) infinite;
+    animation: mail 4s steps(24) infinite;
   }
   @keyframes mail {
     0%,
@@ -97,7 +169,7 @@ import { SOCIAL } from "../../consts";
     }
     50%,
     62% {
-      transform: translateX(68px);
+      transform: translateX(47px);
     }
     100% {
       transform: translateX(0);
@@ -106,7 +178,7 @@ import { SOCIAL } from "../../consts";
   @media (prefers-reduced-motion: reduce) {
     .envelope {
       animation: none;
-      transform: translateX(34px);
+      transform: translateX(24px);
     }
   }
 
