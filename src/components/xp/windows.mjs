@@ -114,8 +114,12 @@ export function cascadePosition(openCount, win, desk) {
  */
 export const TASKBAR_ENTER_MS = 800;
 
-/** When the first window arrives: just after the bar settles. */
-export const ENTER_BASE = TASKBAR_ENTER_MS + 100;
+/**
+ * When the first window arrives: a second after the bar settles. The pause is
+ * deliberate — the visitor gets a beat of empty desktop before anything opens,
+ * which is what makes the windows read as arriving rather than as page load.
+ */
+export const ENTER_BASE = TASKBAR_ENTER_MS + 1100;
 
 /** The gap between one window arriving and the next. */
 export const ENTER_STEP = 260;
