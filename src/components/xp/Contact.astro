@@ -16,6 +16,50 @@ import { SOCIAL } from "../../consts";
 ---
 
 <div class="xp-doc">
+  {/* Two machines passing an envelope, in the sixteen colours a VGA card had.
+      Drawn here rather than fetched: the 90s clipart this echoes carries no
+      licence anyone can point at, and this repo is public. Vector, so it stays
+      sharp; `crispEdges` is what keeps it looking like pixels and not like a
+      drawing of pixels. */}
+  <svg
+    class="mailer"
+    viewBox="0 0 100 32"
+    width="200"
+    height="64"
+    shape-rendering="crispEdges"
+    role="img"
+    aria-label="Two computers sending an envelope back and forth"
+  >
+    <defs>
+      <g id="pc">
+        <rect x="4" y="1" width="24" height="17"></rect>
+        <rect x="5" y="2" width="22" height="15" fill="#bebebe"></rect>
+        <rect x="5" y="2" width="22" height="1" fill="#fff"></rect>
+        <rect x="5" y="2" width="1" height="15" fill="#fff"></rect>
+        <rect x="26" y="3" width="1" height="14" fill="#7e7e7e"></rect>
+        <rect x="5" y="16" width="22" height="1" fill="#7e7e7e"></rect>
+        <rect x="8" y="4" width="16" height="11" fill="#7e7e7e"></rect>
+        <rect x="9" y="5" width="14" height="9" fill="#047e7e"></rect>
+        <rect x="12" y="17" width="8" height="3"></rect>
+        <rect x="13" y="17" width="6" height="3" fill="#bebebe"></rect>
+        <rect x="0" y="20" width="30" height="10"></rect>
+        <rect x="1" y="21" width="28" height="8" fill="#bebebe"></rect>
+        <rect x="1" y="21" width="28" height="1" fill="#fff"></rect>
+        <rect x="1" y="28" width="28" height="1" fill="#7e7e7e"></rect>
+        <rect x="24" y="24" width="2" height="2" fill="#7e0000"></rect>
+      </g>
+    </defs>
+    {/* The right-hand one is the same drawing flipped, so the two face each
+        other and their power lights sit on the inside. */}
+    <use href="#pc" y="1"></use>
+    <use href="#pc" y="1" transform="translate(100,0) scale(-1,1)"></use>
+    <g class="envelope">
+      <rect x="8" y="9" width="16" height="11"></rect>
+      <rect x="9" y="10" width="14" height="9" fill="#dbdb29"></rect>
+      <path d="M9.5 10.5 16 15 22.5 10.5" fill="none" stroke="#000"></path>
+    </g>
+  </svg>
+
   <ul class="xp-contact">
     {
       SOCIAL.map((s) => (
@@ -32,6 +76,40 @@ import { SOCIAL } from "../../consts";
 </div>
 
 <style>
+  .mailer {
+    display: block;
+    /* 200px is exactly 2× the viewBox, so every pixel doubles cleanly. Below
+       that the window is narrower than the drawing and even scaling loses. */
+    width: 100%;
+    max-width: 200px;
+    height: auto;
+    margin: 0 auto 0.9rem;
+  }
+  /* Stepped, not smooth: a sliding envelope at 2× shimmers along its own
+     edges, and the thing being imitated moved in whole pixels anyway. */
+  .envelope {
+    animation: mail 4s steps(17) infinite;
+  }
+  @keyframes mail {
+    0%,
+    12% {
+      transform: translateX(0);
+    }
+    50%,
+    62% {
+      transform: translateX(68px);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .envelope {
+      animation: none;
+      transform: translateX(34px);
+    }
+  }
+
   .xp-contact {
     margin: 0;
     padding: 0;
