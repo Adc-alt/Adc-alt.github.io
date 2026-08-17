@@ -4,7 +4,7 @@ summary: "A single-page portfolio. The content lives in XP windows that drag, mi
 year: 2026
 stack: ["Astro", "TypeScript", "CSS", "GitHub Actions"]
 status: "live"
-order: 1
+order: 2
 repo: "https://github.com/Adc-alt/Adc-alt.github.io"
 demo: "https://adc-alt.github.io"
 ---
