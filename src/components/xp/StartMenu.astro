@@ -95,12 +95,32 @@ const HELP = [
   hidden
 >
   <div class="sm-head">
-    {/* The account picture. XP shipped a set of them; this is a plain silhouette
-        rather than one of theirs. */}
+    {/* The account picture: chess, the one the Administrator account came with.
+        ⚠️ Drawn, not copied. XP's `chess.bmp` is a photograph licensed from
+        Corbis — Mark Karrass took it — so it is somebody's stock photo and not
+        Microsoft artwork to borrow. These are three pieces of our own in the
+        same arrangement: a rook, a king and a pawn on a board. */}
     <span class="sm-avatar">
       <svg viewBox="0 0 32 32" width="42" height="42" role="presentation">
-        <circle cx="16" cy="12" r="6" fill="#cfe0f2"></circle>
-        <path d="M4 31c1.5-7 6.5-10 12-10s10.5 3 12 10z" fill="#cfe0f2"></path>
+        <rect width="32" height="32" fill="#1b2533"></rect>
+        <rect y="25" width="32" height="7" fill="#42566e"></rect>
+        <rect y="25" width="8" height="7" fill="#25313f"></rect>
+        <rect x="16" y="25" width="8" height="7" fill="#25313f"></rect>
+        <g fill="#f2e9d4">
+          {/* Rook: crenellations, a waist, a foot. */}
+          <path d="M3 11h1.6v1.6h1.4V11h1.6v1.6h1.4V11H11v4H3z"></path>
+          <path d="M4.4 15h5.2l-.7 8H5.1z"></path>
+          <path d="M3 23h8v2.4H3z"></path>
+          {/* King: the cross is what makes it read at this size. */}
+          <path d="M15.2 2h1.6v1.8h1.8v1.6h-1.8V8h-1.6V5.4h-1.8V3.8h1.8z"></path>
+          <circle cx="16" cy="11" r="3.4"></circle>
+          <path d="M12.6 23c0-5.4 2-8 3.4-10.2C17.4 15 19.4 17.6 19.4 23z"></path>
+          <path d="M11.4 23h9.2v2.4h-9.2z"></path>
+          {/* Pawn. */}
+          <circle cx="25" cy="14" r="2.8"></circle>
+          <path d="M22.6 23c0-3.8 1.6-5.6 2.4-7.2.8 1.6 2.4 3.4 2.4 7.2z"></path>
+          <path d="M21.6 23h6.8v2.4h-6.8z"></path>
+        </g>
       </svg>
     </span>
     <span class="sm-user">Administrator</span>
