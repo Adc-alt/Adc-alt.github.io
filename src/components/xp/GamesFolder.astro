@@ -28,37 +28,61 @@ const BODIES: Record<string, typeof Minesweeper> = {
   pinball: Pinball,
 };
 
-const BLURB: Record<string, string> = {
-  minesweeper:
-    "Beginner, Intermediate and Expert, the three boards Windows shipped. Written for this site; the rules are a module of their own with tests, because a flood fill that stops one cell short still looks perfectly fine on screen.",
-  solitaire:
-    "Klondike, with drag and drop. Turning one card at a time rather than the three Windows defaulted to — draw-three makes most deals unwinnable, which is a poor thing to put in front of a visitor.",
-  pinball:
-    "The real one, running on WebAssembly. Not mine and not hosted here: it is a decompilation of the original by k4zmu2a, ported by alula, and the frame stays empty until you ask for it.",
+/**
+ * One 32x32 icon per game, drawn here rather than shipped as files: they are a
+ * few hundred bytes of markup each, the rest of this directory already draws
+ * its icons this way (see `StartMenu.astro`), and nothing in the folder is
+ * Microsoft's artwork.
+ */
+const ICONS: Record<string, string> = {
+  // A closed cell with a mine on it.
+  minesweeper: `<rect x="2" y="2" width="28" height="28" fill="#c0c0c0"/>
+    <path d="M2 2h28v2.5H4.5V30H2z" fill="#ffffff"/>
+    <path d="M30 2v28H2v-2.5h25.5V2z" fill="#7b7b7b"/>
+    <path d="M16 7v18M7 16h18M10 10l12 12M22 10L10 22" stroke="#000000" stroke-width="2"/>
+    <circle cx="16" cy="16" r="6" fill="#000000"/>
+    <rect x="12.8" y="12.8" width="3" height="3" fill="#ffffff"/>`,
+  // Two cards, the back one fanned out behind the ace.
+  solitaire: `<rect x="3.5" y="9" width="15" height="20" rx="2" fill="#2a5fb0" stroke="#10306b"
+      transform="rotate(-14 11 19)"/>
+    <rect x="12" y="4" width="16" height="22" rx="2" fill="#ffffff" stroke="#000000"/>
+    <path d="M20 20.5s-4.2-2.6-4.2-5.4a2.1 2.1 0 0 1 4.2-.9 2.1 2.1 0 0 1 4.2.9c0 2.8-4.2 5.4-4.2 5.4z"
+      fill="#cc0000"/>
+    <path d="M14.4 9.2h1.1l1.4 3.4h-1l-.24-.7h-1.4l-.24.7h-1z" fill="#cc0000"/>`,
+  // The table, seen from above: a ball, a bumper and the two flippers.
+  pinball: `<rect x="5" y="2" width="22" height="28" rx="5" fill="#16276b" stroke="#0a1440"/>
+    <circle cx="20" cy="9" r="3" fill="#ffc83d" stroke="#a9761a"/>
+    <circle cx="12" cy="17" r="2.4" fill="#e6e6e6" stroke="#8f8f8f"/>
+    <path d="M8.5 23.5l5 3.2M23.5 23.5l-5 3.2" stroke="#d0d0d0" stroke-width="3"
+      stroke-linecap="round"/>
+    <path d="M24.6 6.5v16" stroke="#39508f" stroke-width="1.6"/>`,
 };
 ---
 
 <div class="games" data-title={GAMES_TITLE}>
-  <div class="xp-doc games-index" id="games-index">
-    <p class="lede">
-      The three that came with the machine. Two of them I wrote; the third is
-      somebody else's build of the original, framed rather than copied.
-    </p>
-
-    <ul class="index">
+  <div class="games-index" id="games-index">
+    {/* Icons and not a list of titles: this is a folder, and a folder shows
+        what is in it. Same gesture as the shortcut on the desktop — a click
+        selects, a double click opens — so the two behave alike. */}
+    <ul class="games-icons">
       {
         GAMES.map((game) => (
           <li>
-            <h2>
-              <button type="button" class="games-open" data-game={game.id}>
-                {game.label}
-              </button>
-            </h2>
-            <p>{BLURB[game.id]}</p>
+            <button type="button" class="games-open" data-game={game.id} aria-pressed="false">
+              <span class="games-art" aria-hidden="true">
+                <svg viewBox="0 0 32 32" width="32" height="32" set:html={ICONS[game.id]} />
+              </span>
+              <span class="games-name">{game.label}</span>
+            </button>
           </li>
         ))
       }
     </ul>
+
+    <p class="games-hint">
+      Double click to open. Two of them I wrote; 3D Pinball is somebody else's
+      build of the original, framed here rather than copied.
+    </p>
   </div>
 
   {
@@ -120,13 +144,38 @@ const BLURB: Record<string, string> = {
       open?.focus({ preventScroll: true });
     };
 
-    for (const button of root.querySelectorAll<HTMLButtonElement>(".games-open")) {
-      button.addEventListener("click", () => show(button.dataset.game ?? null));
+    const icons = [...root.querySelectorAll<HTMLButtonElement>(".games-open")];
+
+    /** One selected at a time, like any folder. */
+    const select = (icon: HTMLButtonElement | null) => {
+      for (const other of icons) other.setAttribute("aria-pressed", String(other === icon));
+    };
+
+    for (const icon of icons) {
+      icon.addEventListener("click", () => select(icon));
+      icon.addEventListener("dblclick", () => show(icon.dataset.game ?? null));
+      // A keyboard has no double click. On `keydown` and not `click`, because
+      // Space already fires `click` on a button and that path only selects.
+      icon.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        e.preventDefault();
+        select(icon);
+        show(icon.dataset.game ?? null);
+      });
     }
+
+    // Clicking the empty part of the folder clears the selection.
+    index.addEventListener("pointerdown", (e) => {
+      const el = e.target;
+      if (el instanceof Element && el.closest(".games-open")) return;
+      select(null);
+    });
+
     for (const button of root.querySelectorAll<HTMLButtonElement>(".games-back")) {
       button.addEventListener("click", () => {
         show(null);
-        index.querySelector<HTMLButtonElement>(".games-open")?.focus({ preventScroll: true });
+        select(null);
+        icons[0]?.focus({ preventScroll: true });
       });
     }
 
@@ -147,26 +196,74 @@ const BLURB: Record<string, string> = {
     outline: none;
   }
 
-  /* A game's title in the index. It has to be a button, not a link — see the
-     comment at the top of this file — so it is a button painted as a link. */
-  .games-index .games-open {
+  /* The icon view of a folder: a row of tiles that wraps, each one an icon with
+     its name under it. `auto-fill` and not a fixed count so a narrower window
+     rewraps instead of scrolling sideways. */
+  .games-icons {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 8px 4px;
+    margin: 0;
     padding: 0;
+    list-style: none;
+  }
+  .games-icons li {
+    margin: 0;
+  }
+
+  /* A button and not a link — see the comment at the top of this file — painted
+     as a shortcut. Same shape as the one on the wallpaper, different colours:
+     here the ground is the window's own #ece9d8, so the label is black and
+     needs no shadow to stay readable. */
+  .games-open {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    padding: 6px 2px 4px;
     background: none;
     border: 0;
-    color: #0000ee;
+    color: #000000;
     font: inherit;
-    font-size: inherit;
-    font-weight: inherit;
-    text-align: left;
-    text-decoration: underline;
+    font-size: 0.78rem;
+    line-height: 1.25;
+    text-align: center;
     cursor: default;
   }
-  .games-index .games-open:hover {
-    color: #0000aa;
+  .games-art {
+    display: block;
   }
-  .games-index .games-open:focus-visible {
-    outline: 2px solid #316ac5;
-    outline-offset: 2px;
+  .games-art svg {
+    display: block;
+  }
+  .games-name {
+    padding: 1px 4px;
+    /* Two words on one line beats a name split down the middle. */
+    max-width: 100%;
+  }
+
+  /* Hover and selection, as Explorer drew them. */
+  .games-open:hover .games-name {
+    background: #d8e6f8;
+  }
+  .games-open[aria-pressed="true"] .games-name {
+    background: #316ac5;
+    color: #ffffff;
+  }
+  .games-open[aria-pressed="true"] .games-art {
+    filter: brightness(0.78) sepia(1) hue-rotate(178deg) saturate(2.4);
+  }
+  .games-open:focus-visible {
+    outline: 1px dotted #000000;
+    outline-offset: -1px;
+  }
+
+  .games-hint {
+    margin: 1.6rem 0 0;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: #6b675c;
   }
 
   /* Same, for the way back out of a game. */
