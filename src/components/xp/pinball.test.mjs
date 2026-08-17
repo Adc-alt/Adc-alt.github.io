@@ -37,6 +37,18 @@ test("the shortcut the menu prints is bound", () => {
   assert.match(SCRIPT, /"F4"/);
 });
 
+test("full screen scales the frame instead of enlarging it", () => {
+  // The trap this catches cost a round trip: every measurement of our own
+  // boxes said "full screen" while the screenshot showed the game small in a
+  // corner. The page inside ignores the room it is given, so the frame has to
+  // keep the size that page wants and be blown up as a picture.
+  const rule = SRC.match(/\.pin-stage:fullscreen :global\(\.pin-frame\)\s*\{[^}]*\}/)?.[0] ?? "";
+  assert.match(rule, /transform: scale\(var\(--k/);
+  assert.match(rule, /var\(--pin-w\)/);
+  assert.doesNotMatch(rule, /[1-9]\d\dpx/, "the frame's size must come from --pin-w/--pin-h");
+  assert.match(SCRIPT, /setProperty\("--k"/);
+});
+
 test("leaving the game destroys the frame rather than hiding it", () => {
   // The reason is audio: a hidden cross-origin frame keeps playing, and this
   // page has no way to reach in and stop it. Only removal stops it.

@@ -163,11 +163,38 @@ const MENUS: Menu[] = [
       // "exit" is not handled here: the window this lives in owns it.
     });
 
+    /**
+     * Blows the frame up to fill the screen.
+     *
+     * ⚠️ Full screen on the frame is NOT full screen on the game. The page
+     * inside lays its own XP window out at one fixed size and does not care how
+     * much room it is given: giving it the whole display just left the game
+     * marooned, small, in the top corner of a blue field. Verified with a
+     * screenshot of the real thing — every measurement of OUR boxes said "full
+     * screen" while the picture said otherwise.
+     *
+     * So the frame keeps the size the page wants (see `--pin-w/--pin-h`) and
+     * gets scaled. `offsetWidth` is the unscaled box, which is what makes this
+     * safe to run twice.
+     */
+    const zoom = () => {
+      const frame = stage.querySelector<HTMLIFrameElement>("iframe");
+      if (!frame) return;
+      if (document.fullscreenElement !== stage) {
+        frame.style.removeProperty("--k");
+        return;
+      }
+      const k = Math.min(stage.clientWidth / frame.offsetWidth, stage.clientHeight / frame.offsetHeight);
+      frame.style.setProperty("--k", String(k));
+    };
+
     // The tick on Options -> Full Screen is only true while it is true, and the
     // browser can end full screen on its own (Esc, another tab).
     document.addEventListener("fullscreenchange", () => {
       item("full")?.setAttribute("aria-pressed", String(document.fullscreenElement === stage));
+      zoom();
     });
+    addEventListener("resize", zoom);
 
     /* The menu prints F4, so F4 has to work. `offsetWidth` is the guard and it
        is deliberately not "is my panel hidden": the game can also be off screen
@@ -201,17 +228,25 @@ const MENUS: Menu[] = [
   .pin {
     display: flex;
     flex-direction: column;
+
+    /* ⚠️ The size the page INSIDE the frame draws itself at, which is not the
+       600x416 of the game: it paints its own XP window around it (title bar,
+       its own menus) and keeps its body's 8px margin. 606x469 plus that margin,
+       measured off a screenshot of the real thing — a cross-origin frame cannot
+       be asked, and a frame any smaller silently clips the game's bottom edge.
+       Unitless because the aspect ratio below needs numbers, not lengths. */
+    --pin-w: 622;
+    --pin-h: 486;
   }
-  /* Exactly the 600x416 the original window opened at, and no margin: the
-     window is sized to this, so the frame IS the client area. A fixed width
-     rather than a percentage because the panel around it is sized by its
-     content, and a percentage of a max-content box has nothing to resolve
-     against. */
+  /* The frame IS the client area: the window is sized to this, so no margin. A
+     fixed width rather than a percentage because the panel around it is sized
+     by its content, and a percentage of a max-content box has nothing to
+     resolve against. */
   .pin-stage {
     position: relative;
-    width: 600px;
+    width: calc(var(--pin-w) * 1px);
     max-width: 100%;
-    aspect-ratio: 600 / 416;
+    aspect-ratio: var(--pin-w) / var(--pin-h);
     background: #000000;
   }
 
@@ -256,21 +291,24 @@ const MENUS: Menu[] = [
 
   /* Full screen. The browser forces the stage to 100% of the display and puts
      it in the top layer, so all that is left to do here is centre what is
-     inside it — the stage is already black, which makes the bars the
-     letterboxing needs. */
+     inside it. The ground is XP's own desktop blue and not black because that
+     is what the page inside paints AROUND its window: any other colour and the
+     seam shows. */
   .pin-stage:fullscreen {
     display: flex;
     align-items: center;
     justify-content: center;
+    background: #3a6ea5;
   }
   .pin-stage:fullscreen :global(.pin-frame) {
-    /* Blown up to the tallest 600x416 that fits, and no taller. `100vh` is the
-       stage's own height HERE and only here, which is the whole point: the
-       letterbox has to be measured against the screen, not against the 600px
-       the stage is while it lives in a window. */
-    width: min(100%, calc(100vh * 600 / 416));
-    height: auto;
-    aspect-ratio: 600 / 416;
+    /* Still the size the page wants — see `--pin-w`. Growing the frame does
+       NOT grow the game: the page inside ignores the room and stays put, so
+       what fills the screen is a scaled picture of it. `--k` comes from the
+       script; the transform does not touch the frame's own box, which is what
+       lets the scale be recomputed from it. */
+    width: calc(var(--pin-w) * 1px);
+    height: calc(var(--pin-h) * 1px);
+    transform: scale(var(--k, 1));
   }
 
 </style>
