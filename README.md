@@ -288,6 +288,17 @@ winbows' `win-min.png`, reduced to 52x48 (painted at 26px tall, at double size s
 it is not blurry on retina). Same caveat as the wallpaper: it is a registered
 trademark and not a free image.
 
+**The click and the four icons are Microsoft's as well.** `public/xp/click.wav`
+is `Windows Navigation Start.wav`, downmixed to mono 22 kHz. The four PNGs in
+`public/xp/icons/` are the real XP artwork at the 32x32 XP drew them at: the
+Minesweeper mine, the Solitaire card box and the 3D Pinball ball come from the
+extracted set at
+[lelegofrog.github.io/winicogames.html](https://lelegofrog.github.io/winicogames.html),
+and the folder from winbows' `folder.png`, rescaled from 800x800. They were
+drawn by hand first and replaced with the originals at the owner's express
+request. Same caveat as the wallpaper, and the same escape hatch: they are four
+files, and deleting them breaks nothing but the picture.
+
 Of the bar itself, on the other hand, not one file has been copied: only
 measurements and colours, which are facts and not work.
 

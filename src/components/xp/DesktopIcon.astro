@@ -21,6 +21,9 @@ interface Props {
 }
 
 const { target, label } = Astro.props;
+
+/** The only shortcut on this desktop is a folder, so the icon is not a prop. */
+const ICON = "/xp/icons/folder.png";
 ---
 
 {/* A real <button>: it is a control, and this is what gives it the keyboard and
@@ -34,15 +37,13 @@ const { target, label } = Astro.props;
   aria-pressed="false"
   style={`--bar-h:${BAR_H}px`}
 >
-  <span class="xp-icon-art" aria-hidden="true">
-    {/* The Windows folder, drawn rather than copied: the back flap, the front
-        face over it, and one light edge along the top. */}
-    <svg viewBox="0 0 32 32" width="32" height="32">
-      <path d="M2 7a2 2 0 0 1 2-2h8l3 3h11a2 2 0 0 1 2 2v3H2z" fill="#dfa000" />
-      <path d="M2 10h28v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z" fill="#ffc84a" />
-      <path d="M2 10h28v2H2z" fill="#ffe9a8" />
-      <path d="M4 26a2 2 0 0 1-2-2V12h26v12a2 2 0 0 1-2 2z" fill="#fdbe30" />
-    </svg>
+  {/* ⚠️ The real Windows XP folder, not a drawing of one. Same standing as the
+      wallpaper and the Start flag: Microsoft's artwork, here as a homage at the
+      owner's express request, credited in the README and in the Contact
+      window. `--icon` repeats the path so the selected state can wash the
+      artwork blue the way XP did. */}
+  <span class="xp-icon-art" aria-hidden="true" style={`--icon:url("${ICON}")`}>
+    <img src={ICON} width="32" height="32" alt="" />
   </span>
   <span class="xp-icon-label">{label}</span>
 </button>
@@ -119,9 +120,15 @@ const { target, label } = Astro.props;
     }
 
     :global(html.js) .xp-icon-art {
+      position: relative;
       display: block;
+      width: 32px;
+      height: 32px;
       /* The drop shadow XP put under every desktop icon. */
       filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.55));
+    }
+    :global(html.js) .xp-icon-art img {
+      display: block;
     }
 
     :global(html.js) .xp-icon-label {
@@ -137,10 +144,17 @@ const { target, label } = Astro.props;
     }
 
     /* Selected: the icon takes a blue wash and the label the selection blue of
-       Explorer, which is what XP does. */
-    :global(html.js) .xp-icon[aria-pressed="true"] .xp-icon-art {
-      filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.55)) brightness(0.75)
-        sepia(1) hue-rotate(180deg) saturate(2.2);
+       Explorer, which is what XP does. The wash is the selection blue masked by
+       the icon's own alpha — a `filter` would recolour the artwork rather than
+       tint it. */
+    :global(html.js) .xp-icon[aria-pressed="true"] .xp-icon-art::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: #316ac5;
+      opacity: 0.45;
+      mask: var(--icon) center / 32px 32px no-repeat;
+      -webkit-mask: var(--icon) center / 32px 32px no-repeat;
     }
     :global(html.js) .xp-icon[aria-pressed="true"] .xp-icon-label {
       background: #316ac5;
