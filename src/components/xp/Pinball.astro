@@ -21,9 +21,10 @@ import AboutBox from "./AboutBox.astro";
 
 const SRC = "https://pinball.alula.me/";
 
-/* Short, because it has to be honest. Everything the real Game and Options
-   menus offered lives INSIDE somebody else's frame, and a menu here cannot
-   reach across it. The one thing this side controls is whether to load it. */
+/* Short, because it has to be honest. Almost everything the real Game and
+   Options menus offered lives INSIDE somebody else's frame, and a menu here
+   cannot reach across it — sound and music included. What this side does
+   control is whether to load the frame at all, and how big it is. */
 const MENUS: Menu[] = [
   {
     label: "Game",
@@ -33,6 +34,19 @@ const MENUS: Menu[] = [
       { label: "Pause", disabled: true },
       { sep: true },
       { label: "Exit", cmd: "exit" },
+    ],
+  },
+  {
+    label: "Options",
+    items: [
+      /* The one item here that is really ours: full screen is the page's own
+         doing, not the game's. XP put it in this menu under this name with
+         this key, so here it is. */
+      { label: "Full Screen", cmd: "full", key: "F4", mark: "check", checked: false },
+      { sep: true },
+      { label: "Player Controls...", disabled: true },
+      { label: "Sounds", disabled: true },
+      { label: "Music", disabled: true },
     ],
   },
   {
@@ -55,7 +69,7 @@ const MENUS: Menu[] = [
     <button type="button" class="pin-play" data-src={SRC}>
       <span class="pin-play-icon" aria-hidden="true">▶</span>
       <span>Load the game</span>
-      <span class="pin-play-note">Runs from pinball.alula.me, not from here</span>
+      <span class="pin-play-note">Full screen, from pinball.alula.me. Esc to come back</span>
     </button>
   </div>
 
@@ -66,7 +80,14 @@ const MENUS: Menu[] = [
     <p>
       Arrow keys or <kbd>Z</kbd> and <kbd>/</kbd> for the flippers, hold
       <kbd>Space</kbd> to pull the plunger. Click inside the frame first, or the
-      keys go to this page instead.
+      keys go to this page instead. <kbd>Esc</kbd> leaves full screen.
+    </p>
+    <p>
+      <strong>The sound is the game's, not this page's.</strong> Turn the music
+      or the effects off in the game's own <em>Options</em> menu, the one drawn
+      inside the frame — a page cannot reach into a frame it does not own, so
+      the copies of those items in the menu above are greyed. Leaving the game
+      does stop it: the frame is thrown away when it goes off screen.
     </p>
     <p>
       <strong>Not mine and not hosted here.</strong> The engine is a
@@ -90,6 +111,8 @@ const MENUS: Menu[] = [
   const button = stage?.querySelector<HTMLButtonElement>(".pin-play");
 
   if (root && stage && button) {
+    const item = (cmd: string) => root.querySelector<HTMLButtonElement>(`[data-cmd="${cmd}"]`);
+
     const load = () => {
       if (stage.querySelector("iframe")) return;
       const frame = document.createElement("iframe");
@@ -101,16 +124,71 @@ const MENUS: Menu[] = [
       frame.focus();
       // The menu item has done its one job; leave it greyed rather than let it
       // look like it still would.
-      root.querySelector<HTMLButtonElement>('[data-cmd="load"]')?.setAttribute("disabled", "");
+      item("load")?.setAttribute("disabled", "");
     };
 
-    button.addEventListener("click", load);
+    /**
+     * Throws the frame away and puts the button back.
+     *
+     * Not housekeeping: a cross-origin frame keeps RUNNING when you hide it,
+     * and the first thing you notice is that the game's music follows you out
+     * of the room. Nothing on this side can turn that off — the audio belongs
+     * to a document this page is not allowed to touch — so the only way to
+     * stop it is to stop the document.
+     */
+    const unload = () => {
+      if (!stage.querySelector("iframe")) return;
+      // The button was taken out of the DOM by `load`, not destroyed: it is the
+      // same element, listener and all, going back where it was.
+      stage.replaceChildren(button);
+      item("load")?.removeAttribute("disabled");
+    };
+
+    const full = () => {
+      load();
+      if (document.fullscreenElement === stage) document.exitFullscreen();
+      // A rejection is a browser that will not do it — iOS never does it for
+      // anything but a video. The game stays in its window, which still plays.
+      else stage.requestFullscreen().catch(() => {});
+    };
+
+    // Loading and going full screen are one gesture: the game pops out centred
+    // on the whole screen, which is what the real one did off F4.
+    button.addEventListener("click", full);
     root.addEventListener("xpmenu", (e) => {
       const cmd = (e as CustomEvent<string>).detail;
       if (cmd === "load") load();
+      else if (cmd === "full") full();
       else if (cmd === "about") root.querySelector<HTMLDialogElement>("#pin-about")?.showModal();
       // "exit" is not handled here: the window this lives in owns it.
     });
+
+    // The tick on Options -> Full Screen is only true while it is true, and the
+    // browser can end full screen on its own (Esc, another tab).
+    document.addEventListener("fullscreenchange", () => {
+      item("full")?.setAttribute("aria-pressed", String(document.fullscreenElement === stage));
+    });
+
+    /* The menu prints F4, so F4 has to work. `offsetWidth` is the guard and it
+       is deliberately not "is my panel hidden": the game can also be off screen
+       because the Games window was closed or minimised, and an unrendered
+       element measures 0 in every one of those cases. */
+    addEventListener("keydown", (e) => {
+      if (e.key !== "F4" || !stage.offsetWidth) return;
+      e.preventDefault();
+      full();
+    });
+
+    /* ⚠️ The one hook that catches every way this game can leave the screen:
+       Game -> Exit, opening a different game, closing the window, minimising
+       it. All four end in `display: none` somewhere up the tree, and the only
+       thing they have in common is that the stage stops having a box. An
+       IntersectionObserver would ALSO fire on scrolling the game out of view,
+       which would kill a game that is merely behind the edge of the screen. */
+    new ResizeObserver(([entry]) => {
+      const box = entry?.contentRect;
+      if (box && box.width === 0 && box.height === 0) unload();
+    }).observe(stage);
 
     // 600x416 is what the original window opened at, and the window is sized to
     // it. Whoever owns the window listens for this.
@@ -174,6 +252,25 @@ const MENUS: Menu[] = [
     width: 100%;
     height: 100%;
     border: 0;
+  }
+
+  /* Full screen. The browser forces the stage to 100% of the display and puts
+     it in the top layer, so all that is left to do here is centre what is
+     inside it — the stage is already black, which makes the bars the
+     letterboxing needs. */
+  .pin-stage:fullscreen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pin-stage:fullscreen :global(.pin-frame) {
+    /* Blown up to the tallest 600x416 that fits, and no taller. `100vh` is the
+       stage's own height HERE and only here, which is the whole point: the
+       letterbox has to be measured against the screen, not against the 600px
+       the stage is while it lives in a window. */
+    width: min(100%, calc(100vh * 600 / 416));
+    height: auto;
+    aspect-ratio: 600 / 416;
   }
 
 </style>
