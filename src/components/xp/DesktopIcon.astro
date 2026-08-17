@@ -18,12 +18,13 @@ interface Props {
   /** The window this opens. */
   target: string;
   label: string;
+  /** 32x32 artwork. Also used as a mask, so it needs an alpha channel. */
+  icon?: string;
+  /** Which shelf it sits on: 0 is the bottom one, 1 the one above it. */
+  row?: number;
 }
 
-const { target, label } = Astro.props;
-
-/** The only shortcut on this desktop is a folder, so the icon is not a prop. */
-const ICON = "/xp/icons/folder.png";
+const { target, label, icon = "/xp/icons/folder.png", row = 0 } = Astro.props;
 ---
 
 {/* A real <button>: it is a control, and this is what gives it the keyboard and
@@ -35,15 +36,15 @@ const ICON = "/xp/icons/folder.png";
   class="xp-icon"
   data-target={target}
   aria-pressed="false"
-  style={`--bar-h:${BAR_H}px`}
+  style={`--bar-h:${BAR_H}px; --row:${row}`}
 >
-  {/* ⚠️ The real Windows XP folder, not a drawing of one. Same standing as the
-      wallpaper and the Start flag: Microsoft's artwork, here as a homage at the
-      owner's express request, credited in the README and in the Contact
-      window. `--icon` repeats the path so the selected state can wash the
-      artwork blue the way XP did. */}
-  <span class="xp-icon-art" aria-hidden="true" style={`--icon:url("${ICON}")`}>
-    <img src={ICON} width="32" height="32" alt="" />
+  {/* ⚠️ The folder is the real Windows XP one, not a drawing of one. Same
+      standing as the wallpaper and the Start flag: Microsoft's artwork, here as
+      a homage at the owner's express request, credited in the README.
+      `--icon` repeats the path so the selected state can wash the artwork blue
+      the way XP did. */}
+  <span class="xp-icon-art" aria-hidden="true" style={`--icon:url("${icon}")`}>
+    <img src={icon} width="32" height="32" alt="" />
   </span>
   <span class="xp-icon-label">{label}</span>
 </button>
@@ -101,11 +102,12 @@ const ICON = "/xp/icons/folder.png";
   @media (min-width: 1204px) {
     :global(html.js) .xp-icon {
       position: absolute;
-      /* Bottom left, clear of the taskbar. `--bar-h` is set on the element
-         itself out of `taskbar-colors.mjs`, so the gap survives a change to the
-         bar's height instead of drifting from a number copied here. */
+      /* Bottom left, clear of the taskbar, stacking upwards. `--bar-h` is set
+         on the element itself out of `taskbar-colors.mjs`, so the gap survives
+         a change to the bar's height instead of drifting from a number copied
+         here; 74px is XP's own vertical pitch between two shortcuts. */
       left: 16px;
-      bottom: calc(var(--bar-h, 40px) + 16px);
+      bottom: calc(var(--bar-h, 40px) + 16px + var(--row, 0) * 74px);
       z-index: 1;
 
       display: flex;

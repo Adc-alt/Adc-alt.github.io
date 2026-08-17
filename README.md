@@ -308,7 +308,16 @@ it is loaded here so the page can turn the game's music off, which cannot be
 done to a frame from another origin. **The game's data is Microsoft's, is not
 redistributable, and is not in this repository**: it is fetched from their
 server, and only once the visitor presses Load. Nothing is requested from them
-before that.
+before that. The music is the two MIDI files in that package and nothing else,
+so the loader hands the game an empty file where each one should be: it comes up
+with no music to play and every sound effect intact.
+
+**The song in Media Player is not in this repository either.** It is the
+official YouTube embed, and like the pinball table it loads on a click and not
+before — an embed that started by itself would call Google on every visit to a
+site whose whole pitch is no analytics and no cookies. Both frames are
+*destroyed* when their window closes rather than hidden: a hidden cross-origin
+frame carries on playing and there is no way to reach in and stop it.
 
 Of the bar itself, on the other hand, not one file has been copied: only
 measurements and colours, which are facts and not work.

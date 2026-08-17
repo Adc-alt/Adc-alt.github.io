@@ -49,6 +49,9 @@ export const GAMES_WINDOW_ID = "window-games";
 /** What the Games window is called when no game is open. */
 export const GAMES_TITLE = "Games";
 
+/** The media player's window. Same deal: minted by `index.astro`, opened by its icon. */
+export const MUSIC_WINDOW_ID = "window-music";
+
 /**
  * A game panel's element id.
  *
