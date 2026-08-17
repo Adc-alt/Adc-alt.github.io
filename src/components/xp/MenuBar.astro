@@ -1,0 +1,309 @@
+---
+/**
+ * The menu bar of a Windows XP application: `Game`, `Help`, and what drops down
+ * from them.
+ *
+ * NOT `role="menubar"`. That role is a promise about the keyboard — arrow keys
+ * across the bar, typeahead, a single tab stop for the whole thing — and a
+ * promise made and not kept is worse for a screen reader than plain buttons.
+ * What this is, honestly, is a row of disclosure buttons: each one says whether
+ * it is expanded and which group it controls. Arrow keys inside an open menu
+ * work anyway, because they cost four lines.
+ *
+ * A menu does not do anything itself. Choosing an item dispatches one bubbling
+ * `xpmenu` event carrying the item's `cmd`, and whichever game is listening
+ * decides what that means. That is what lets three different games share one
+ * bar with no knowledge of each other.
+ */
+export interface MenuItem {
+  label?: string;
+  /** What the `xpmenu` event carries. Unique within a bar; also the item's handle. */
+  cmd?: string;
+  /** The shortcut printed on the right. Drawing it does NOT bind it. */
+  key?: string;
+  /** The glyph in the left gutter when the item is on. */
+  mark?: "dot" | "check";
+  checked?: boolean;
+  /** Drawn greyed and unusable, which is XP's own way of saying "not here". */
+  disabled?: boolean;
+  /** An engraved rule instead of an item. */
+  sep?: boolean;
+}
+
+export interface Menu {
+  label: string;
+  items: MenuItem[];
+}
+
+interface Props {
+  /** Prefix for the popup ids, so two bars on one page cannot collide. */
+  id: string;
+  menus: Menu[];
+}
+
+const { id, menus } = Astro.props;
+---
+
+<div class="xpmb">
+  {
+    menus.map((menu, m) => (
+      <div class="xpmb-slot">
+        <button
+          type="button"
+          class="xpmb-top"
+          aria-expanded="false"
+          aria-controls={`${id}-m${m}`}
+        >
+          {menu.label}
+        </button>
+
+        <div class="xpmb-pop" id={`${id}-m${m}`} hidden>
+          {menu.items.map((item) =>
+            item.sep ? (
+              <hr />
+            ) : (
+              <button
+                type="button"
+                class="xpmb-item"
+                data-cmd={item.cmd}
+                disabled={item.disabled}
+                aria-pressed={item.mark ? (item.checked ? "true" : "false") : undefined}
+              >
+                <span class="xpmb-mark" aria-hidden="true">
+                  {item.mark === "dot" ? "•" : item.mark === "check" ? "✓" : ""}
+                </span>
+                <span class="xpmb-label">{item.label}</span>
+                <span class="xpmb-key">{item.key}</span>
+              </button>
+            ),
+          )}
+        </div>
+      </div>
+    ))
+  }
+</div>
+
+<script>
+  for (const bar of document.querySelectorAll<HTMLElement>(".xpmb")) {
+    const tops = [...bar.querySelectorAll<HTMLButtonElement>(".xpmb-top")];
+    const popOf = (top: HTMLButtonElement) =>
+      document.getElementById(top.getAttribute("aria-controls") ?? "");
+
+    const closeAll = () => {
+      for (const top of tops) {
+        top.setAttribute("aria-expanded", "false");
+        const pop = popOf(top);
+        if (pop) pop.hidden = true;
+      }
+    };
+
+    /**
+     * Opens a menu and places it under its button.
+     *
+     * ⚠️ The placing is not decoration. The popup is `position: fixed`, because
+     * the window's body scrolls — and an ancestor with `overflow` other than
+     * visible CLIPS an absolutely positioned descendant. A ten-item Game menu
+     * is taller than a beginner Minesweeper window, so half of it was being cut
+     * off: still there as far as `getBoundingClientRect` was concerned, and
+     * completely unclickable. Fixed positioning escapes the clip, at the price
+     * of having to compute the coordinates here.
+     */
+    const open = (top: HTMLButtonElement) => {
+      closeAll();
+      top.setAttribute("aria-expanded", "true");
+      const pop = popOf(top);
+      if (!pop) return;
+
+      const anchor = top.getBoundingClientRect();
+      pop.style.left = `${anchor.left}px`;
+      pop.style.top = `${anchor.bottom}px`;
+      pop.hidden = false;
+
+      // Now that it has a size, keep it on screen: slide it left if it runs off
+      // the edge, and flip it above the button if it runs off the bottom.
+      const box = pop.getBoundingClientRect();
+      if (box.right > innerWidth) pop.style.left = `${Math.max(0, innerWidth - box.width)}px`;
+      if (box.bottom > innerHeight) {
+        pop.style.top = `${Math.max(0, anchor.top - box.height)}px`;
+      }
+    };
+
+    const isOpen = (top: HTMLButtonElement) => top.getAttribute("aria-expanded") === "true";
+    const anyOpen = () => tops.some(isOpen);
+
+    for (const top of tops) {
+      top.addEventListener("click", () => (isOpen(top) ? closeAll() : open(top)));
+      // Once one menu is down, sliding across the bar switches to the next,
+      // which is what Windows does and what your hand expects.
+      top.addEventListener("pointerenter", () => {
+        if (anyOpen() && !isOpen(top)) open(top);
+      });
+    }
+
+    bar.addEventListener("click", (e) => {
+      const item = (e.target as Element | null)?.closest<HTMLButtonElement>(".xpmb-item");
+      if (!item || item.disabled) return;
+      closeAll();
+      const cmd = item.dataset.cmd;
+      if (cmd) bar.dispatchEvent(new CustomEvent("xpmenu", { detail: cmd, bubbles: true }));
+    });
+
+    bar.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        const openTop = tops.find(isOpen);
+        closeAll();
+        openTop?.focus();
+        return;
+      }
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+
+      const top = (e.target as Element | null)?.closest<HTMLButtonElement>(".xpmb-top");
+      if (top) {
+        // Down opens the menu and lands on its first usable item.
+        e.preventDefault();
+        open(top);
+        popOf(top)?.querySelector<HTMLButtonElement>(".xpmb-item:not([disabled])")?.focus();
+        return;
+      }
+
+      const pop = (e.target as Element | null)?.closest<HTMLElement>(".xpmb-pop");
+      if (!pop) return;
+      e.preventDefault();
+      const items = [...pop.querySelectorAll<HTMLButtonElement>(".xpmb-item:not([disabled])")];
+      const at = items.indexOf(document.activeElement as HTMLButtonElement);
+      const next = e.key === "ArrowDown" ? at + 1 : at - 1;
+      items[(next + items.length) % items.length]?.focus();
+    });
+
+    // Anywhere else on the page closes it, including inside the game.
+    addEventListener("pointerdown", (e) => {
+      const el = e.target;
+      if (el instanceof Element && bar.contains(el)) return;
+      closeAll();
+    });
+    // A fixed popup does not travel with anything that scrolls under it, so
+    // rather than track the scroll, close. Windows menus behave the same way.
+    addEventListener("scroll", closeAll, true);
+    addEventListener("resize", closeAll);
+    // Tabbing out of the bar closes it too — a menu hanging open over a game
+    // nobody is pointing at is a menu that looks stuck.
+    bar.addEventListener("focusout", (e) => {
+      const to = e.relatedTarget;
+      if (to instanceof Element && bar.contains(to)) return;
+      closeAll();
+    });
+  }
+</script>
+
+<style>
+  /* The strip itself: the control face, one hairline under it, and nothing
+     else. XP's menu bar is 20px of Tahoma and no ornament at all. */
+  .xpmb {
+    display: flex;
+    flex: none;
+    align-items: stretch;
+    padding: 1px 2px;
+    background: #ece9d8;
+    border-bottom: 1px solid #aca899;
+    font-family: Tahoma, "DejaVu Sans", Verdana, sans-serif;
+    font-size: 11px;
+    user-select: none;
+  }
+  .xpmb-slot {
+    position: relative;
+  }
+
+  .xpmb-top {
+    padding: 3px 7px;
+    background: none;
+    border: 0;
+    color: #000000;
+    font: inherit;
+    cursor: default;
+  }
+  .xpmb-top:hover,
+  .xpmb-top[aria-expanded="true"] {
+    background: #316ac5;
+    color: #ffffff;
+  }
+  .xpmb-top:focus-visible {
+    outline: 1px dotted currentColor;
+    outline-offset: -3px;
+  }
+
+  /* The drop-down. `position: absolute` against the slot, and a z-index above
+     the game so a menu never opens behind a card or a mine. */
+  /* `fixed`, and placed by the script — see the comment on `open()`. Without
+     it the window's own scrollport clips the menu. */
+  .xpmb-pop {
+    position: fixed;
+    z-index: 30;
+    min-width: 168px;
+    padding: 2px;
+    background: #ffffff;
+    border: 1px solid #aca899;
+    box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.35);
+  }
+  .xpmb-pop[hidden] {
+    display: none;
+  }
+  .xpmb-pop hr {
+    height: 0;
+    margin: 3px 1px 3px 26px;
+    border: 0;
+    border-top: 1px solid #d5d2ca;
+    border-bottom: 1px solid #ffffff;
+  }
+
+  .xpmb-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 3px 8px 3px 2px;
+    background: none;
+    border: 0;
+    color: #000000;
+    font: inherit;
+    text-align: left;
+    cursor: default;
+  }
+  .xpmb-item:hover:not(:disabled),
+  .xpmb-item:focus-visible {
+    background: #316ac5;
+    color: #ffffff;
+    outline: none;
+  }
+  /* Greyed rather than hidden: in Windows an item you cannot use still tells
+     you it exists, and hiding it would be a different menu each time. */
+  .xpmb-item:disabled {
+    color: #aca899;
+  }
+
+  /* The gutter every Windows menu reserves on the left for the tick, so the
+     labels line up whether or not anything is ticked. */
+  .xpmb-mark {
+    flex: none;
+    width: 18px;
+    text-align: center;
+  }
+  /* The glyph is in the markup for every markable item, so the gutter has to
+     hide it when the item is off. `visibility` and not `display`, because the
+     gutter itself must stay: it is what lines every label up, ticked or not. */
+  .xpmb-item[aria-pressed="false"] .xpmb-mark {
+    visibility: hidden;
+  }
+  .xpmb-label {
+    flex: 1 1 auto;
+  }
+  /* The shortcut, pushed right and quiet. */
+  .xpmb-key {
+    flex: none;
+    padding-left: 18px;
+    color: #6b675c;
+  }
+  .xpmb-item:hover:not(:disabled) .xpmb-key,
+  .xpmb-item:focus-visible .xpmb-key {
+    color: #d8e6f8;
+  }
+</style>

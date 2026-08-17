@@ -261,6 +261,48 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
       toFront();
     });
 
+    /**
+     * Resizes the window so its BODY is exactly `detail.w` x `detail.h`, and
+     * puts it back with no detail at all.
+     *
+     * This is what "the game fills the window" means: an application window in
+     * Windows is the size of what is inside it — Minesweeper's window is the
+     * size of the board and changes when the board does. The caller measures
+     * its own content and does not know or care what the title bar costs; the
+     * chrome is measured here, from the difference between the window and its
+     * body, so a change to the padding or the bar's height needs no edit.
+     *
+     * `authored` is captured once, on the first resize, because after that the
+     * inline `--w` is whatever the last game asked for.
+     */
+    const body = win.querySelector<HTMLElement>(".xp-winbody");
+    let authored: { w: string; h: string } | null = null;
+
+    win.addEventListener("xp:resize", (e) => {
+      if (!body || !DESKTOP.matches) return;
+      const size = (e as CustomEvent<{ w: number; h: number } | undefined>).detail;
+
+      if (!authored) {
+        const style = getComputedStyle(win);
+        authored = {
+          w: style.getPropertyValue("--w").trim(),
+          h: style.getPropertyValue("--h").trim(),
+        };
+      }
+      if (!size) {
+        win.style.setProperty("--w", authored.w);
+        win.style.setProperty("--h", authored.h);
+      } else {
+        // clientWidth and not offsetWidth: the body's own border and scrollbar
+        // are chrome as far as the caller is concerned.
+        const chromeW = win.offsetWidth - body.clientWidth;
+        const chromeH = win.offsetHeight - body.clientHeight;
+        win.style.setProperty("--w", `${Math.ceil(size.w) + chromeW}px`);
+        win.style.setProperty("--h", `${Math.ceil(size.h) + chromeH}px`);
+      }
+      reclamp();
+    });
+
     // Pressing anywhere in the window brings it to the front, like in Windows.
     // On capture so it lands before the buttons inside.
     win.addEventListener("pointerdown", () => toFront(), true);
@@ -547,6 +589,11 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
      the Contact card ask for this; the reading pane does not. */
   .xp-window[data-tight] .xp-winbody {
     padding: 8px;
+  }
+  /* An application window, as opposed to a document one: the thing inside runs
+     edge to edge. Windows never put a margin around a Minesweeper board. */
+  .xp-window.is-app .xp-winbody {
+    padding: 0;
   }
 
   /* ══ DESKTOP MODE — the enhancement ═══════════════════════════════════════

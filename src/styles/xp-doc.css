@@ -188,9 +188,3 @@
   margin-bottom: 0.6rem;
 }
 
-/* A game is as wide as its board. The 62ch of `.xp-doc` is the measure that
-   makes prose readable, and it is exactly the wrong width for a Minesweeper
-   grid thirty cells across or seven columns of cards. */
-.xp-doc.xp-game {
-  max-width: none;
-}

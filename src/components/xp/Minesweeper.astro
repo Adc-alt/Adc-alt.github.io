@@ -11,25 +11,46 @@
  * The `.ms-grid` on the left of each rule is in this file's markup, so the
  * scoping still holds — the rules cannot leak past this component's grid.
  */
-import { LEVELS } from "./minesweeper.mjs";
+import MenuBar, { type Menu } from "./MenuBar.astro";
+import AboutBox from "./AboutBox.astro";
 
-const LABELS = {
-  beginner: "Beginner",
-  intermediate: "Intermediate",
-  expert: "Expert",
-};
+/* XP's own Game menu, in XP's order. The entries that do nothing here are
+   drawn disabled rather than dropped: in Windows an item you cannot use still
+   tells you it exists, and a menu that changes shape is a worse lie than a
+   greyed line. */
+const MENUS: Menu[] = [
+  {
+    label: "Game",
+    items: [
+      { label: "New", cmd: "new", key: "F2" },
+      { sep: true },
+      { label: "Beginner", cmd: "level:beginner", mark: "dot", checked: true },
+      { label: "Intermediate", cmd: "level:intermediate", mark: "dot" },
+      { label: "Expert", cmd: "level:expert", mark: "dot" },
+      { label: "Custom...", disabled: true },
+      { sep: true },
+      { label: "Marks (?)", cmd: "marks", mark: "check", checked: true },
+      { label: "Colour", mark: "check", checked: true, disabled: true },
+      { label: "Sound", mark: "check", disabled: true },
+      { sep: true },
+      { label: "Best Times...", disabled: true },
+      { sep: true },
+      { label: "Exit", cmd: "exit" },
+    ],
+  },
+  {
+    label: "Help",
+    items: [
+      { label: "Contents", disabled: true },
+      { sep: true },
+      { label: "About Minesweeper", cmd: "about" },
+    ],
+  },
+];
 ---
 
 <div class="ms">
-  <div class="ms-levels" role="group" aria-label="Difficulty">
-    {
-      Object.keys(LEVELS).map((name) => (
-        <button type="button" class="ms-level" data-level={name}>
-          {LABELS[name as keyof typeof LABELS]}
-        </button>
-      ))
-    }
-  </div>
+  <MenuBar id="ms-menu" menus={MENUS} />
 
   <div class="ms-frame">
     <div class="ms-head">
@@ -43,19 +64,34 @@ const LABELS = {
     <div class="ms-grid" role="grid" aria-label="Minefield"></div>
   </div>
 
-  <p class="ms-status note" role="status"></p>
-  <p class="note">
-    Left click opens, right click cycles flag and question mark. With the
-    keyboard: arrows to move, Enter to open, F to flag.
-  </p>
-  <noscript>
-    <p class="note">Minesweeper needs JavaScript, and it is switched off.</p>
-  </noscript>
+  {/* The board says everything a sighted player needs — the face is the
+      scoreboard — but a screen reader has no face to look at, so the outcome is
+      announced here instead of drawn. */}
+  <p class="ms-status" role="status"></p>
+
+  <AboutBox id="ms-about" title="About Minesweeper">
+    <p>
+      Clear every square that is not a mine. The number on a square counts the
+      mines touching it.
+    </p>
+    <p>
+      Left click opens a square, right click cycles a flag and a question mark.
+      With the keyboard: arrow keys to move, <kbd>Enter</kbd> to open,
+      <kbd>F</kbd> to flag.
+    </p>
+    <p>
+      Written for this site. Only the icon is Microsoft's; the rules live in a
+      module of their own with tests, because a flood fill that stops one square
+      short still looks perfectly fine on screen.
+    </p>
+  </AboutBox>
 </div>
 
 <script>
   import {
+    HIDDEN,
     LEVELS,
+    QUESTION,
     createBoard,
     cycleMark,
     faceOf,
@@ -95,6 +131,8 @@ const LABELS = {
       '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M8 2v12M2 8h12M3.8 3.8l8.4 8.4M12.2 3.8l-8.4 8.4" stroke="#000" stroke-width="1.2"/><circle cx="8" cy="8" r="3.4" fill="#000"/><path d="M2.5 2.5l11 11M13.5 2.5l-11 11" stroke="#ff0000" stroke-width="1.6"/></svg>';
 
     let level = "beginner";
+    /** XP's "Marks (?)" setting, on by default there and here. */
+    let marks = true;
     let board = createBoard(level);
     let timer = 0;
     let ticking: ReturnType<typeof setInterval> | null = null;
@@ -202,6 +240,9 @@ const LABELS = {
       }
       grid.replaceChildren(rows);
       paint();
+      // The board just changed size, so the window has to. Whoever owns the
+      // window listens for this; nothing here knows there is one.
+      root.dispatchEvent(new CustomEvent("xp:fit", { bubbles: true }));
     };
 
     const indexOf = (target: EventTarget | null) => {
@@ -229,7 +270,7 @@ const LABELS = {
       if (i < 0) return;
       e.preventDefault();
       cursor = i;
-      cycleMark(board, i);
+      cycleMark(board, i, marks);
       paint();
     });
 
@@ -268,23 +309,49 @@ const LABELS = {
         }
       } else if (e.key === "f" || e.key === "F") {
         e.preventDefault();
-        cycleMark(board, i);
+        cycleMark(board, i, marks);
         paint();
       }
     });
 
     faceBtn.addEventListener("click", build);
 
-    for (const btn of root.querySelectorAll<HTMLButtonElement>(".ms-level")) {
-      btn.addEventListener("click", () => {
-        level = btn.dataset.level ?? "beginner";
-        for (const b of root.querySelectorAll<HTMLButtonElement>(".ms-level")) {
-          b.setAttribute("aria-pressed", String(b === btn));
-        }
+    /** Ticks one item of a group and unticks its siblings. */
+    const setMark = (cmd: string, on: boolean) =>
+      root.querySelector(`[data-cmd="${cmd}"]`)?.setAttribute("aria-pressed", String(on));
+
+    root.addEventListener("xpmenu", (e) => {
+      const cmd = (e as CustomEvent<string>).detail;
+      if (cmd === "new") {
         build();
-      });
-      btn.setAttribute("aria-pressed", String(btn.dataset.level === level));
-    }
+      } else if (cmd.startsWith("level:")) {
+        level = cmd.slice("level:".length);
+        for (const name of Object.keys(LEVELS)) setMark(`level:${name}`, name === level);
+        build();
+      } else if (cmd === "marks") {
+        marks = !marks;
+        setMark("marks", marks);
+        // A board mid-game can be holding question marks the setting just
+        // abolished. Clearing them is what XP does, and leaving them would put
+        // a "?" on the board with no way to cycle it off.
+        if (!marks) {
+          for (const cell of board.cells) if (cell.state === QUESTION) cell.state = HIDDEN;
+          paint();
+        }
+      } else if (cmd === "about") {
+        root.querySelector<HTMLDialogElement>("#ms-about")?.showModal();
+      }
+      // "exit" is not handled here: the window this lives in owns it.
+    });
+
+    // The menu prints F2 next to New, so F2 has to do it. Guarded on the panel
+    // being visible, or the key would deal a new board from inside Solitaire.
+    addEventListener("keydown", (e) => {
+      if (e.key !== "F2") return;
+      if (root.closest(".games-panel")?.hasAttribute("hidden")) return;
+      e.preventDefault();
+      build();
+    });
 
     build();
   }
@@ -295,45 +362,24 @@ const LABELS = {
      shadow bottom-right. Every raised thing here is that, and every sunken one
      is the same two colours swapped. */
   .ms {
+    /* A column so the menu bar sits on top of the board and stretches across
+       it. The width comes from the board: the panel this lives in is sized to
+       its content, and the board is the widest thing in it. */
+    display: flex;
+    flex-direction: column;
     --face: #d4d0c8;
     --light: #ffffff;
     --dark: #808080;
     --darker: #404040;
   }
 
-  .ms-levels {
-    display: flex;
-    gap: 6px;
-    margin: 0 0 0.9rem;
-  }
-  .ms-level {
-    padding: 3px 12px;
-    background: var(--face);
-    border: 1px solid var(--darker);
-    box-shadow:
-      inset 1px 1px 0 var(--light),
-      inset -1px -1px 0 var(--dark);
-    font: inherit;
-    font-size: 0.85rem;
-    cursor: default;
-  }
-  .ms-level[aria-pressed="true"] {
-    box-shadow:
-      inset 1px 1px 0 var(--dark),
-      inset -1px -1px 0 var(--light);
-    font-weight: bold;
-  }
-
+  /* The client area of the window: the raised panel, edge to edge, exactly as
+     Windows drew it. No margin — the window is sized to this. */
   .ms-frame {
-    display: inline-block;
-    max-width: 100%;
     padding: 6px;
     background: var(--face);
     border: 3px solid;
     border-color: var(--light) var(--dark) var(--dark) var(--light);
-    /* The expert board is 30 cells wide. Wider than the pane on a narrow
-       screen, so it scrolls rather than pushing the whole document sideways. */
-    overflow-x: auto;
   }
 
   .ms-head {
@@ -438,10 +484,16 @@ const LABELS = {
     outline-offset: -2px;
   }
 
+  /* Visually hidden, not gone: the face already tells a sighted player how it
+     went, and Windows had no status line under the board. */
   .ms-status {
-    min-height: 1.2em;
-    margin: 0.7rem 0 0.4rem;
-    font-weight: bold;
-    color: #0a246a;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 </style>

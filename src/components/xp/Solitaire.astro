@@ -13,13 +13,38 @@
  * Not here, on purpose: the cascade of bouncing cards XP played when you won.
  * It is animation and nothing else, and the game is finished without it.
  */
+import MenuBar, { type Menu } from "./MenuBar.astro";
+import AboutBox from "./AboutBox.astro";
+
+/* XP's Game menu. Undo, Deck and Options are drawn disabled rather than
+   dropped, the same way Minesweeper's are: an item you cannot use still tells
+   you it exists. */
+const MENUS: Menu[] = [
+  {
+    label: "Game",
+    items: [
+      { label: "Deal", cmd: "deal", key: "F2" },
+      { sep: true },
+      { label: "Undo", disabled: true },
+      { label: "Deck...", disabled: true },
+      { label: "Options...", disabled: true },
+      { sep: true },
+      { label: "Exit", cmd: "exit" },
+    ],
+  },
+  {
+    label: "Help",
+    items: [
+      { label: "Contents", disabled: true },
+      { sep: true },
+      { label: "About Solitaire", cmd: "about" },
+    ],
+  },
+];
 ---
 
 <div class="sol">
-  <div class="sol-bar">
-    <button type="button" class="sol-new">New game</button>
-    <span class="sol-moves note">Moves: 0</span>
-  </div>
+  <MenuBar id="sol-menu" menus={MENUS} />
 
   <div class="sol-table">
     <div class="sol-top">
@@ -45,15 +70,27 @@
       attribute the `:global()` rules below hang off. */}
   <div class="sol-ghost" hidden></div>
 
-  <p class="sol-status note" role="status"></p>
-  <p class="note">
-    Drag a card onto another, double click to send it to a pile at the top, and
-    click the deck to turn a card over. With the keyboard: Tab to a card and
-    press Enter, which does the same as a double click.
-  </p>
-  <noscript>
-    <p class="note">Solitaire needs JavaScript, and it is switched off.</p>
-  </noscript>
+  {/* The sunken strip along the bottom of a Windows window. It holds the move
+      count, and it is where the win goes — without the cascade of cards there
+      would otherwise be nothing at all to mark it. */}
+  <p class="sol-status" role="status">Moves: 0</p>
+
+  <AboutBox id="sol-about" title="About Solitaire">
+    <p>
+      Klondike. Build the four piles at the top up from the ace in one suit, and
+      the columns down in alternating colours.
+    </p>
+    <p>
+      Drag a card onto another, double click to send it to a pile at the top,
+      and click the deck to turn a card over. With the keyboard: <kbd>Tab</kbd>
+      to a card and <kbd>Enter</kbd>, which does what a double click does.
+    </p>
+    <p>
+      Written for this site; only the icon is Microsoft's. It turns one card at
+      a time rather than the three Windows defaulted to, because draw-three
+      makes most deals unwinnable.
+    </p>
+  </AboutBox>
 </div>
 
 <script>
@@ -81,9 +118,8 @@
   const table = root?.querySelector<HTMLElement>(".sol-table");
   const ghost = root?.querySelector<HTMLElement>(".sol-ghost");
   const status = root?.querySelector<HTMLElement>(".sol-status");
-  const movesOut = root?.querySelector<HTMLElement>(".sol-moves");
 
-  if (root && table && ghost && status && movesOut) {
+  if (root && table && ghost && status) {
     let game = newGame();
 
     /* Read out of the stylesheet rather than repeated here. A card height that
@@ -162,8 +198,9 @@
         slot.classList.toggle("is-empty", cards.length === 0);
       }
 
-      movesOut.textContent = `Moves: ${game.moves}`;
-      status.textContent = isWon(game) ? "All four piles complete. That is a win." : "";
+      status.textContent = isWon(game)
+        ? "All four piles complete. That is a win."
+        : `Moves: ${game.moves}`;
     };
 
     /** Which card an event landed on: its pile and its place in it. */
@@ -280,17 +317,40 @@
       paint();
     });
 
-    root.querySelector<HTMLButtonElement>(".sol-new")?.addEventListener("click", () => {
+    const deal = () => {
       game = newGame();
       paint();
+    };
+
+    root.addEventListener("xpmenu", (e) => {
+      const cmd = (e as CustomEvent<string>).detail;
+      if (cmd === "deal") deal();
+      else if (cmd === "about") root.querySelector<HTMLDialogElement>("#sol-about")?.showModal();
+      // "exit" is not handled here: the window this lives in owns it.
+    });
+
+    // The menu prints F2 next to Deal, so F2 has to deal. Guarded on the panel
+    // being visible, or the key would reshuffle this from inside Minesweeper.
+    addEventListener("keydown", (e) => {
+      if (e.key !== "F2") return;
+      if (root.closest(".games-panel")?.hasAttribute("hidden")) return;
+      e.preventDefault();
+      deal();
     });
 
     paint();
+    // The table is as big as it is; the window follows it. Whoever owns the
+    // window listens for this — nothing here knows there is one.
+    root.dispatchEvent(new CustomEvent("xp:fit", { bubbles: true }));
   }
 </script>
 
 <style>
   .sol {
+    /* A column: menu bar, baize, status bar — the three parts of a Windows
+       application window, in that order. */
+    display: flex;
+    flex-direction: column;
     --card-w: 62px;
     --card-h: 88px;
     /* How far a card in a column is offset from the one above it. Read by the
@@ -299,39 +359,12 @@
     --step-down: 8px;
   }
 
-  .sol-bar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 0 0 0.7rem;
-  }
-  .sol-new {
-    padding: 3px 12px;
-    background: #d4d0c8;
-    border: 1px solid #404040;
-    box-shadow:
-      inset 1px 1px 0 #ffffff,
-      inset -1px -1px 0 #808080;
-    font: inherit;
-    font-size: 0.85rem;
-    cursor: default;
-  }
-  .sol-new:active {
-    box-shadow:
-      inset 1px 1px 0 #808080,
-      inset -1px -1px 0 #ffffff;
-  }
-  .sol-moves {
-    margin: 0;
-  }
-
-  /* The baize. #008000 is the green Windows dealt on. */
+  /* The baize, edge to edge: it is the client area of the window, and Windows
+     put no margin around it. #008000 is the green it dealt on. */
   .sol-table {
+    flex: 1 1 auto;
     padding: 10px;
     background: #008000;
-    border: 2px solid;
-    border-color: #808080 #ffffff #ffffff #808080;
-    overflow-x: auto;
   }
 
   .sol-top,
@@ -343,6 +376,13 @@
   }
   .sol-top {
     margin-bottom: 12px;
+  }
+  /* The window is sized to the table at the moment it is dealt, and a column
+     grows as you play — six face-down cards plus a dozen face-up ones is
+     360px. Without this floor the window would be dealt short and the baize
+     would have to scroll the first time a column got long. */
+  .sol-cols {
+    min-height: 360px;
   }
   /* Stock and waste on the left, the four foundations on the right, with the
      third column left empty between them — the layout Windows dealt. */
@@ -437,10 +477,16 @@
     box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.4);
   }
 
+  /* The status bar along the bottom: the sunken strip of a Windows window. */
   .sol-status {
-    min-height: 1.2em;
-    margin: 0.7rem 0 0.4rem;
-    font-weight: bold;
-    color: #0a246a;
+    flex: none;
+    margin: 0;
+    padding: 2px 8px;
+    background: #ece9d8;
+    border-top: 1px solid #ffffff;
+    box-shadow: inset 0 1px 0 #aca899;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #000000;
   }
 </style>

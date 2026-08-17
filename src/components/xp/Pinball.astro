@@ -16,10 +16,39 @@
  * everyone who so much as glances at this page — which the colophon in the
  * Contact window promises not to do.
  */
+import MenuBar, { type Menu } from "./MenuBar.astro";
+import AboutBox from "./AboutBox.astro";
+
 const SRC = "https://pinball.alula.me/";
+
+/* Short, because it has to be honest. Everything the real Game and Options
+   menus offered lives INSIDE somebody else's frame, and a menu here cannot
+   reach across it. The one thing this side controls is whether to load it. */
+const MENUS: Menu[] = [
+  {
+    label: "Game",
+    items: [
+      { label: "Load the game", cmd: "load" },
+      { label: "New Game", key: "F2", disabled: true },
+      { label: "Pause", disabled: true },
+      { sep: true },
+      { label: "Exit", cmd: "exit" },
+    ],
+  },
+  {
+    label: "Help",
+    items: [
+      { label: "Contents", disabled: true },
+      { sep: true },
+      { label: "About 3D Pinball", cmd: "about" },
+    ],
+  },
+];
 ---
 
 <div class="pin">
+  <MenuBar id="pin-menu" menus={MENUS} />
+
   <div class="pin-stage">
     {/* The URL rides on the button rather than in the script: the script is
         bundled and shared, the markup is where this component's own data goes. */}
@@ -30,52 +59,82 @@ const SRC = "https://pinball.alula.me/";
     </button>
   </div>
 
-  <p class="note">
-    Arrow keys or <kbd>Z</kbd> and <kbd>/</kbd> for the flippers, hold
-    <kbd>Space</kbd> to pull the plunger. Click inside the frame first, or the
-    keys go to this page instead.
-  </p>
-
-  {/* On the page and not only in a comment: this is the one thing here that is
-      neither mine nor served from here, and the folder no longer carries a
-      description that could say so. */}
-  <p class="note">
-    Not mine and not hosted here. The engine is a decompilation of the original
-    by <a href="https://github.com/k4zmu2a/SpaceCadetPinball" rel="noopener">k4zmu2a</a>,
-    compiled to WebAssembly by <a href="https://github.com/alula/SpaceCadetPinball"
-      rel="noopener">alula</a>, and it runs off their server. The game's own
-    data is Microsoft's and is not redistributable, so there is no copy of it in
-    this repository.
-  </p>
+  {/* The notice is not decoration and it is not optional, so it does not live
+      only in a comment. Help -> About is where Windows kept this, and it is the
+      only place left now that the game fills the window. */}
+  <AboutBox id="pin-about" title="About 3D Pinball">
+    <p>
+      Arrow keys or <kbd>Z</kbd> and <kbd>/</kbd> for the flippers, hold
+      <kbd>Space</kbd> to pull the plunger. Click inside the frame first, or the
+      keys go to this page instead.
+    </p>
+    <p>
+      <strong>Not mine and not hosted here.</strong> The engine is a
+      decompilation of the original by <a
+        href="https://github.com/k4zmu2a/SpaceCadetPinball"
+        rel="noopener">k4zmu2a</a>, compiled to WebAssembly by <a
+        href="https://github.com/alula/SpaceCadetPinball" rel="noopener">alula</a>,
+      and it runs off their server.
+    </p>
+    <p>
+      The game's own data is Microsoft's and is not redistributable, so there is
+      no copy of it in this repository — and nothing is fetched from them until
+      you press Load.
+    </p>
+  </AboutBox>
 </div>
 
 <script>
-  const stage = document.querySelector<HTMLElement>(".pin-stage");
+  const root = document.querySelector<HTMLElement>(".pin");
+  const stage = root?.querySelector<HTMLElement>(".pin-stage");
   const button = stage?.querySelector<HTMLButtonElement>(".pin-play");
 
-  button?.addEventListener("click", () => {
-    const frame = document.createElement("iframe");
-    frame.src = button.dataset.src ?? "";
-    frame.title = "3D Pinball: Space Cadet";
-    frame.allow = "autoplay; fullscreen";
-    frame.className = "pin-frame";
-    stage?.replaceChildren(frame);
-    frame.focus();
-  });
+  if (root && stage && button) {
+    const load = () => {
+      if (stage.querySelector("iframe")) return;
+      const frame = document.createElement("iframe");
+      frame.src = button.dataset.src ?? "";
+      frame.title = "3D Pinball: Space Cadet";
+      frame.allow = "autoplay; fullscreen";
+      frame.className = "pin-frame";
+      stage.replaceChildren(frame);
+      frame.focus();
+      // The menu item has done its one job; leave it greyed rather than let it
+      // look like it still would.
+      root.querySelector<HTMLButtonElement>('[data-cmd="load"]')?.setAttribute("disabled", "");
+    };
+
+    button.addEventListener("click", load);
+    root.addEventListener("xpmenu", (e) => {
+      const cmd = (e as CustomEvent<string>).detail;
+      if (cmd === "load") load();
+      else if (cmd === "about") root.querySelector<HTMLDialogElement>("#pin-about")?.showModal();
+      // "exit" is not handled here: the window this lives in owns it.
+    });
+
+    // 600x416 is what the original window opened at, and the window is sized to
+    // it. Whoever owns the window listens for this.
+    root.dispatchEvent(new CustomEvent("xp:fit", { bubbles: true }));
+  }
 </script>
 
 <style>
-  /* The 600x416 the original window opened at, kept as a ratio so the frame
-     shrinks with the pane instead of pushing it sideways. */
+  /* Menu bar on top, frame under it: the two parts of the window. */
+  .pin {
+    display: flex;
+    flex-direction: column;
+  }
+  /* Exactly the 600x416 the original window opened at, and no margin: the
+     window is sized to this, so the frame IS the client area. A fixed width
+     rather than a percentage because the panel around it is sized by its
+     content, and a percentage of a max-content box has nothing to resolve
+     against. */
   .pin-stage {
     position: relative;
+    width: 600px;
+    max-width: 100%;
     aspect-ratio: 600 / 416;
-    width: 100%;
-    max-width: 600px;
-    margin: 0 0 0.9rem;
     background: #000000;
-    border: 2px solid;
-    border-color: #808080 #ffffff #ffffff #808080;
   }
 
   .pin-play {
@@ -117,13 +176,4 @@ const SRC = "https://pinball.alula.me/";
     border: 0;
   }
 
-  .pin kbd {
-    padding: 0 4px;
-    background: #f4f2ec;
-    border: 1px solid #aca899;
-    border-bottom-width: 2px;
-    border-radius: 3px;
-    font-family: inherit;
-    font-size: 0.85em;
-  }
 </style>

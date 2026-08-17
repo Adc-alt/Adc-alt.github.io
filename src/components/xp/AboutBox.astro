@@ -1,0 +1,170 @@
+---
+/**
+ * The `Help → About` dialog of a Windows XP application.
+ *
+ * It exists because the games stopped being documents. Making the game fill its
+ * window meant deleting the headings and the paragraphs around it — the
+ * instructions, and the notice that the pinball is somebody else's work running
+ * off somebody else's server. That notice is not decoration, so it needed a
+ * home, and in Windows this is the home it has.
+ *
+ * A real `<dialog>` and not a div: the browser gives modality, the backdrop,
+ * Escape, the focus trap and the return of focus for free, and all four are
+ * things a hand-rolled version gets wrong.
+ */
+interface Props {
+  /** Ties the dialog to the menu item that opens it. */
+  id: string;
+  title: string;
+}
+
+const { id, title } = Astro.props;
+---
+
+<dialog class="xpdlg" id={id} aria-labelledby={`${id}-title`}>
+  <div class="xpdlg-bar">
+    <img class="xpdlg-icon" src="/xp/win-flag.png" width="52" height="48" alt="" />
+    <h2 class="xpdlg-title" id={`${id}-title`}>{title}</h2>
+    <button type="button" class="xpdlg-x" aria-label="Close"><span aria-hidden="true">✕</span></button>
+  </div>
+
+  <div class="xpdlg-body">
+    <slot />
+    <div class="xpdlg-buttons">
+      <button type="button" class="xpdlg-ok">OK</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  for (const dlg of document.querySelectorAll<HTMLDialogElement>(".xpdlg")) {
+    for (const close of dlg.querySelectorAll<HTMLButtonElement>(".xpdlg-x, .xpdlg-ok")) {
+      close.addEventListener("click", () => dlg.close());
+    }
+    // Clicking the backdrop closes it. The test is the dialog's own box and not
+    // the event target, because the backdrop IS the dialog as far as the DOM is
+    // concerned — a click on it reports the dialog as the target.
+    dlg.addEventListener("click", (e) => {
+      const box = dlg.getBoundingClientRect();
+      const outside =
+        e.clientX < box.left || e.clientX > box.right || e.clientY < box.top || e.clientY > box.bottom;
+      // A click dispatched by the keyboard has no coordinates; 0,0 would read
+      // as outside and close the dialog the moment Enter opened it.
+      if (outside && (e.clientX || e.clientY)) dlg.close();
+    });
+  }
+</script>
+
+<style>
+  .xpdlg {
+    width: min(420px, calc(100vw - 32px));
+    padding: 0;
+    /* The Luna frame, same as a window but thinner: a dialog has no resize
+       border and no minimise. */
+    background: #0831d9;
+    border: 0;
+    border-radius: 8px 8px 0 0;
+    box-shadow: 3px 4px 16px rgba(0, 0, 0, 0.5);
+    font-family: Tahoma, "DejaVu Sans", Verdana, sans-serif;
+    font-size: 12px;
+    color: #000000;
+  }
+  .xpdlg::backdrop {
+    /* XP dimmed nothing behind a dialog, but on a web page the window edges
+       need separating from the desktop or the dialog looks pasted on. */
+    background: rgba(0, 0, 0, 0.25);
+  }
+
+  .xpdlg-bar {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: 28px;
+    padding: 0 3px 0 5px;
+    border-radius: 6px 6px 0 0;
+    background: linear-gradient(
+      to bottom,
+      #0997ff 0,
+      #0053ee 8%,
+      #0050ee 40%,
+      #0066ff 88%,
+      #005bff 95%,
+      #003dd7 96%,
+      #003dd7 100%
+    );
+  }
+  .xpdlg-icon {
+    height: 15px;
+    width: auto;
+    display: block;
+  }
+  .xpdlg-title {
+    flex: 1 1 auto;
+    margin: 0;
+    color: #ffffff;
+    font: bold 12px/1 Tahoma, "DejaVu Sans", Verdana, sans-serif;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
+  }
+  .xpdlg-x {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    border-radius: 3px;
+    background: linear-gradient(to bottom, #f18f6a 0, #d9542a 45%, #b32d13 100%);
+    color: #ffffff;
+    font-size: 11px;
+    cursor: default;
+  }
+  .xpdlg-x:hover {
+    filter: brightness(1.18);
+  }
+
+  .xpdlg-body {
+    padding: 14px 16px 12px;
+    background: #ece9d8;
+    line-height: 1.5;
+  }
+  .xpdlg-body :global(p) {
+    margin: 0 0 0.7rem;
+  }
+  .xpdlg-body :global(p:last-of-type) {
+    margin-bottom: 0;
+  }
+  .xpdlg-body :global(a) {
+    color: #0000ee;
+  }
+  .xpdlg-body :global(kbd) {
+    padding: 0 4px;
+    background: #f4f2ec;
+    border: 1px solid #aca899;
+    border-bottom-width: 2px;
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: 0.9em;
+  }
+
+  /* A Windows dialog puts its buttons on the right, and OK is the default one. */
+  .xpdlg-buttons {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 14px;
+  }
+  .xpdlg-ok {
+    min-width: 74px;
+    padding: 4px 12px;
+    background: #ece9d8;
+    border: 1px solid #003c74;
+    border-radius: 3px;
+    font: inherit;
+    cursor: default;
+  }
+  .xpdlg-ok:hover {
+    border-color: #f0a30a;
+  }
+  .xpdlg-ok:active {
+    background: #dcd8c8;
+  }
+</style>

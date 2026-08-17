@@ -127,12 +127,18 @@ export function reveal(board, i, rng = Math.random) {
   return "ok";
 }
 
-/** Right click: hidden → flag → "?" → hidden, the cycle XP shows by default. */
-export function cycleMark(board, i) {
+/**
+ * Right click: hidden → flag → "?" → hidden, the cycle XP shows by default.
+ *
+ * `marks` is XP's "Marks (?)" setting from the Game menu. With it off the
+ * question mark is skipped and the cycle is just flag on, flag off.
+ */
+export function cycleMark(board, i, marks = true) {
   const cell = board.cells[i];
   if (!cell || board.dead || cell.state === REVEALED) return board;
-  cell.state =
-    cell.state === HIDDEN ? FLAGGED : cell.state === FLAGGED ? QUESTION : HIDDEN;
+  if (cell.state === HIDDEN) cell.state = FLAGGED;
+  else if (cell.state === FLAGGED) cell.state = marks ? QUESTION : HIDDEN;
+  else cell.state = HIDDEN;
   return board;
 }
 

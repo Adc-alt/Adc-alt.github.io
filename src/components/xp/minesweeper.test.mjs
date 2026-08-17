@@ -133,6 +133,23 @@ test("the mark cycles hidden, flag, question, hidden", () => {
   assert.equal(cycleMark(b, 0).cells[0].state, HIDDEN);
 });
 
+test("with Marks (?) off the cycle is just flag on, flag off", () => {
+  // The Game menu offers the setting, so it has to mean something. Left in,
+  // the "?" would be reachable with the setting switched off.
+  const b = rigged(1, 1, []);
+  assert.equal(cycleMark(b, 0, false).cells[0].state, FLAGGED);
+  assert.equal(cycleMark(b, 0, false).cells[0].state, HIDDEN);
+  assert.equal(cycleMark(b, 0, false).cells[0].state, FLAGGED);
+});
+
+test("a question mark still clears when the setting is turned off mid-cycle", () => {
+  const b = rigged(1, 1, []);
+  cycleMark(b, 0); // flag
+  cycleMark(b, 0); // question
+  assert.equal(b.cells[0].state, QUESTION);
+  assert.equal(cycleMark(b, 0, false).cells[0].state, HIDDEN, "a ? must not be a dead end");
+});
+
 test("a revealed cell cannot be flagged", () => {
   const b = rigged(3, 1, [2]);
   reveal(b, 0);

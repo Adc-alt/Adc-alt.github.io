@@ -11,8 +11,9 @@
  * which is a thing nobody shares, and buy no coupling between two windows.
  *
  * Every panel is rendered at build time and the script hides them (phase 1
- * §13). Without JavaScript this is the whole folder, one game after another —
- * each of which says it needs JavaScript, because all three do.
+ * §13). Without JavaScript this is the whole folder with all three games laid
+ * out one after another — none of them playable, because all three need a
+ * script, but nothing is blank and nothing is broken.
  */
 import Minesweeper from "./Minesweeper.astro";
 import Solitaire from "./Solitaire.astro";
@@ -83,15 +84,11 @@ const iconSrc = (id: string) => `/xp/icons/${id}.png`;
         /* `data-title` is the game's own name and not "Games": while a game is
            open the title bar says what the window it came out of said. */
         <div class="games-panel" id={gamePanelId(game.id)} data-title={game.title} tabindex="-1">
-          {/* `xp-game` widens the document: a board is as wide as it is, not as
-              wide as a column of prose. */}
-          <div class="xp-doc xp-game">
-            <p class="note back">
-              <button type="button" class="games-back">← Games</button>
-            </p>
-            <h1>{game.label}</h1>
-            <Body />
-          </div>
+          {/* Nothing around it: no heading, no prose, no padding. The game IS
+              the window's contents, the way an application window works. What
+              used to be written here now lives in the game's Help -> About, and
+              the way back is Game -> Exit. */}
+          <Body />
         </div>
       );
     })
@@ -115,6 +112,26 @@ const iconSrc = (id: string) => `/xp/icons/${id}.png`;
       if (title) win?.dispatchEvent(new CustomEvent("xp:title", { detail: title }));
     };
 
+    /**
+     * Sizes the window to whatever is open.
+     *
+     * A game's panel is `width: max-content`, so its box is the intrinsic size
+     * of the game and does not depend on how big the window happens to be right
+     * now — which is what stops the window from only ever growing. The index
+     * gets no measurement: it is a document, and it keeps the authored size.
+     */
+    const fit = () => {
+      const open = panels.find((p) => !p.hidden);
+      if (!open) {
+        win?.dispatchEvent(new CustomEvent("xp:resize"));
+        return;
+      }
+      const box = open.getBoundingClientRect();
+      win?.dispatchEvent(
+        new CustomEvent("xp:resize", { detail: { w: box.width, h: box.height } }),
+      );
+    };
+
     /** `id` names a game, or null for the index. */
     const show = (id: string | null) => {
       // Through `gamePanelId` and not by pasting the prefix: the markup above
@@ -125,6 +142,12 @@ const iconSrc = (id: string) => `/xp/icons/${id}.png`;
 
       const open = wanted ? panels.find((p) => p.id === wanted) : null;
       retitle(open?.dataset.title ?? root.dataset.title);
+
+      // `is-app` strips the window's body padding: a game runs edge to edge,
+      // the folder does not. It has to be set BEFORE the fit below, because the
+      // padding it removes is part of the chrome that fit measures.
+      win?.classList.toggle("is-app", wanted !== null);
+      fit();
 
       // The window keeps its scroll across a swap, so arriving from a game read
       // to the bottom would put the index's first line above the viewport.
@@ -162,13 +185,19 @@ const iconSrc = (id: string) => `/xp/icons/${id}.png`;
       select(null);
     });
 
-    for (const button of root.querySelectorAll<HTMLButtonElement>(".games-back")) {
-      button.addEventListener("click", () => {
-        show(null);
-        select(null);
-        icons[0]?.focus({ preventScroll: true });
-      });
-    }
+    // Game -> Exit, from whichever game is open. The games do not know this
+    // window exists; they say "exit" and this is what that means here.
+    root.addEventListener("xpmenu", (e) => {
+      if ((e as CustomEvent<string>).detail !== "exit") return;
+      show(null);
+      select(null);
+      icons[0]?.focus({ preventScroll: true });
+    });
+
+    // A game that changed size — a new Minesweeper difficulty, say — asks for
+    // the window to be re-fitted. It does not know which window, or that there
+    // is one; it just says it changed.
+    root.addEventListener("xp:fit", () => fit());
 
     // The folder opens on the index. Doing it here and not in the markup is
     // what leaves the whole folder readable with JavaScript off.
@@ -177,6 +206,14 @@ const iconSrc = (id: string) => `/xp/icons/${id}.png`;
 </script>
 
 <style>
+  /* `max-content` is what makes the window fit the game: the panel's box is the
+     intrinsic size of what is inside it, so measuring it does not just read
+     back the width of the window it already sits in. */
+  .games-panel {
+    display: flex;
+    flex-direction: column;
+    width: max-content;
+  }
   .games-panel[hidden],
   .games-index[hidden] {
     display: none;
@@ -267,21 +304,6 @@ const iconSrc = (id: string) => `/xp/icons/${id}.png`;
     font-size: 0.8rem;
     line-height: 1.5;
     color: #6b675c;
-  }
-
-  /* Same, for the way back out of a game. */
-  .games-back {
-    padding: 0;
-    background: none;
-    border: 0;
-    color: #0000ee;
-    font: inherit;
-    text-decoration: underline;
-    cursor: default;
-  }
-  .games-back:focus-visible {
-    outline: 2px solid #316ac5;
-    outline-offset: 2px;
   }
 
   /* Without JavaScript every panel is on the page one after another, and they
