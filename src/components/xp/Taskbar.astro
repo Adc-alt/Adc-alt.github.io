@@ -23,6 +23,7 @@ import {
   TRAY_FOOT,
   TRAY_EDGE,
 } from "./taskbar-colors.mjs";
+import StartMenu from "./StartMenu.astro";
 
 const bar = gradient();
 // The first two rows are the measured light band (§4.2) and are given in px,
@@ -39,8 +40,9 @@ const trayEdge = hex(TRAY_EDGE);
   style={`--bar:${bar};--bar-h:${HEIGHT}px;--start-bg:${startBg};--start-down:${startBgDown};--tray-bg:${trayBg};--tray-edge:${trayEdge}`}
 >
   {/* A real <button> and not a <div>: focusable with a keyboard and announced
-      by a screen reader. In phase 1 it depresses and opens nothing. */}
-  <button class="xp-start" type="button">
+      by a screen reader. It opens the Start menu, which is a picture — see
+      StartMenu.astro for why the panel itself is aria-hidden and this is not. */}
+  <button class="xp-start" type="button" aria-expanded="false" aria-controls="xp-startmenu">
     {/* The flag is decoration: the button's accessible name is already "start",
         so the empty alt stops a reader saying the same thing twice. */}
     <img class="xp-flag" src="/xp/win-flag.png" width="52" height="48" alt="" />
@@ -53,14 +55,42 @@ const trayEdge = hex(TRAY_EDGE);
   <div class="xp-tasks"></div>
 
   <div class="xp-tray">
+    {/* Hidden in the HTML and revealed by the script, like the clock next to it:
+        with no JavaScript nothing makes a sound, so a mute button would be a
+        control over something that cannot happen. */}
+    <button class="xp-mute" type="button" aria-pressed="false" hidden>
+      <span class="xp-sr">Mute the click</span>
+      <svg viewBox="0 0 16 16" width="16" height="16" role="presentation">
+        <path d="M1.5 6h2.6L7.5 3v10L4.1 10H1.5z" fill="currentColor"></path>
+        {/* Both drawn, and the CSS shows one: the waves when the sound is on,
+            the cross when it is off. */}
+        <g class="xp-wave" fill="none" stroke="currentColor" stroke-width="1.3">
+          <path d="M9.6 5.4a3.6 3.6 0 0 1 0 5.2"></path>
+          <path d="M11.7 3.6a6.4 6.4 0 0 1 0 8.8"></path>
+        </g>
+        <g class="xp-cross" fill="none" stroke="currentColor" stroke-width="1.4">
+          <path d="M10 6l4 4M14 6l-4 4"></path>
+        </g>
+      </svg>
+    </button>
+
     {/* No `datetime` in the built HTML: the clock is the VISITOR's time, not the
         build server's. The script fills it in on start-up. */}
     <time class="xp-clock" id="xp-clock"></time>
   </div>
 </div>
 
+<StartMenu />
+
 <script>
   import { formatTime, msToNextMinute } from "./clock.mjs";
+  import { DESKTOP_MIN_WIDTH } from "./windows.mjs";
+
+  /* Windows' own navigation click, 64ms, converted to mono 22kHz — 2.9kB, small
+     enough that it is not worth an encoder. It is Microsoft's sound, like the
+     wallpaper and the flag already in /xp/. */
+  const CLICK_SRC = "/xp/click.wav";
+  const MUTE_KEY = "xp_muted";
 
   const el = document.getElementById("xp-clock");
   if (el) {
@@ -75,6 +105,131 @@ const trayEdge = hex(TRAY_EDGE);
     };
     tick();
   }
+
+  // ── The click ─────────────────────────────────────────────────────────────
+  // Same query as Window.astro's, from the same constant: the sound belongs to
+  // the desktop, and in stacked mode there is no desktop to click on.
+  const DESKTOP = matchMedia(`(min-width: ${DESKTOP_MIN_WIDTH}px)`);
+
+  const audio = new Audio(CLICK_SRC);
+  audio.preload = "auto";
+
+  // localStorage throws in some privacy modes and the whole bar would die with
+  // it. Same guard as the boot screen's.
+  const store = (fn: (s: Storage) => void) => {
+    try {
+      fn(localStorage);
+    } catch {
+      /* private mode: the setting just does not survive the tab */
+    }
+  };
+
+  let muted = false;
+  store((s) => {
+    muted = s.getItem(MUTE_KEY) === "1";
+  });
+
+  const mute = document.querySelector<HTMLButtonElement>(".xp-mute");
+
+  const paintMute = () => {
+    mute?.setAttribute("aria-pressed", String(muted));
+    mute?.classList.toggle("is-muted", muted);
+  };
+
+  /** The button only exists where the sound does. */
+  const showMute = () => {
+    if (mute) mute.hidden = !DESKTOP.matches;
+  };
+  paintMute();
+  showMute();
+  DESKTOP.addEventListener("change", showMute);
+
+  mute?.addEventListener("click", () => {
+    muted = !muted;
+    store((s) => s.setItem(MUTE_KEY, muted ? "1" : "0"));
+    paintMute();
+    // Unmuting plays the click, muting does not: the sound is the confirmation
+    // that it is back, and there is nothing to confirm about silence.
+    if (!muted) play();
+  });
+
+  function play() {
+    if (muted || !DESKTOP.matches) return;
+    audio.currentTime = 0;
+    // Rejects until the browser has seen a gesture, and there is nothing to do
+    // about that or to report: the first click is the gesture.
+    audio.play().catch(() => {});
+  }
+
+  // One delegated listener instead of one per window: `pointerdown` on capture
+  // so it fires before anything inside can stop it, and before the window's own
+  // handlers move things around.
+  addEventListener(
+    "pointerdown",
+    (e) => {
+      const t = e.target;
+      if (!(t instanceof Element)) return;
+      // The mute button is handled above, on click, and would otherwise beep on
+      // the way down while you are silencing it.
+      if (t.closest(".xp-mute")) return;
+      if (t.closest(".xp-window, .xp-taskbar")) play();
+    },
+    true,
+  );
+
+  // ── The Start menu ────────────────────────────────────────────────────────
+  const start = document.querySelector<HTMLButtonElement>(".xp-start");
+  const menu = document.getElementById("xp-startmenu");
+
+  const setMenu = (open: boolean) => {
+    if (!menu || !start) return;
+    menu.hidden = !open;
+    start.setAttribute("aria-expanded", String(open));
+    start.classList.toggle("is-open", open);
+  };
+
+  start?.addEventListener("click", () => {
+    // Stacked mode keeps the Start button depressing and opening nothing, which
+    // is what it did before this existed: a 400px-wide panel of things you
+    // cannot click would cover the page it is sitting on.
+    if (!DESKTOP.matches) return;
+    setMenu(menu?.hidden ?? false);
+  });
+
+  // Anywhere else closes it, like XP. On capture and on the document so it also
+  // catches a click inside a window, which stops propagation for its own
+  // reasons.
+  addEventListener(
+    "pointerdown",
+    (e) => {
+      if (menu?.hidden) return;
+      const t = e.target;
+      if (t instanceof Element && (t.closest(".xp-startmenu") || t.closest(".xp-start"))) return;
+      setMenu(false);
+    },
+    true,
+  );
+
+  addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || menu?.hidden) return;
+    setMenu(false);
+    start?.focus();
+  });
+
+  // Stacked mode has no desktop for the menu to sit on, and at 400px it would
+  // cover the page. The button stops announcing itself as collapsed there too:
+  // `aria-expanded` on a control that cannot expand tells a screen reader there
+  // is something to open.
+  const syncStart = () => {
+    if (!start) return;
+    if (DESKTOP.matches) start.setAttribute("aria-expanded", String(!menu?.hidden));
+    else {
+      setMenu(false);
+      start.removeAttribute("aria-expanded");
+    }
+  };
+  syncStart();
+  DESKTOP.addEventListener("change", syncStart);
 </script>
 
 <style>
@@ -138,9 +293,10 @@ const trayEdge = hex(TRAY_EDGE);
     height: 26px;
     width: auto;
   }
-  .xp-start:active {
-    /* It depresses by inverting the gradient and dropping the text two pixels.
-       It does nothing else: the Start menu is a phase 2 thing. */
+  /* Pressed, and STAYS pressed while the menu is open: in XP the button is the
+     menu's hinge, not a thing you tap. `.is-open` is set by the script. */
+  .xp-start:active,
+  .xp-start.is-open {
     background: var(--start-down);
     padding-top: 2px;
     padding-bottom: 0;
@@ -217,10 +373,54 @@ const trayEdge = hex(TRAY_EDGE);
     display: flex;
     align-items: center;
     justify-content: center;
+    /* The speaker sits to the LEFT of the clock, which is where XP put its tray
+       icons. The gap comes out of the 133px rather than widening the tray: that
+       width is measured (§4.3) and the clock is short enough to give it up. */
+    gap: 8px;
     border-left: 1px solid var(--tray-edge);
     background: var(--tray-bg);
     color: #ffffff;
     font-size: 14px;
+  }
+
+  /* A tray icon, not a button with a body: no background, no border, and the
+     arrow cursor Windows uses everywhere on the bar. */
+  .xp-mute {
+    flex: none;
+    display: block;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    line-height: 0;
+    cursor: default;
+  }
+  .xp-mute[hidden] {
+    display: none;
+  }
+  .xp-mute:focus-visible {
+    outline: 1px solid #ffffff;
+    outline-offset: 2px;
+  }
+  /* One of the two groups drawn in the icon, never both. */
+  .xp-mute .xp-cross,
+  .xp-mute.is-muted .xp-wave {
+    display: none;
+  }
+  .xp-mute.is-muted .xp-cross {
+    display: inline;
+  }
+  /* The accessible name, off screen. The icon carries the meaning visually and
+     `aria-pressed` carries the state. */
+  .xp-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .xp-clock {
     /* Without JS the tray stays empty, and that is acceptable: it is decoration,
