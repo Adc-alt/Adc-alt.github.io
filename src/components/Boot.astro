@@ -332,7 +332,7 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
 <style>
   /* AcPlus IBM VGA 8x16 — VileR, https://int10h.org/oldschool-pc-fonts/ (CC BY-SA 4.0).
      The full licence travels with the file, in /fonts/, and the credit it
-     requires is in the welcome window (the site footer it used to live in went
+     requires is in the Contact window (the site footer it used to live in went
      away with the arcade look).
 
      ⚠️ It has to be the **AcPlus** variant (aspect-corrected), not Web/WebPlus.
@@ -362,8 +362,11 @@ const { paths = ["/", "/index.html"], seenKey = "boot_seen" } = Astro.props;
     display: block;
     position: fixed;
     inset: 0;
-    /* Above everything, including the site's CRT layers (z 58-60) and the
-       skip-to-content link (z 100). */
+    /* Above everything the site puts on the desktop: the taskbar sits at 10 and
+       the windows start at 5, with `zTop` in `Window.astro` handing out one
+       more each time a window is raised. 200 leaves that counter all the room
+       it will ever need — the boot screen has to cover the site absolutely,
+       because it is also what hides the first frame of the layout. */
     z-index: 200;
     overflow: hidden;
   }

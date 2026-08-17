@@ -4,11 +4,11 @@ import { z } from "astro/zod";
 
 /**
  * Each project is a .md in src/content/projects/.
- * The filename is its window id: `hito.md` → #window-project-hito
+ * The filename is its section id: `my-project.md` → #section-project-my-project
  *
  * The schema is not decoration: if a project is missing a field, or has a
  * `status` that does not exist, `pnpm build` FAILS. Shipping a half-written
- * window is impossible.
+ * section is impossible.
  */
 const projects = defineCollection({
   loader: glob({ base: "./src/content/projects", pattern: "**/*.md" }),

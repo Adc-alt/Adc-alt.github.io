@@ -1,0 +1,156 @@
+---
+/**
+ * The contents of the reading pane: every section, rendered into the build.
+ *
+ * Phase 1 §13 still governs — if JavaScript produced these, a crawler would see
+ * an empty pane. The script only decides which one is visible. Without it every
+ * section is on the page, one after another, which is the whole no-JavaScript
+ * story (phase 3 §6).
+ *
+ * The four fixed sections are rendered FROM `NAV`, not written out by hand, so a
+ * Menu entry cannot end up pointing at a section that does not exist.
+ *
+ * Spec: docs/superpowers/specs/2026-08-16-xp-desktop-phase3-design.md
+ */
+import { getCollection } from "astro:content";
+import Home from "./Home.astro";
+import Projects from "./Projects.astro";
+import About from "./About.astro";
+import Blog from "./Blog.astro";
+import Project from "./Project.astro";
+import { NAV, projectSectionId, sectionId } from "./sections.mjs";
+
+/* Annotated because `FIXED[entry.id]` indexes with a `string`, and under
+   `astro/tsconfigs/strict` an un-annotated object literal makes that an
+   implicit-any index error that fails `astro check`. All four are Astro
+   component factories with no required props, so they share one type. */
+const FIXED: Record<string, typeof Home> = {
+  home: Home,
+  projects: Projects,
+  about: About,
+  blog: Blog,
+};
+
+const projects = (
+  await getCollection("projects", ({ data }) => (import.meta.env.PROD ? !data.draft : true))
+).sort((a, b) => a.data.order - b.data.order || b.data.year - a.data.year);
+---
+
+{
+  NAV.map((entry) => {
+    const Body = FIXED[entry.id];
+    return (
+      <section
+        class="xp-section"
+        id={sectionId(entry.id)}
+        data-title={entry.label}
+        tabindex="-1"
+      >
+        <Body />
+      </section>
+    );
+  })
+}
+
+{
+  projects.map((p) => (
+    <section
+      class="xp-section"
+      id={projectSectionId(p.id)}
+      data-title={p.data.title}
+      tabindex="-1"
+    >
+      <Project project={p} />
+    </section>
+  ))
+}
+
+<script>
+  import { navFor, PANE_ID, resolveSection } from "./sections.mjs";
+
+  const pane = document.getElementById(PANE_ID);
+  const sections = [...document.querySelectorAll<HTMLElement>(`#${PANE_ID} .xp-section`)];
+  const links = [...document.querySelectorAll<HTMLAnchorElement>(".xp-navlink")];
+  const ids = sections.map((s) => s.id);
+
+  // A click on the entry that is already current sets an identical hash, so no
+  // `hashchange` fires and nothing reopens a closed pane — the one click most
+  // likely to look broken. Re-running `show()` by hand covers it. No
+  // preventDefault: the anchor still does its own job, which is what keeps the
+  // back button and shareable section links working.
+  for (const a of links) {
+    a.addEventListener("click", () => {
+      if (location.hash === a.getAttribute("href")) show(location.hash, true);
+    });
+  }
+
+  /**
+   * Shows one section and hides the rest.
+   *
+   * Runs in BOTH modes, not just on a desktop: on a phone with JavaScript, one
+   * section at a time beats a single column holding the entire site.
+   *
+   * `moveFocus` is false on the first call on purpose. Focusing an element
+   * scrolls it into view, and nobody asked to be scrolled just for arriving.
+   */
+  function show(hash: string, moveFocus: boolean) {
+    if (!sections.length) return;
+    const target = resolveSection(ids, hash);
+    const active = sections.find((s) => s.id === target);
+    if (!active) return;
+
+    for (const s of sections) s.hidden = s !== active;
+
+    // Through the event and not by writing to `.xp-titletext` directly: the
+    // taskbar button's text is a copy made at start-up and `Window.astro` is
+    // what knows about it.
+    const title = active.dataset.title;
+    if (title) pane?.dispatchEvent(new CustomEvent("xp:title", { detail: title }));
+
+    // Brings the pane back if a Menu click closed it and the visitor clicked
+    // again — phase 3 does not intercept those clicks, so nothing else would
+    // reopen it. Before the focus call below, so the section's own focus wins.
+    pane?.dispatchEvent(new CustomEvent("xp:show"));
+
+    const current = `#${navFor(target)}`;
+    for (const a of links) {
+      if (a.getAttribute("href") === current) a.setAttribute("aria-current", "page");
+      else a.removeAttribute("aria-current");
+    }
+
+    // The pane keeps its scroll position across a swap, so arriving from a long
+    // section read to the bottom put the new section's heading ~900px above the
+    // viewport. Nothing else resets it: the sections share one scrollport, and
+    // `focus()` cannot fix it either — a section taller than the pane already
+    // covers the scrollport, so scrolling it "into view" is a no-op.
+    pane?.querySelector(".xp-winbody")?.scrollTo(0, 0);
+
+    // `preventScroll`: focusing a container scrolls it into view, and inside the
+    // pane that means scrolling past `.xp-winbody`'s own padding — the section
+    // arrived 18px down. The screen reader still lands on the new content; only
+    // the scroll is suppressed, and the line above has already put the pane
+    // exactly where we want it.
+    if (moveFocus) active.focus({ preventScroll: true });
+  }
+
+  // No click handler that intercepts: the anchors set the hash themselves,
+  // which is what gives the back button and shareable section links for free
+  // (phase 3 §3). The click listener above only ever runs `show()` again; it
+  // never calls `preventDefault`.
+  addEventListener("hashchange", () => show(location.hash, true));
+
+  // The first show() waits for DOMContentLoaded, which fires only after every
+  // deferred module script has run. Astro does not promise an order between two
+  // bundled component scripts, and this one dispatches `xp:title` at a window
+  // whose listener lives in Window.astro's script: run first and the event goes
+  // nowhere, so a deep link would land on the right section under the title
+  // "Home".
+  //
+  // No `readyState` guard: a module script runs while readiness is already
+  // "interactive", so a `=== "loading"` test never fires and would silently
+  // give back the top-level call this exists to avoid. Registering
+  // unconditionally is safe because a non-async module script always finishes
+  // running before `DOMContentLoaded` fires, whatever order the bundle runs
+  // this script and Window.astro's in.
+  addEventListener("DOMContentLoaded", () => show(location.hash, false));
+</script>

@@ -8,7 +8,10 @@ import Window from "../components/xp/Window.astro";
 ---
 
 <XP title="Page not found" noindex>
-  <Window id="window-404" title="Error" width={480} height={260} open>
+  {/* `noEnter`: with no boot screen to hide it behind, the arrival stagger is
+      just an empty desktop for a second and a half on a page nobody meant to
+      land on. */}
+  <Window id="window-404" title="Error" width={480} height={260} open noEnter>
     <div class="xp-doc">
       <h1>Page not found</h1>
       <p>

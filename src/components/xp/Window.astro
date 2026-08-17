@@ -18,8 +18,10 @@
  *     scrolls. It is what a phone gets and what anyone without JavaScript gets,
  *     on any screen.
  *   - **Desktop** is the ENHANCEMENT: absolute, draggable, they open and close.
- *     It lives inside `@media (min-width: 721px)` and hangs off `html.js`,
- *     which an inline script in the layout sets.
+ *     It lives inside `@media (min-width: 1204px)` and hangs off `html.js`,
+ *     which an inline script in the layout sets. 1204 is not a taste: it is the
+ *     width the three-window row needs (`DESKTOP_MIN_WIDTH` in `windows.mjs`),
+ *     and desktop mode means exactly "the row fits".
  *
  * Written the other way round the same rules would need two copies, and a
  * JavaScript failure would leave the site blank instead of in reading mode.
@@ -27,7 +29,7 @@
  * Hiding is `display: none`, which already removes the window from the tab
  * order and the accessibility tree: no need for `inert` on top.
  */
-import { initialPosition } from "./windows.mjs";
+import { enterDelay, initialPosition } from "./windows.mjs";
 import { HEIGHT as BAR_H } from "./taskbar-colors.mjs";
 
 interface Props {
@@ -37,24 +39,56 @@ interface Props {
   id: string;
   width?: number;
   height?: number;
-  /** Whether it opens by itself on load. Only the welcome window does. */
+  /** Whether it opens by itself on load. */
   open?: boolean;
+  /** Position in the arrival sequence: 0 arrives first. */
+  order?: number;
+  /**
+   * Skips the arrival stagger entirely: the window is there from the first
+   * frame. For `/404`, which mounts no boot screen (you reach a 404 by
+   * accident) and would otherwise show an empty desktop for the whole delay.
+   */
+  noEnter?: boolean;
+  /** Whether it takes part in the row layout (phase 3 §4.1). */
+  row?: boolean;
+  /** Half the body padding. For the small windows, where 22px eats the content. */
+  tight?: boolean;
+  /** Build-time position. Overrides the centred default; the script re-lays it anyway. */
+  x?: number;
+  y?: number;
 }
 
-const { title, id, width = 720, height = 520, open = false } = Astro.props;
+const {
+  title,
+  id,
+  width = 720,
+  height = 520,
+  open = false,
+  order = 0,
+  noEnter = false,
+  row = false,
+  tight = false,
+  x,
+  y,
+} = Astro.props;
 
-/* Server-side position, computed against a reference desktop of 1440x900. In
-   desktop mode the script recomputes it against the real screen — cascaded, if
-   there are windows open already; in stacked mode it is not used. */
-const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: BAR_H });
+/* Build-time position, computed against a 1440x900 reference desktop. In
+   desktop mode the script recomputes it against the real screen; in stacked
+   mode it is not used. Passing x/y explicitly is how `index.astro` hands over
+   the row it already knows, so a returning visitor — who gets no boot screen —
+   does not see the windows land centred and then jump. */
+const fallback = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: BAR_H });
+const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
 ---
 
 <section
   class="xp-window"
   id={id}
   data-open={open ? "true" : "false"}
+  data-row={row ? "true" : undefined}
+  data-tight={tight ? "true" : undefined}
   tabindex="-1"
-  style={`--x:${pos.x}px;--y:${pos.y}px;--w:${width}px;--h:${height}px;--bar-h:${BAR_H}px`}
+  style={`--x:${pos.x}px;--y:${pos.y}px;--w:${width}px;--h:${height}px;--bar-h:${BAR_H}px;--enter-delay:${noEnter ? 0 : enterDelay(order)}ms`}
   aria-labelledby={`${id}-title`}
 >
   <div class="xp-titlebar">
@@ -83,20 +117,24 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
 </section>
 
 <script>
-  import { cascadePosition, clampPosition } from "./windows.mjs";
+  import {
+    DESKTOP_MIN_WIDTH,
+    cascadePosition,
+    clampPosition,
+    rowPositions,
+  } from "./windows.mjs";
 
-  /* 721px: below that the desktop gives up and everything goes to stacked mode
-     (phase 2 §4). The same number is in the CSS of this file. */
-  const DESKTOP = matchMedia("(min-width: 721px)");
+  /* Desktop mode means "the three-window row fits". Below `DESKTOP_MIN_WIDTH`
+     (1204px, derived in windows.mjs from the row's own sizes) everything goes
+     to stacked mode. The same number is in the CSS of this file, where a media
+     query cannot read the constant. */
+  const DESKTOP = matchMedia(`(min-width: ${DESKTOP_MIN_WIDTH}px)`);
 
   /** The real height of the taskbar, measured in the DOM and not repeated here. */
   const barHeight = () =>
     document.querySelector(".xp-taskbar")?.getBoundingClientRect().height ?? 0;
 
   const tasks = document.querySelector(".xp-tasks");
-
-  /** window id → how to open it. The link handler looks it up here. */
-  const windows = new Map<string, (trigger?: HTMLElement | null) => void>();
 
   /** Depth counter. It goes up and never down: last clicked, front-most. */
   let zTop = 5;
@@ -126,9 +164,6 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
     task.className = "xp-task";
     task.textContent = titleText.textContent;
 
-    /** Who opened the window, so focus can go back there when it closes. */
-    let opener: HTMLElement | null = null;
-
     const toFront = () => {
       if (win.classList.contains("is-front")) return;
       win.style.zIndex = String(++zTop);
@@ -147,36 +182,15 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
       btnMin.setAttribute("aria-pressed", "false");
     };
 
-    // The parameter is `trigger` and not `from`: `from` is the drag origin,
-    // declared further down in this same scope.
-    const open = (trigger?: HTMLElement | null) => {
-      if (trigger) opener = trigger;
-      if (win.dataset.open !== "true") {
-        // Counted BEFORE opening this one: the cascade places it behind the
-        // ones already there. And `data-open` is set before measuring, because
-        // a window in display:none measures 0x0.
-        const alreadyOpen = document.querySelectorAll('.xp-window[data-open="true"]').length;
-        win.dataset.open = "true";
-        restore();
-        if (DESKTOP.matches) {
-          tasks?.appendChild(task);
-          move(cascadePosition(alreadyOpen, size(), desk()));
-        }
-      }
-      toFront();
-      win.focus();
-    };
-
     const close = () => {
       win.dataset.open = "false";
       win.classList.remove("is-min", "is-front");
-      task.remove();
-      // Focus cannot stay on an element that has just disappeared. It goes back
-      // to whoever opened the window if they are still on the page; failing
-      // that, to the Start button, which is always there.
-      const target =
-        opener && opener.isConnected ? opener : document.querySelector<HTMLElement>(".xp-start");
-      target?.focus();
+      // The button does NOT go (phase 3 §4.3). In XP it would, but in XP there
+      // are desktop icons and a Start menu to get the window back; here there is
+      // nothing else, and closing the Menu window under XP's rule would leave a
+      // visitor with a site and no way to navigate it until they reloaded.
+      task.classList.remove("xp-task-active");
+      task.focus();
     };
 
     const minimise = () => {
@@ -187,12 +201,21 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
       task.focus();
     };
 
-    // A click on the taskbar button does what it does in Windows: if the window
-    // is hidden or behind, it brings it up; if it is already in front, it hides
-    // it.
+    // A click on the taskbar button does what it does in Windows, plus one
+    // thing XP does not need: it also brings back a window that was closed.
     task.addEventListener("click", () => {
-      if (win.classList.contains("is-min") || !win.classList.contains("is-front")) {
+      const outOfSight =
+        win.dataset.open !== "true" || win.classList.contains("is-min");
+      if (outOfSight || !win.classList.contains("is-front")) {
+        win.dataset.open = "true";
         restore();
+        // A window can be closed at one viewport size and reopened at another,
+        // and without this it comes back at coordinates that no longer exist.
+        // The resize handler only reclamps windows with `data-open="true"`, so
+        // a closed one is never caught up; a minimised one still counts as open
+        // and IS reclamped, but under `display: none` it measures 0×0, so the
+        // numbers it was clamped against were meaningless. Both need this.
+        if (DESKTOP.matches) reclamp();
         toFront();
         win.focus();
       } else {
@@ -210,6 +233,28 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
       // On restore, the stored position may have fallen outside if the screen
       // changed while the window was maximised.
       if (!on) reclamp();
+    });
+
+    // The only way to retitle a window from outside. It has to go through here
+    // because the taskbar button's text is copied once at start-up: retitling
+    // just the title bar leaves the button saying something else.
+    win.addEventListener("xp:title", (e) => {
+      const next = (e as CustomEvent<string>).detail;
+      if (!next) return;
+      titleText.textContent = next;
+      task.textContent = next;
+    });
+
+    // Brings the window back without knowing anything about who asked. The
+    // reading pane needs it: closing it is allowed, and a Menu click has to
+    // work afterwards — phase 3 does not intercept those clicks, so nothing
+    // else would reopen it. Idempotent, and deliberately does not take focus:
+    // whoever dispatched this knows better what the visitor should land on.
+    win.addEventListener("xp:show", () => {
+      win.dataset.open = "true";
+      restore();
+      if (DESKTOP.matches) reclamp();
+      toFront();
     });
 
     // Pressing anywhere in the window brings it to the front, like in Windows.
@@ -251,35 +296,122 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
       if (DESKTOP.matches && win.dataset.open === "true") reclamp();
     });
 
+    /** The row if this window is in one and it fits; the cascade otherwise. */
+    const placement = (index: number) =>
+      placeRow(win) ?? cascadePosition(index, size(), desk());
+
     // ── Start-up ──────────────────────────────────────────────────────────
-    windows.set(win.id, open);
-
-    if (win.dataset.open === "true" && DESKTOP.matches) {
-      // The cascade counts the ones that already have a taskbar button: if two
-      // windows ever open by themselves, the second will not land on the first.
-      const alreadyOpen = tasks?.children.length ?? 0;
+    /** Puts the window on the desktop: a taskbar button, a position, and the front. */
+    const enterDesktop = () => {
+      if (win.dataset.open !== "true" || !DESKTOP.matches || task.isConnected) return;
+      // Counted BEFORE appending, as phase 2 did: it is the cascade's index,
+      // and it has to be different for each window. Counting open windows
+      // instead would give every one of them the same number at start-up,
+      // because they are all already `data-open="true"` in the HTML, and the
+      // cascade would stack them on one spot.
+      const alreadyPlaced = tasks?.children.length ?? 0;
       tasks?.appendChild(task);
-      move(cascadePosition(alreadyOpen, size(), desk()));
+      move(placement(alreadyPlaced));
       toFront();
-    }
+    };
+
+    /**
+     * Undoes it. Everything `enterDesktop` puts on the window is desktop-only
+     * furniture, and its CSS lives inside the desktop media query, so leaving
+     * the mode with any of it still set strands the state: a taskbar button
+     * that survives into the stacked column toggles `.is-min`, whose
+     * `display: none` no longer applies — the button appears to do nothing, and
+     * the window disappears the next time the viewport grows.
+     *
+     * `is-front` has to go too, not only for the dimmed title bar: `toFront()`
+     * returns early when it is already set, so a window that kept it would
+     * re-enter the desktop with no z-index and no active taskbar button.
+     */
+    const leaveDesktop = () => {
+      task.remove();
+      task.classList.remove("xp-task-active");
+      win.dataset.open = "true";
+      win.classList.remove("is-min", "is-front");
+      btnMin.setAttribute("aria-pressed", "false");
+    };
+
+    enterDesktop();
+    // Also when the viewport crosses DESKTOP_MIN_WIDTH after load — a rotated
+    // phone, a resized window. Without the entering half the desktop turns on
+    // with an empty taskbar, and since the taskbar is the only way back to a
+    // closed window, closing one would be irreversible.
+    DESKTOP.addEventListener("change", () => (DESKTOP.matches ? enterDesktop() : leaveDesktop()));
   });
 
-  // ── The links that open windows ─────────────────────────────────────────
-  // Delegated on the document: it covers the links that exist now and any that
-  // live inside a window. In stacked mode it does NOT intercept: there the
-  // anchor does its usual job, which is jumping to the window, which is
-  // visible. That is what gives navigation without JavaScript.
-  document.addEventListener("click", (e) => {
-    if (!DESKTOP.matches) return;
-    const link = (e.target as HTMLElement | null)?.closest?.("a[href]");
-    if (!(link instanceof HTMLAnchorElement)) return;
-    const href = link.getAttribute("href") ?? "";
-    if (!href.startsWith("#")) return;
-    const open = windows.get(href.slice(1));
-    if (!open) return;
-    e.preventDefault();
-    open(link);
-  });
+  /**
+   * The arrival happens once, and the marker that ends it has to be anchored to
+   * the animation and not to a clock. The animation starts when `Boot.astro`
+   * removes `data-boot`, which on a first visit is whenever the visitor presses
+   * a key — `AUTO_MS` is 0, so the boot screen waits as long as it takes. A
+   * timer started at page load fires long before that and switches the arrival
+   * off before it ever runs.
+   *
+   * Only the windows that are open at start-up are counted: a window that is
+   * `display: none` runs no animation, so waiting for one from it would wait
+   * for ever.
+   *
+   * Why the marker exists at all: taking an element out of `display: none`
+   * RESTARTS every animation named on it, so without this a window the visitor
+   * just reopened would sit invisible for the whole delay before fading in.
+   * Removing the rule afterwards is not visible — the animation's `to` state is
+   * the window's natural state.
+   */
+  const arriving = [...document.querySelectorAll<HTMLElement>('.xp-window[data-open="true"]')];
+  let pending = arriving.length;
+  const arrived = () => document.documentElement.classList.add("xp-arrived");
+  // Nothing to wait for: no window is open, or the visitor asked for no motion
+  // and the rule that would animate does not exist. The `reduce` case matters
+  // because the preference can be turned OFF mid-session — the rule starts
+  // matching then, and without the marker all three windows replay the 900ms
+  // entrance in the middle of a visit.
+  if (!pending || matchMedia("(prefers-reduced-motion: reduce)").matches) arrived();
+  for (const w of arriving) {
+    const onEnd = (e: AnimationEvent) => {
+      if (e.animationName !== "xp-window-enter") return;
+      w.removeEventListener("animationend", onEnd);
+      w.removeEventListener("animationcancel", onEnd);
+      if (pending > 0 && --pending === 0) arrived();
+    };
+    // `animationcancel` too: taking a window to `display: none` — minimising it
+    // mid-arrival, which its taskbar button already allows — cancels the
+    // animation and fires only this. Counting just `animationend` leaves the
+    // marker off for ever and every later reopen replays the entrance.
+    w.addEventListener("animationend", onEnd);
+    w.addEventListener("animationcancel", onEnd);
+  }
+
+  /**
+   * Where a window goes when it first appears.
+   *
+   * Row windows are laid out together: each one reads every `[data-row]` window
+   * in DOM order, computes the whole row and takes its own slot. Doing the same
+   * arithmetic three times is cheaper than a shared layout pass and keeps each
+   * window's script self-contained.
+   */
+  function placeRow(win: HTMLElement): { x: number; y: number } | null {
+    const row = [...document.querySelectorAll<HTMLElement>('.xp-window[data-row="true"]')];
+    const index = row.indexOf(win);
+    if (index < 0) return null;
+    // The authored --w/--h and not offsetWidth/offsetHeight: those are correct
+    // even while the window is display:none or mid-animation, and they are the
+    // exact numbers index.astro measured against when it computed the
+    // build-time row.
+    const sizes = row.map((w) => ({
+      w: parseFloat(getComputedStyle(w).getPropertyValue("--w")) || w.offsetWidth,
+      h: parseFloat(getComputedStyle(w).getPropertyValue("--h")) || w.offsetHeight,
+    }));
+    const positions = rowPositions(sizes, {
+      vw: innerWidth,
+      vh: innerHeight,
+      barH: barHeight(),
+    });
+    return positions ? positions[index] : null;
+  }
 </script>
 
 <style>
@@ -292,6 +424,9 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
     margin: 0 auto 14px;
     display: flex;
     flex-direction: column;
+    /* Where the arrival animation scales FROM: the bottom edge, like a window
+       rising off the taskbar, not the centre. */
+    transform-origin: 50% 100%;
     /* The Luna frame: 3px of blue at the sides and the bottom, rounded corners
        at the top and square ones at the bottom. */
     background: #0831d9;
@@ -388,11 +523,24 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
     font-size: 14px;
     line-height: 1.55;
   }
+  /* 22px of padding inside a 200px window leaves 156px of content. The Menu and
+     the Contact card ask for this; the reading pane does not. */
+  .xp-window[data-tight] .xp-winbody {
+    padding: 8px;
+  }
 
   /* ══ DESKTOP MODE — the enhancement ═══════════════════════════════════════
      `html.js` is set by an inline script in the layout. Without JavaScript this
-     media query never applies, on any screen, and everything stays stacked. */
-  @media (min-width: 721px) {
+     media query never applies, on any screen, and everything stays stacked.
+
+     1204 = 200 + 700 + 240 (the three windows) + 2×16 (ROW_GAP) + 2×16
+     (ROW_MARGIN). It is `DESKTOP_MIN_WIDTH` in `windows.mjs`, written out here
+     because a media query cannot read a JS constant; the script reads the
+     constant, and `windows.test.mjs` pins the invariant so the two cannot
+     drift. Desktop mode means "the row fits": narrower than this the three
+     windows would have to cascade, which buries the Menu and Contact inside
+     the reading pane. */
+  @media (min-width: 1204px) {
     :global(html.js) .xp-window {
       position: absolute;
       top: var(--y);
@@ -420,7 +568,8 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
       touch-action: none;
     }
     /* The window that is not in front wears a dimmed title bar. It is how you
-       tell the active one apart in Windows, and with five windows you need it.
+       tell the active one apart in Windows, and with three side by side you
+       need it.
        A filter and not a second gradient: there is no capture of the inactive
        bar to measure, and approximating twice is worse than approximating
        once. */
@@ -455,35 +604,59 @@ const pos = initialPosition({ w: width, h: height }, { vw: 1440, vh: 900, barH: 
     }
   }
 
-  /* ── The opening ──────────────────────────────────────────────────────── */
-  /* Same mechanism as the taskbar and for the same reason: the VISIBLE state is
-     declared with its transition, and the hidden one with `transition: none`.
-     The browser reads the transition off the DESTINATION state, so the window
-     animates when `Boot.astro` removes the attribute and not on first paint.
+  /* ── The arrival ──────────────────────────────────────────────────────── */
+  /* `html:not([data-boot])` is the entire trick, and it is why this is an
+     animation now and was a transition in phase 2.
 
-     A @keyframes with a delay would NOT do: it would count from page load, so
-     the window would open behind the boot screen and turn up already open. Here
-     the clock is started by the end of the boot screen, which is the point.
+     A CSS animation starts when the element FIRST MATCHES the rule. While the
+     boot screen is up the rule does not match, so nothing is running; the
+     moment `Boot.astro` removes the attribute the element starts matching and
+     the delay is counted from THERE. That is what phase 2 could not do with
+     @keyframes — an animation with a delay counts from page load, so it would
+     have played behind the boot screen — and it is what a transition could not
+     do either, because a returning visitor gets no boot screen and therefore no
+     attribute change to transition off. Now both visits get the same sequence.
 
-     The 900ms are deliberately more than the taskbar's 800 (400 waiting + 400
-     rising): desktop first, then the bar, and only then the window. All at once
-     it looks like an image and not like a machine starting up. */
-  .xp-window {
-    transform-origin: 50% 100%;
-    opacity: 1;
-    transform: none;
-    transition:
-      opacity 260ms ease 900ms,
-      transform 260ms cubic-bezier(0.16, 1, 0.3, 1) 900ms;
-  }
-  :global(html[data-boot]) .xp-window {
-    opacity: 0;
-    transform: scale(0.92) translateY(12px);
-    transition: none;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .xp-window {
-      transition: none;
+     `both` fill: before the delay the window holds the `from` state, so it is
+     invisible while the script re-lays it against the real viewport, and the
+     correction is never seen.
+
+     `.xp-arrived` and `html.js`: taking an element out of `display: none`
+     RESTARTS every animation named on it, so without a way to stop matching
+     the rule, closing and reopening (or minimising and restoring) a window
+     would replay the whole entrance and hold it at opacity 0 for the delay
+     again. The script adds `.xp-arrived` once the sequence is over, and from
+     then on the rule stops applying — nothing moves when it does, because the
+     animation's `to` state is already the window's natural, un-animated one.
+     `html.js` is not decoration either: without it, a no-JS visitor — who
+     never gets `.xp-arrived` — would sit through a delay the animation exists
+     to hide a script re-laying, which they have no script to run.
+
+     This fails open in every direction that is under this rule's own control:
+     there is no base `opacity: 0` for a failed script to undo, the hiding is
+     the animation's own backwards fill plus one rule that only applies while
+     the boot screen is on top, and under reduced motion neither rule exists so
+     every window is simply visible. The one thing it depends on outside itself
+     is `Boot.astro` removing `data-boot` — phase 1 and 2 had the same
+     dependency, and `Boot.astro` installs its exit listeners before anything
+     that can throw, precisely so that removal is guaranteed. */
+  @media (prefers-reduced-motion: no-preference) {
+    :global(html[data-boot]) .xp-window {
+      opacity: 0;
+    }
+    :global(html.js:not([data-boot]):not(.xp-arrived)) .xp-window {
+      animation: xp-window-enter 260ms cubic-bezier(0.16, 1, 0.3, 1) var(--enter-delay, 900ms)
+        both;
+    }
+    @keyframes xp-window-enter {
+      from {
+        opacity: 0;
+        transform: scale(0.92) translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
     }
   }
 </style>

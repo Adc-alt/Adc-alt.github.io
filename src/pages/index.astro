@@ -1,60 +1,80 @@
 ---
 /**
- * The site: a Windows XP desktop with the portfolio inside windows.
+ * The site: a Windows XP desktop with the portfolio inside three windows.
  *
- * Every window is rendered here, at build time. The JavaScript only opens,
- * closes and drags them — if it generated the content, a search engine would
- * see an empty desktop (phase 1 §13).
+ * Menu on the left, the reading pane in the middle, Contact on the right. They
+ * arrive in that order after the boot screen (phase 3 §4.2). Every window and
+ * every section is rendered here, at build time: if the JavaScript generated
+ * them, a search engine would see an empty desktop (phase 1 §13).
  *
- * Spec: docs/superpowers/specs/2026-08-15-xp-desktop-phase2-design.md
+ * Spec: docs/superpowers/specs/2026-08-16-xp-desktop-phase3-design.md
  */
-import { getCollection } from "astro:content";
 import XP from "../layouts/XP.astro";
 import Boot from "../components/Boot.astro";
 import Window from "../components/xp/Window.astro";
-import Welcome from "../components/xp/Welcome.astro";
-import Projects from "../components/xp/Projects.astro";
-import Project from "../components/xp/Project.astro";
-import About from "../components/xp/About.astro";
-import Blog from "../components/xp/Blog.astro";
-import { windowIdFor } from "../components/xp/projects.mjs";
+import Nav from "../components/xp/Nav.astro";
+import Sections from "../components/xp/Sections.astro";
+import Contact from "../components/xp/Contact.astro";
+import { PANE_ID } from "../components/xp/sections.mjs";
+import { ROW_SIZES, rowPositions } from "../components/xp/windows.mjs";
+import { HEIGHT as BAR_H } from "../components/xp/taskbar-colors.mjs";
 
-const projects = (
-  await getCollection("projects", ({ data }) => (import.meta.env.PROD ? !data.draft : true))
-).sort((a, b) => a.data.order - b.data.order || b.data.year - a.data.year);
+/* The row, computed here against the same 1440x900 reference the rest of the
+   build uses, and handed to each window as x/y. The script recomputes it
+   against the real viewport, but this is what gets painted first, and the
+   closer it is the less there is to correct.
+
+   The sizes come from `windows.mjs` and not from here: the desktop breakpoint
+   is derived from them, so they cannot be authored in a file the breakpoint
+   does not read. */
+const [nav, main, contact] = rowPositions(ROW_SIZES, { vw: 1440, vh: 900, barH: BAR_H }) ?? [];
 ---
 
 <XP>
   <Boot slot="overlay" />
 
-  {/* The only one that opens by itself, and the only navigation there is: no
-      icons and no Start menu, everything else opens from inside this one. */}
-  {/* 560 is not a round number: measured in the browser, the welcome content
-      takes 515px and the usable well is 33 less than the window height. It is
-      the only window that cares — the rest are documents and scroll by nature —
-      because a scrollbar on the first screen of the site says "this does not
-      fit here" before anyone has read a word. */}
-  <Window id="window-welcome" title="Welcome to my page" width={720} height={560} open>
-    <Welcome />
+  <Window
+    id="window-nav"
+    title="Menu"
+    width={ROW_SIZES[0].w}
+    height={ROW_SIZES[0].h}
+    x={nav?.x}
+    y={nav?.y}
+    order={0}
+    row
+    tight
+    open
+  >
+    <Nav />
   </Window>
 
-  <Window id="window-projects" title="Projects" width={660} height={480}>
-    <Projects />
+  {/* The title is the one the pane starts on; the switcher rewrites it. */}
+  <Window
+    id={PANE_ID}
+    title="Home"
+    width={ROW_SIZES[1].w}
+    height={ROW_SIZES[1].h}
+    x={main?.x}
+    y={main?.y}
+    order={1}
+    row
+    open
+  >
+    <Sections />
   </Window>
 
-  <Window id="window-about" title="About me" width={640} height={520}>
-    <About />
+  <Window
+    id="window-contact"
+    title="Contact"
+    width={ROW_SIZES[2].w}
+    height={ROW_SIZES[2].h}
+    x={contact?.x}
+    y={contact?.y}
+    order={2}
+    row
+    tight
+    open
+  >
+    <Contact />
   </Window>
-
-  <Window id="window-blog" title="Blog" width={740} height={560}>
-    <Blog />
-  </Window>
-
-  {
-    projects.map((p) => (
-      <Window id={windowIdFor(p.id)} title={p.data.title} width={720} height={560}>
-        <Project project={p} />
-      </Window>
-    ))
-  }
 </XP>

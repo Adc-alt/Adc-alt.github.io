@@ -8,9 +8,10 @@
  * the visitor either has or falls back to the closest thing they do have.
  *
  * TWO MODES (phase 2 §4). Stacked is the base and desktop is the enhancement:
- * the desktop rules live inside `@media (min-width: 721px)` and hang off
- * `html.js`. Without JavaScript they never apply and the site reads as a column
- * of windows, which is also what a phone gets.
+ * the desktop rules live inside `@media (min-width: 1204px)` — the width the
+ * three-window row needs, `DESKTOP_MIN_WIDTH` in `xp/windows.mjs` — and hang
+ * off `html.js`. Without JavaScript they never apply and the site reads as a
+ * column of windows, which is also what a phone and a narrow window get.
  *
  * Spec: docs/superpowers/specs/2026-08-15-xp-desktop-phase2-design.md
  */
@@ -104,14 +105,22 @@ const fullTitle = title ? `${title} — ${SITE.name}` : `${SITE.name} — ${SITE
 
   @media (prefers-reduced-motion: no-preference) {
     html {
-      /* The welcome shortcuts are real anchors: in stacked mode they jump to
-         the window, and with this the jump is visible. */
+      /* The Menu entries are real anchors, so with JavaScript off they jump to
+         the section and this makes the jump visible. With JavaScript the
+         switcher hides every other section and there is nothing to scroll to —
+         this only ever fires on the no-JS page. */
       scroll-behavior: smooth;
     }
   }
 
-  /* ── Desktop mode: a desktop has no scroll ────────────────────────────── */
-  @media (min-width: 721px) {
+  /* ── Desktop mode: a desktop has no scroll ──────────────────────────────
+     1204 = 200 + 700 + 240 (the three windows) + 2×16 (ROW_GAP) + 2×16
+     (ROW_MARGIN) — `DESKTOP_MIN_WIDTH` in `components/xp/windows.mjs`, spelled
+     out because a media query cannot read a JS constant. It has to be the same
+     number as the one in `Window.astro`: below it the windows stay in the
+     stacked column, and a page that hid its scrollbar without them being
+     absolute would be a page you cannot scroll. */
+  @media (min-width: 1204px) {
     html.js,
     html.js body {
       height: 100%;

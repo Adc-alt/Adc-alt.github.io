@@ -23,9 +23,16 @@ ordinary HTML and the script only opens, drags and closes them. If the browser
 painted the content, a search engine would see an empty desktop, and redoing it
 afterwards would have meant rewriting the windows entirely.
 
+**The navigation is the URL, not a click handler.** The Menu entries are plain
+anchors to `#section-…`. Nothing intercepts the click: the browser sets the hash
+and a `hashchange` listener swaps the pane. The back button and links you can
+paste into an email both fall out of that, and there is no history code to get
+wrong.
+
 **Stacked is the base and the desktop is the enhancement.** You do not drive a
-desktop with a finger, so below 720px the windows stop being absolute and stack
-in a column. The desktop rules live inside a media query and hang off a class
+desktop with a finger — and you cannot fit a 700px reading pane between a menu
+and a contact card on a narrow screen either — so below 1204px the windows stop
+being absolute and stack in a column. The desktop rules live inside a media query and hang off a class
 that an inline script in the `<head>` sets: intended consequence, without
 JavaScript the site falls back to stacked mode, which is readable. Written the
 other way round it would take two copies of the same rules.

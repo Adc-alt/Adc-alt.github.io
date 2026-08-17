@@ -1,10 +1,10 @@
 ---
 /**
- * A whole project, inside its window. This is what used to be
- * `/proyectos/<id>/`.
+ * A whole project, as one section of the reading pane. This is what used to be
+ * `/proyectos/<id>/`, and in phase 2 a window of its own.
  */
 import { render, type CollectionEntry } from "astro:content";
-import { STATUS } from "./projects.mjs";
+import { STATUS, sectionId } from "./sections.mjs";
 
 interface Props {
   project: CollectionEntry<"projects">;
@@ -16,6 +16,10 @@ const { title, summary, stack, year, status, repo, demo } = project.data;
 ---
 
 <div class="xp-doc">
+  {/* A real anchor, like every other bit of navigation here: with JavaScript the
+      switcher takes it, without it the page jumps to the Projects section,
+      which is visible. */}
+  <p class="note back"><a href={`#${sectionId("projects")}`}>← Projects</a></p>
   <h1>{title}</h1>
   <p class="lede">{summary}</p>
 
