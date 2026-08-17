@@ -1,14 +1,19 @@
 ---
 /**
- * 3D Pinball: Space Cadet — the only game here that is not mine and not hosted
- * here either.
+ * 3D Pinball: Space Cadet — the only game here that is not mine.
  *
  * The engine is a decompilation of the original, compiled to WebAssembly
  * (k4zmu2a's work, ported to Emscripten by alula). The engine is MIT. The GAME
  * — the table, the sprites, the sounds — is Microsoft's and is not
  * redistributable, which is why upstream ships the code without it and why
- * there is no copy of it in this repository. What is here is a frame around
- * somebody else's build.
+ * there is no copy of it in this repository: every byte of it is fetched from
+ * their server, and only once you ask for it.
+ *
+ * ⚠️ The frame no longer points at their page — it points at `/xp/pinball.html`,
+ * which is ours and loads their engine. See the long comment in that file: a
+ * frame from another origin is a room you cannot enter, and this game needed
+ * two things done inside it — the music turned off, and its own window chrome
+ * left out of a full screen that is supposed to be the game.
  *
  * It does NOT load on its own. The frame appears only when the visitor asks for
  * it, for two reasons: it is several megabytes off a stranger's bandwidth, and
@@ -19,12 +24,12 @@
 import MenuBar, { type Menu } from "./MenuBar.astro";
 import AboutBox from "./AboutBox.astro";
 
-const SRC = "https://pinball.alula.me/";
+const SRC = "/xp/pinball.html";
 
 /* Short, because it has to be honest. Almost everything the real Game and
-   Options menus offered lives INSIDE somebody else's frame, and a menu here
-   cannot reach across it — sound and music included. What this side does
-   control is whether to load the frame at all, and how big it is. */
+   Options menus offered is drawn by the game inside its own canvas, and a menu
+   out here cannot reach into a picture. What this side controls is whether to
+   load the game at all, and how much of the screen it gets. */
 const MENUS: Menu[] = [
   {
     label: "Game",
@@ -45,8 +50,8 @@ const MENUS: Menu[] = [
       { label: "Full Screen", cmd: "full", key: "F4", mark: "check", checked: false },
       { sep: true },
       /* Named exactly as the game names them, because these are pointers to
-         the real ones: they live in the identical menu drawn inside the frame,
-         both ticked, and that is the only place they can be switched. */
+         the real ones: the game draws this same menu inside its own canvas,
+         and that is where they can be switched. Music arrives already off. */
       { label: "Player Controls...", key: "F8", disabled: true },
       { label: "Sound", disabled: true },
       { label: "Music", disabled: true },
@@ -72,7 +77,7 @@ const MENUS: Menu[] = [
     <button type="button" class="pin-play" data-src={SRC}>
       <span class="pin-play-icon" aria-hidden="true">▶</span>
       <span>Load the game</span>
-      <span class="pin-play-note">Full screen, from pinball.alula.me. Esc to come back</span>
+      <span class="pin-play-note">Full screen, no music. Esc to come back</span>
     </button>
   </div>
 
@@ -86,20 +91,21 @@ const MENUS: Menu[] = [
       keys go to this page instead. <kbd>Esc</kbd> leaves full screen.
     </p>
     <p>
-      <strong>The sound is the game's, not this page's.</strong> It starts with
-      both <em>Sound</em> and <em>Music</em> on; turn either off in the game's
-      own <em>Options</em> menu, the one drawn inside the frame. A page cannot
-      reach into a frame it does not own, which is why the same two items are
-      greyed in the menu above. Leaving the game does stop it, though: the
-      frame is thrown away the moment it goes off screen.
+      <strong>The music is off.</strong> The game has no switch anyone can
+      reach from outside, so the page turns it off the way you would: it opens
+      the game's own <em>Options</em> menu and clicks <em>Music</em>, once, as
+      soon as the table appears. The sound effects stay. Both live in that menu
+      — the one the game draws inside itself — which is why the copies of them
+      above are greyed. Leaving the game stops it entirely: the frame is thrown
+      away the moment it goes off screen.
     </p>
     <p>
-      <strong>Not mine and not hosted here.</strong> The engine is a
-      decompilation of the original by <a
+      <strong>The game is not mine.</strong> The engine is a decompilation of
+      the original by <a
         href="https://github.com/k4zmu2a/SpaceCadetPinball"
         rel="noopener">k4zmu2a</a>, compiled to WebAssembly by <a
         href="https://github.com/alula/SpaceCadetPinball" rel="noopener">alula</a>,
-      and it runs off their server.
+      and it is loaded, along with the game's data, from their server.
     </p>
     <p>
       The game's own data is Microsoft's and is not redistributable, so there is
@@ -167,38 +173,15 @@ const MENUS: Menu[] = [
       // "exit" is not handled here: the window this lives in owns it.
     });
 
-    /**
-     * Blows the frame up to fill the screen.
-     *
-     * ⚠️ Full screen on the frame is NOT full screen on the game. The page
-     * inside lays its own XP window out at one fixed size and does not care how
-     * much room it is given: giving it the whole display just left the game
-     * marooned, small, in the top corner of a blue field. Verified with a
-     * screenshot of the real thing — every measurement of OUR boxes said "full
-     * screen" while the picture said otherwise.
-     *
-     * So the frame keeps the size the page wants (see `--pin-w/--pin-h`) and
-     * gets scaled. `offsetWidth` is the unscaled box, which is what makes this
-     * safe to run twice.
-     */
-    const zoom = () => {
-      const frame = stage.querySelector<HTMLIFrameElement>("iframe");
-      if (!frame) return;
-      if (document.fullscreenElement !== stage) {
-        frame.style.removeProperty("--k");
-        return;
-      }
-      const k = Math.min(stage.clientWidth / frame.offsetWidth, stage.clientHeight / frame.offsetHeight);
-      frame.style.setProperty("--k", String(k));
-    };
+    /* Nothing here resizes anything. The frame is the stage, the stage becomes
+       the screen, and the game inside renders at whatever size it is given —
+       which is the entire reason it stopped being framed from their page. */
 
     // The tick on Options -> Full Screen is only true while it is true, and the
     // browser can end full screen on its own (Esc, another tab).
     document.addEventListener("fullscreenchange", () => {
       item("full")?.setAttribute("aria-pressed", String(document.fullscreenElement === stage));
-      zoom();
     });
-    addEventListener("resize", zoom);
 
     /* The menu prints F4, so F4 has to work. `offsetWidth` is the guard and it
        is deliberately not "is my panel hidden": the game can also be off screen
@@ -233,14 +216,12 @@ const MENUS: Menu[] = [
     display: flex;
     flex-direction: column;
 
-    /* ⚠️ The size the page INSIDE the frame draws itself at, which is not the
-       600x416 of the game: it paints its own XP window around it (title bar,
-       its own menus) and keeps its body's 8px margin. 606x469 plus that margin,
-       measured off a screenshot of the real thing — a cross-origin frame cannot
-       be asked, and a frame any smaller silently clips the game's bottom edge.
-       Unitless because the aspect ratio below needs numbers, not lengths. */
-    --pin-w: 622;
-    --pin-h: 486;
+    /* The client area of the original window: 600x416 of table, plus the 24px
+       menu bar the game draws along the top of it. Nothing depends on these
+       being right any more — the game fills whatever it is given — so they are
+       a choice about how big the window opens, not a constraint. */
+    --pin-w: 600;
+    --pin-h: 440;
   }
   /* The frame IS the client area: the window is sized to this, so no margin. A
      fixed width rather than a percentage because the panel around it is sized
@@ -293,26 +274,9 @@ const MENUS: Menu[] = [
     border: 0;
   }
 
-  /* Full screen. The browser forces the stage to 100% of the display and puts
-     it in the top layer, so all that is left to do here is centre what is
-     inside it. The ground is XP's own desktop blue and not black because that
-     is what the page inside paints AROUND its window: any other colour and the
-     seam shows. */
-  .pin-stage:fullscreen {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #3a6ea5;
-  }
-  .pin-stage:fullscreen :global(.pin-frame) {
-    /* Still the size the page wants — see `--pin-w`. Growing the frame does
-       NOT grow the game: the page inside ignores the room and stays put, so
-       what fills the screen is a scaled picture of it. `--k` comes from the
-       script; the transform does not touch the frame's own box, which is what
-       lets the scale be recomputed from it. */
-    width: calc(var(--pin-w) * 1px);
-    height: calc(var(--pin-h) * 1px);
-    transform: scale(var(--k, 1));
-  }
+  /* Full screen needs no rule of its own: the browser stretches the stage to
+     the whole display, the frame is already 100% of the stage, and the game
+     re-renders at that size. It was a pile of arithmetic while the page inside
+     belonged to someone else. */
 
 </style>

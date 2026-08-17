@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>3D Pinball for Windows - Space Cadet</title>
+
+    <!--
+      3D Pinball: Space Cadet, in a page of ours rather than one of theirs.
+
+      WHY THIS FILE EXISTS. The game used to be framed straight from
+      pinball.alula.me, and a frame from another origin is a room you cannot
+      enter: its music could not be turned off, its sound could not be turned
+      down, and its own window chrome (a second title bar, inside ours) came
+      along whether or not it made sense. This page loads the same engine from
+      the same server — their files answer with `access-control-allow-origin: *`
+      — but runs it HERE, so the canvas, the sizing and the audio are ours to
+      deal with.
+
+      WHAT IS NOT OURS. The engine is k4zmu2a's decompilation of the original,
+      compiled to WebAssembly by alula, and it is MIT. The game data — the
+      table, the sprites, the sounds — is Microsoft's, is not redistributable,
+      and is NOT in this repository: every byte of it is fetched from their
+      server at the moment you press Load, and never before.
+    -->
+    <style>
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: #000000;
+        color: #d8e6f8;
+        font: 12px Tahoma, "DejaVu Sans", Verdana, sans-serif;
+      }
+      /* ⚠️ These two lines are the whole full-screen story. The engine reads
+         the canvas' CSS size and sets its own pixel size to match, so filling
+         the page means the game RENDERS at the size of the page instead of
+         being a 600x440 picture stretched to fit — which is what full screen
+         looked like while this was framed from their own page. It keeps the
+         table's proportions itself and fills the rest with black.
+         No `object-fit`: it would letterbox inside the box while the mouse
+         mapping kept using the box, putting every click a few pixels out. */
+      #canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      #canvas[hidden] {
+        display: none;
+      }
+      #status {
+        margin: 0;
+      }
+    </style>
+  </head>
+
+  <body>
+    <p id="status">Loading…</p>
+    <canvas id="canvas" tabindex="-1" hidden></canvas>
+
+    <script>
+      const HOST = "https://pinball.alula.me/";
+      const canvas = document.getElementById("canvas");
+      const status = document.getElementById("status");
+      canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+
+      /* ── Silence first ─────────────────────────────────────────────────────
+         The music starts with the game, and the mute below cannot happen until
+         the game is up. Half a second of it at full volume is exactly what we
+         are here to get rid of, so every audio context the engine opens starts
+         suspended and is let go once the music is off. */
+      const contexts = [];
+      for (const name of ["AudioContext", "webkitAudioContext"]) {
+        const Real = window[name];
+        if (!Real) continue;
+        window[name] = function (...args) {
+          const ctx = new Real(...args);
+          contexts.push(ctx);
+          ctx.suspend();
+          return ctx;
+        };
+        window[name].prototype = Real.prototype;
+      }
+      const letSoundThrough = () => {
+        for (const ctx of contexts) ctx.resume().catch(() => {});
+      };
+
+      /* ── Turning the music off ─────────────────────────────────────────────
+         ⚠️ There is no API for this. The switch lives in the menu the game
+         draws inside its own canvas, so the only way to reach it is to click
+         it: Options, then Music. The two offsets are in canvas pixels, read off
+         a screenshot of the real menu, and they are scaled here because the
+         canvas on screen is usually bigger than the canvas in memory.
+
+         A move before the press is not optional — the menu tracks the pointer
+         and acts wherever it last saw it, so a press with no move behind it
+         lands on nothing. Events made by a script are enough; nothing here
+         checks whether a human sent them. */
+      /* ⚠️ y=9 is the MIDDLE of the menu bar, not its edge. The bar is about 18
+         pixels tall whatever size the canvas is — the game draws it at a fixed
+         font size — so an 18 that worked on a small canvas lands just below the
+         bar on a big one, and the menu silently never opens. */
+      const OPTIONS_MENU = [78, 9];
+      const MUSIC_ITEM = [72, 72];
+
+      const clickCanvas = ([cx, cy]) => {
+        const box = canvas.getBoundingClientRect();
+        const at = {
+          clientX: box.left + (cx * box.width) / canvas.width,
+          clientY: box.top + (cy * box.height) / canvas.height,
+          bubbles: true,
+          cancelable: true,
+          button: 0,
+          pointerId: 1,
+          pointerType: "mouse",
+          isPrimary: true,
+        };
+        canvas.dispatchEvent(new PointerEvent("pointermove", { ...at, buttons: 0 }));
+        canvas.dispatchEvent(new MouseEvent("mousemove", { ...at, buttons: 0 }));
+        canvas.dispatchEvent(new PointerEvent("pointerdown", { ...at, buttons: 1 }));
+        canvas.dispatchEvent(new MouseEvent("mousedown", { ...at, buttons: 1 }));
+        canvas.dispatchEvent(new PointerEvent("pointerup", { ...at, buttons: 0 }));
+        canvas.dispatchEvent(new MouseEvent("mouseup", { ...at, buttons: 0 }));
+      };
+
+      const killMusic = () => {
+        clickCanvas(OPTIONS_MENU);
+        setTimeout(() => {
+          clickCanvas(MUSIC_ITEM);
+          // Choosing an item closes the menu, so by now the game is back.
+          setTimeout(letSoundThrough, 120);
+        }, 120);
+      };
+
+      /* ⚠️ NOTHING here sizes the canvas, on purpose. The engine picks its own
+         pixel size from the window and follows it when the window changes, so
+         it renders at the real resolution instead of being a small picture
+         stretched — which is what full screen looked like when this was framed
+         from their page, and the reason it is not framed from there any more.
+         A `fit()` on top of that also loops: our CSS size feeds their pixel
+         size feeds our CSS size. Body flex does the centring; that is all. */
+
+      window.Module = {
+        canvas,
+        // Their build fetches its .wasm and .data next to the script, and the
+        // script is not next to this page.
+        locateFile: (path) => HOST + path,
+        print: () => {},
+        printErr: (text) => console.error(text),
+        setStatus: (text) => {
+          status.textContent = text || "";
+          status.hidden = !text;
+        },
+        onRuntimeInitialized: () => {
+          canvas.hidden = false;
+          // One frame is not enough: the menu it has to click does not exist
+          // until the game has drawn itself at least once.
+          setTimeout(killMusic, 700);
+        },
+      };
+    </script>
+    <script async src="https://pinball.alula.me/SpaceCadetPinball.js"></script>
+  </body>
+</html>

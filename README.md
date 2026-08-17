@@ -299,6 +299,17 @@ drawn by hand first and replaced with the originals at the owner's express
 request. Same caveat as the wallpaper, and the same escape hatch: they are four
 files, and deleting them breaks nothing but the picture.
 
+**3D Pinball is somebody else's build, running in a page of ours.**
+`public/xp/pinball.html` loads the engine from
+[pinball.alula.me](https://pinball.alula.me/) — k4zmu2a's decompilation of the
+original, ported to WebAssembly by alula, MIT, and served with
+`access-control-allow-origin: *`. It used to be framed from their page instead;
+it is loaded here so the page can turn the game's music off, which cannot be
+done to a frame from another origin. **The game's data is Microsoft's, is not
+redistributable, and is not in this repository**: it is fetched from their
+server, and only once the visitor presses Load. Nothing is requested from them
+before that.
+
 Of the bar itself, on the other hand, not one file has been copied: only
 measurements and colours, which are facts and not work.
 

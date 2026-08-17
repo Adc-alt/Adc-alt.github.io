@@ -37,16 +37,28 @@ test("the shortcut the menu prints is bound", () => {
   assert.match(SCRIPT, /"F4"/);
 });
 
-test("full screen scales the frame instead of enlarging it", () => {
-  // The trap this catches cost a round trip: every measurement of our own
-  // boxes said "full screen" while the screenshot showed the game small in a
-  // corner. The page inside ignores the room it is given, so the frame has to
-  // keep the size that page wants and be blown up as a picture.
-  const rule = SRC.match(/\.pin-stage:fullscreen :global\(\.pin-frame\)\s*\{[^}]*\}/)?.[0] ?? "";
-  assert.match(rule, /transform: scale\(var\(--k/);
-  assert.match(rule, /var\(--pin-w\)/);
-  assert.doesNotMatch(rule, /[1-9]\d\dpx/, "the frame's size must come from --pin-w/--pin-h");
-  assert.match(SCRIPT, /setProperty\("--k"/);
+test("the game runs in a page of ours, not in one of theirs", () => {
+  // Everything else about this game depends on it. A frame from another origin
+  // cannot be reached into: the music could not be switched off, and full
+  // screen was a small game in a corner because the page inside ignored the
+  // room it was given.
+  assert.match(FRONTMATTER, /const SRC = "\/xp\/pinball\.html"/);
+});
+
+test("our loader page carries no game data and does the muting", () => {
+  const page = readFileSync(new URL("../../../public/xp/pinball.html", import.meta.url), "utf8");
+  // The engine comes from them, over CORS. What must never appear here is the
+  // game's own data, which is Microsoft's.
+  assert.match(page, /https:\/\/pinball\.alula\.me\/SpaceCadetPinball\.js/);
+  assert.match(page, /locateFile/);
+  // The mute is two clicks into the game's own menu, and both offsets have to
+  // survive: a lone Options click leaves the menu hanging open over the table.
+  assert.match(page, /OPTIONS_MENU = \[\d+, \d+\]/);
+  assert.match(page, /MUSIC_ITEM = \[\d+, \d+\]/);
+  // A press with no move before it lands on nothing — the menu acts wherever
+  // it last saw the pointer.
+  assert.match(page, /pointermove/);
+  assert.match(page, /mousemove/);
 });
 
 test("leaving the game destroys the frame rather than hiding it", () => {
