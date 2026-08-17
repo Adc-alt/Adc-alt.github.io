@@ -51,14 +51,25 @@ test("our loader page carries no game data and does the muting", () => {
   // game's own data, which is Microsoft's.
   assert.match(page, /https:\/\/pinball\.alula\.me\/SpaceCadetPinball\.js/);
   assert.match(page, /locateFile/);
-  // The mute is two clicks into the game's own menu, and both offsets have to
-  // survive: a lone Options click leaves the menu hanging open over the table.
-  assert.match(page, /OPTIONS_MENU = \[\d+, \d+\]/);
-  assert.match(page, /MUSIC_ITEM = \[\d+, \d+\]/);
-  // A press with no move before it lands on nothing — the menu acts wherever
-  // it last saw the pointer.
-  assert.match(page, /pointermove/);
-  assert.match(page, /mousemove/);
+  // The music is the two MIDI files and nothing else; the other 60 files in
+  // the package are .WAV effects, which the owner asked to keep. Run the
+  // page's own pattern against real names from the package: widen it by
+  // accident and the effects are blanked too.
+  const literal = page.match(/const MUSIC_FILE = \/(.+)\/([a-z]*);/);
+  assert.ok(literal, "no MUSIC_FILE pattern in the loader page");
+  const music = new RegExp(literal[1], literal[2]);
+  assert.equal(music.test("/game_resources/PINBALL.MID"), true);
+  assert.equal(music.test("/game_resources/PINBALL2.MID"), true);
+  assert.equal(music.test("/game_resources/SOUND29.WAV"), false);
+  assert.equal(music.test("/game_resources/PINBALL.DAT"), false);
+  // It has to be an accessor: the engine's loader assigns this property during
+  // startup, so a plain function here is overwritten and the music comes back.
+  assert.match(page, /Object\.defineProperty\(window\.Module, "FS_createDataFile"/);
+  assert.match(page, /\bset:/);
+  assert.match(page, /\bget:/);
+  // No timer may decide whether the music plays. The click this replaced fired
+  // 700ms after startup and simply missed on a slow machine.
+  assert.equal(/setTimeout\(\s*killMusic/.test(page), false);
 });
 
 test("leaving the game destroys the frame rather than hiding it", () => {

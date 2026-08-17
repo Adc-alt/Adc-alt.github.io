@@ -71,74 +71,6 @@
       const status = document.getElementById("status");
       canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
-      /* ── Silence first ─────────────────────────────────────────────────────
-         The music starts with the game, and the mute below cannot happen until
-         the game is up. Half a second of it at full volume is exactly what we
-         are here to get rid of, so every audio context the engine opens starts
-         suspended and is let go once the music is off. */
-      const contexts = [];
-      for (const name of ["AudioContext", "webkitAudioContext"]) {
-        const Real = window[name];
-        if (!Real) continue;
-        window[name] = function (...args) {
-          const ctx = new Real(...args);
-          contexts.push(ctx);
-          ctx.suspend();
-          return ctx;
-        };
-        window[name].prototype = Real.prototype;
-      }
-      const letSoundThrough = () => {
-        for (const ctx of contexts) ctx.resume().catch(() => {});
-      };
-
-      /* ── Turning the music off ─────────────────────────────────────────────
-         ⚠️ There is no API for this. The switch lives in the menu the game
-         draws inside its own canvas, so the only way to reach it is to click
-         it: Options, then Music. The two offsets are in canvas pixels, read off
-         a screenshot of the real menu, and they are scaled here because the
-         canvas on screen is usually bigger than the canvas in memory.
-
-         A move before the press is not optional — the menu tracks the pointer
-         and acts wherever it last saw it, so a press with no move behind it
-         lands on nothing. Events made by a script are enough; nothing here
-         checks whether a human sent them. */
-      /* ⚠️ y=9 is the MIDDLE of the menu bar, not its edge. The bar is about 18
-         pixels tall whatever size the canvas is — the game draws it at a fixed
-         font size — so an 18 that worked on a small canvas lands just below the
-         bar on a big one, and the menu silently never opens. */
-      const OPTIONS_MENU = [78, 9];
-      const MUSIC_ITEM = [72, 72];
-
-      const clickCanvas = ([cx, cy]) => {
-        const box = canvas.getBoundingClientRect();
-        const at = {
-          clientX: box.left + (cx * box.width) / canvas.width,
-          clientY: box.top + (cy * box.height) / canvas.height,
-          bubbles: true,
-          cancelable: true,
-          button: 0,
-          pointerId: 1,
-          pointerType: "mouse",
-          isPrimary: true,
-        };
-        canvas.dispatchEvent(new PointerEvent("pointermove", { ...at, buttons: 0 }));
-        canvas.dispatchEvent(new MouseEvent("mousemove", { ...at, buttons: 0 }));
-        canvas.dispatchEvent(new PointerEvent("pointerdown", { ...at, buttons: 1 }));
-        canvas.dispatchEvent(new MouseEvent("mousedown", { ...at, buttons: 1 }));
-        canvas.dispatchEvent(new PointerEvent("pointerup", { ...at, buttons: 0 }));
-        canvas.dispatchEvent(new MouseEvent("mouseup", { ...at, buttons: 0 }));
-      };
-
-      const killMusic = () => {
-        clickCanvas(OPTIONS_MENU);
-        setTimeout(() => {
-          clickCanvas(MUSIC_ITEM);
-          // Choosing an item closes the menu, so by now the game is back.
-          setTimeout(letSoundThrough, 120);
-        }, 120);
-      };
-
       /* ⚠️ NOTHING here sizes the canvas, on purpose. The engine picks its own
          pixel size from the window and follows it when the window changes, so
          it renders at the real resolution instead of being a small picture
@@ -160,11 +92,39 @@
         },
         onRuntimeInitialized: () => {
           canvas.hidden = false;
-          // One frame is not enough: the menu it has to click does not exist
-          // until the game has drawn itself at least once.
-          setTimeout(killMusic, 700);
         },
       };
+
+      /* ── No music ──────────────────────────────────────────────────────────
+         The music is two MIDI files in the game's data package and nothing
+         else: every other sound in there is a .WAV, which is an effect. Hand
+         the game an empty file where each MIDI should be and it comes up with
+         nothing to play — its own Options → Music switch greys itself out —
+         while every effect is untouched.
+
+         ⚠️ This replaces a blind click on that menu item, fired on a 700ms
+         timer. That was a race, and it lost: throttle the CPU to a sixth and
+         the game has not drawn its menu bar yet, the click lands on nothing,
+         and the music plays for the rest of the session with no sign that
+         anything failed. A slow machine is not an edge case.
+
+         The property is an accessor because the engine's own loader assigns
+         it during startup, long after this page has handed over `Module`;
+         `writeFile` is whatever it assigned. Non-enumerable on purpose: the
+         loader copies every enumerable key of `Module` onto itself first, and
+         copying a getter's result would feed the wrapper back through the
+         setter and leave it calling itself. */
+      const MUSIC_FILE = /PINBALL2?\.MID$/i;
+      let writeFile = null;
+      Object.defineProperty(window.Module, "FS_createDataFile", {
+        configurable: true,
+        set: (fn) => {
+          writeFile = fn;
+        },
+        // The packager passes the whole path as `parent` and nothing as `name`.
+        get: () => (parent, name, data, ...rest) =>
+          writeFile(parent, name, MUSIC_FILE.test(name ?? parent) ? new Uint8Array(0) : data, ...rest),
+      });
     </script>
     <script async src="https://pinball.alula.me/SpaceCadetPinball.js"></script>
   </body>
