@@ -25,8 +25,8 @@ import { SOCIAL } from "../../consts";
   <svg
     class="mailer"
     viewBox="0 0 100 32"
-    width="200"
-    height="64"
+    width="100"
+    height="32"
     shape-rendering="crispEdges"
     role="img"
     aria-label="Two computers sending an envelope back and forth"
@@ -150,10 +150,12 @@ import { SOCIAL } from "../../consts";
 <style>
   .mailer {
     display: block;
-    /* 200px is exactly 2× the viewBox, so every pixel doubles cleanly. Below
-       that the window is narrower than the drawing and even scaling loses. */
+    /* ⚠️ Whole multiples of the viewBox only: 100px is 1:1 — the size the
+       sprite was drawn at — and 200px would be 2:1. Anything between, 150px
+       say, spreads 100 source pixels over a fractional number of screen ones,
+       and `crispEdges` answers that by making some pixels wider than others. */
     width: 100%;
-    max-width: 200px;
+    max-width: 100px;
     height: auto;
     margin: 0 auto 0.9rem;
   }
