@@ -303,16 +303,21 @@ winbows' `win-min.png`, reduced to 52x48 (painted at 26px tall, at double size s
 it is not blurry on retina). Same caveat as the wallpaper: it is a registered
 trademark and not a free image.
 
-**The click and the four icons are Microsoft's as well.** `public/xp/click.wav`
-is `Windows Navigation Start.wav`, downmixed to mono 22 kHz. The four PNGs in
+**The click and the five icons are Microsoft's as well.** `public/xp/click.wav`
+is `Windows Navigation Start.wav`, downmixed to mono 22 kHz. The five PNGs in
 `public/xp/icons/` are the real XP artwork at the 32x32 XP drew them at: the
 Minesweeper mine, the Solitaire card box and the 3D Pinball ball come from the
 extracted set at
 [lelegofrog.github.io/winicogames.html](https://lelegofrog.github.io/winicogames.html),
-and the folder from winbows' `folder.png`, rescaled from 800x800. They were
-drawn by hand first and replaced with the originals at the owner's express
-request. Same caveat as the wallpaper, and the same escape hatch: they are four
-files, and deleting them breaks nothing but the picture.
+the folder from winbows' `folder.png`, rescaled from 800x800, and `media.png` is
+the Windows Media Player orb, supplied by the owner. That last one arrived as a
+JPEG of a transparent PNG — the checkerboard baked into the picture — so it is
+cut out rather than converted: the circle is the only saturated thing in the
+frame, which is what locates it, and the 32x32 is sampled out of it behind a
+circular alpha, three pixels in from the rim so none of the checkerboard the
+edge is blended with survives. Two of them were drawn by hand first and replaced with the originals at
+the owner's express request. Same caveat as the wallpaper, and the same escape
+hatch: they are five files, and deleting them breaks nothing but the picture.
 
 **3D Pinball is somebody else's build, running in a page of ours.**
 `public/xp/pinball.html` loads the engine from
@@ -326,6 +331,21 @@ server, and only once the visitor presses Load. Nothing is requested from them
 before that. The music is the two MIDI files in that package and nothing else,
 so the loader hands the game an empty file where each one should be: it comes up
 with no music to play and every sound effect intact.
+
+**Solitaire is somebody else's too, and framed rather than loaded.** It used to
+be a game written for this site — a pack of cards and every rule of Klondike in
+`solitaire.mjs` — and the owner asked for it to come from somewhere else, so all
+of that is deleted. `Solitaire.astro` frames
+[jhatzimalis' single-file Solitaire](https://github.com/jhatzimalis/solitaire),
+MIT, off their GitHub Pages site. It is framed straight and not wrapped in a
+page of ours the way the pinball is, because there is nothing in there that
+needs reaching into: no music, and it lays itself out to whatever size it is
+given. The better-known solitaire sites were rejected for one reason — they open
+with a consent dialog listing a couple of hundred advertising partners, and
+framing one would hand every one of them a visitor who came to a site that
+promises no analytics and no cookies. Nothing is fetched from GitHub Pages until
+you press Deal, and `Game -> Deal` is a fresh load with a counter in the query:
+assigning a frame the URL it already has is not reliably a navigation.
 
 **The song behind the Music shortcut is not in this repository either.** It is
 the official YouTube embed, and like the pinball table it loads on a use and not

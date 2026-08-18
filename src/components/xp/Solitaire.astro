@@ -1,24 +1,36 @@
 ---
 /**
- * Klondike: the screen only. Every rule is in `solitaire.mjs` — what a pile
- * will accept, what a double click does, when the game is over — and this file
- * knows two things: how a card is drawn and where the pointer let go.
+ * Klondike, and not mine either.
  *
- * Cards are built by the script, so every rule that styles one is written as
- * `.sol :global(…)`. A JS-created element carries no scope attribute, so a
- * plain `.sol-card` would compile to `.sol-card[data-astro-cid-…]` and match
- * nothing at all; `.sol` is in this file's markup, which is what keeps the
- * global halves from leaking out of the component.
+ * WHAT CHANGED. This used to be a game written for this site: a pack of cards,
+ * a drag, and every rule of Klondike in `solitaire.mjs`. The owner asked for it
+ * to come from somewhere else, the way the pinball table does, so all of that
+ * is gone and what is left is the frame around somebody else's game.
  *
- * Not here, on purpose: the cascade of bouncing cards XP played when you won.
- * It is animation and nothing else, and the game is finished without it.
+ * It is jhatzimalis' single-file Solitaire, MIT, on GitHub Pages. Chosen over
+ * the better-known solitaire sites for one reason: they open with a consent
+ * dialog listing a couple of hundred advertising partners, and framing one
+ * would hand every one of them a visitor who came to a site whose colophon
+ * promises no analytics and no cookies. This one has no ads and no trackers,
+ * and GitHub Pages sends no `x-frame-options`, so it can be framed at all.
+ *
+ * It does NOT load on its own, for the same reason the table does not: a frame
+ * built on page load would call their server for everybody who so much as
+ * glances at this page.
+ *
+ * ⚠️ The load/unload dance below is deliberately the same shape as the one in
+ * `Pinball.astro` rather than a shared component. Two are not a pattern; when a
+ * third framed game turns up, that is the time to pull it out.
  */
 import MenuBar, { type Menu } from "./MenuBar.astro";
 import AboutBox from "./AboutBox.astro";
 
+const SRC = "https://jhatzimalis.github.io/solitaire/";
+
 /* XP's Game menu. Undo, Deck and Options are drawn disabled rather than
    dropped, the same way Minesweeper's are: an item you cannot use still tells
-   you it exists. */
+   you it exists. They are also the three that CANNOT work from here — the game
+   is a document from another origin, and there is no reaching into one. */
 const MENUS: Menu[] = [
   {
     label: "Game",
@@ -46,282 +58,73 @@ const MENUS: Menu[] = [
 <div class="sol">
   <MenuBar id="sol-menu" menus={MENUS} />
 
-  <div class="sol-table">
-    <div class="sol-top">
-      <div class="sol-slot" data-pile="stock"></div>
-      <div class="sol-slot" data-pile="waste"></div>
-      <div class="sol-slot" data-pile="f0"></div>
-      <div class="sol-slot" data-pile="f1"></div>
-      <div class="sol-slot" data-pile="f2"></div>
-      <div class="sol-slot" data-pile="f3"></div>
-    </div>
-    <div class="sol-cols">
-      <div class="sol-col" data-pile="t0"></div>
-      <div class="sol-col" data-pile="t1"></div>
-      <div class="sol-col" data-pile="t2"></div>
-      <div class="sol-col" data-pile="t3"></div>
-      <div class="sol-col" data-pile="t4"></div>
-      <div class="sol-col" data-pile="t5"></div>
-      <div class="sol-col" data-pile="t6"></div>
-    </div>
+  <div class="sol-stage">
+    {/* The URL rides on the button rather than in the script: the script is
+        bundled and shared, the markup is where this component's own data goes. */}
+    <button type="button" class="sol-play" data-src={SRC}>
+      <span class="sol-play-icon" aria-hidden="true">▶</span>
+      <span>Deal</span>
+      <span class="sol-play-note">Loads the game from GitHub Pages</span>
+    </button>
   </div>
-
-  {/* In the markup and not created by the script, so it carries the scope
-      attribute the `:global()` rules below hang off. */}
-  <div class="sol-ghost" hidden></div>
-
-  {/* The sunken strip along the bottom of a Windows window. It holds the move
-      count, and it is where the win goes — without the cascade of cards there
-      would otherwise be nothing at all to mark it. */}
-  <p class="sol-status" role="status">Moves: 0</p>
 
   <AboutBox id="sol-about" title="About Solitaire">
     <p>
       Klondike. Build the four piles at the top up from the ace in one suit, and
-      the columns down in alternating colours.
+      the columns down in alternating colours. Click inside the frame first, or
+      the keys go to this page instead.
     </p>
     <p>
-      Drag a card onto another, double click to send it to a pile at the top,
-      and click the deck to turn a card over. With the keyboard: <kbd>Tab</kbd>
-      to a card and <kbd>Enter</kbd>, which does what a double click does.
+      <strong>The game is not mine.</strong> It is <a
+        href="https://github.com/jhatzimalis/solitaire" rel="noopener">jhatzimalis'
+      Solitaire</a>, MIT, loaded from their GitHub Pages site. There is no copy
+      of it in this repository, and nothing is asked of them until you press
+      Deal.
     </p>
     <p>
-      Written for this site; only the icon is Microsoft's. It turns one card at
-      a time rather than the three Windows defaulted to, because draw-three
-      makes most deals unwinnable.
+      <em>Game → Deal</em> loads it again from the start, because a new deal is
+      the only thing this side can ask of it: the rest of this menu belongs to a
+      document from another origin, which is why the rest of this menu is grey.
     </p>
   </AboutBox>
 </div>
 
 <script>
-  import {
-    RANKS,
-    SUITS,
-    autoMove,
-    drawStock,
-    isRed,
-    isWon,
-    move,
-    newGame,
-    pile,
-    runFrom,
-  } from "./solitaire.mjs";
-
-  interface Card {
-    id: string;
-    suit: number;
-    rank: number;
-    up: boolean;
-  }
-
   const root = document.querySelector<HTMLElement>(".sol");
-  const table = root?.querySelector<HTMLElement>(".sol-table");
-  const ghost = root?.querySelector<HTMLElement>(".sol-ghost");
-  const status = root?.querySelector<HTMLElement>(".sol-status");
+  const stage = root?.querySelector<HTMLElement>(".sol-stage");
+  const button = stage?.querySelector<HTMLButtonElement>(".sol-play");
 
-  if (root && table && ghost && status) {
-    let game = newGame();
-
-    /* Read out of the stylesheet rather than repeated here. A card height that
-       agrees with the CSS by coincidence is one edit away from a column whose
-       last card hangs out of its own pile. */
-    const px = (name: string) =>
-      parseFloat(getComputedStyle(root).getPropertyValue(name)) || 0;
-    const CARD_H = px("--card-h");
-    const STEP_UP = px("--step-up");
-    const STEP_DOWN = px("--step-down");
-
-    /** How far apart the pointer has to travel before a click becomes a drag.
-        Without it every click is a one-pixel drag, the board repaints under the
-        pointer, and the second half of a double click lands on a dead element. */
-    const SLOP = 4;
-
-    let held: { from: string; index: number; dx: number; dy: number; sx: number; sy: number } | null =
-      null;
-    let dragging = false;
-
-    /* Arrows and not `function` declarations: a declaration is hoisted, so
-       TypeScript will not carry the narrowing from the `if` above into its
-       body and `table`, `ghost` and the rest read as possibly null inside.
-       An arrow assigned to a const is created here, and keeps it. */
-    const cardEl = (card: Card, pileId: string, index: number) => {
-      const el = document.createElement(card.up ? "button" : "div");
-      if (el instanceof HTMLButtonElement) el.type = "button";
-      el.className = `sol-card${card.up ? "" : " is-down"}${
-        card.up && isRed(card) ? " is-red" : ""
-      }`;
-      el.dataset.pile = pileId;
-      el.dataset.index = String(index);
-      if (card.up) {
-        const rank = RANKS[card.rank];
-        const glyph = SUITS[card.suit].glyph;
-        el.setAttribute("aria-label", `${rank} of ${SUITS[card.suit].name}`);
-        el.innerHTML =
-          `<span class="sol-corner">${rank}<br>${glyph}</span>` +
-          `<span class="sol-pip">${glyph}</span>`;
-      } else {
-        el.setAttribute("aria-hidden", "true");
-      }
-      return el;
-    };
-
-    const paint = () => {
-      for (const slot of table.querySelectorAll<HTMLElement>("[data-pile]")) {
-        const id = slot.dataset.pile ?? "";
-        const cards = (pile(game, id) ?? []) as Card[];
-        const frag = document.createDocumentFragment();
-
-        if (id[0] === "t") {
-          // A column spreads downwards: a face-down card shows only its edge, a
-          // face-up one shows its corner.
-          let top = 0;
-          let last = 0;
-          for (let i = 0; i < cards.length; i++) {
-            const el = cardEl(cards[i], id, i);
-            el.style.top = `${top}px`;
-            frag.append(el);
-            last = top;
-            top += cards[i].up ? STEP_UP : STEP_DOWN;
-          }
-          slot.style.height = `${last + CARD_H}px`;
-        } else if (id === "stock") {
-          // One back for the whole deck: it is a stack, not a spread, and fifty
-          // stacked elements is fifty hit targets on the same square.
-          if (cards.length) {
-            frag.append(cardEl({ ...cards[cards.length - 1], up: false }, id, cards.length - 1));
-          }
-        } else if (cards.length) {
-          frag.append(cardEl(cards[cards.length - 1], id, cards.length - 1));
-        }
-
-        slot.replaceChildren(frag);
-        slot.classList.toggle("is-empty", cards.length === 0);
-      }
-
-      status.textContent = isWon(game)
-        ? "All four piles complete. That is a win."
-        : `Moves: ${game.moves}`;
-    };
-
-    /** Which card an event landed on: its pile and its place in it. */
-    const locate = (target: EventTarget | null) => {
-      const el = target instanceof Element ? target.closest<HTMLElement>(".sol-card") : null;
-      if (!el?.dataset.pile) return null;
-      return { from: el.dataset.pile, index: Number(el.dataset.index), el };
-    };
-
-    /** Which pile an event landed on, card or bare slot. */
-    const pileOf = (target: EventTarget | null) =>
-      (target instanceof Element ? target.closest<HTMLElement>("[data-pile]") : null)?.dataset
-        .pile ?? null;
-
-    /** Which pile is under a point. The ghost is pointer-transparent, so it
-        cannot be the answer, and an empty column answers through its slot. */
-    const pileAt = (x: number, y: number) => {
-      const el = document.elementFromPoint(x, y);
-      return (el instanceof Element ? el.closest<HTMLElement>("[data-pile]") : null)?.dataset
-        .pile ?? null;
-    };
-
-    table.addEventListener("pointerdown", (e) => {
-      if (e.button !== 0) return;
-
-      // The deck, whether there is a card on it or not: an empty stock is the
-      // click that puts the waste back, and it has no card to aim at.
-      if (pileOf(e.target) === "stock") {
-        drawStock(game);
-        paint();
-        return;
-      }
-
-      const hit = locate(e.target);
-      if (!hit || !runFrom(game, hit.from, hit.index).length) return;
-
-      const box = hit.el.getBoundingClientRect();
-      held = {
-        from: hit.from,
-        index: hit.index,
-        dx: e.clientX - box.left,
-        dy: e.clientY - box.top,
-        sx: e.clientX,
-        sy: e.clientY,
-      };
-      hit.el.setPointerCapture(e.pointerId);
-    });
-
-    table.addEventListener("pointermove", (e) => {
-      if (!held) return;
-
-      if (!dragging) {
-        if (Math.hypot(e.clientX - held.sx, e.clientY - held.sy) < SLOP) return;
-        dragging = true;
-        const run = runFrom(game, held.from, held.index) as Card[];
-        ghost.replaceChildren(
-          ...run.map((card, n) => {
-            const el = cardEl(card, "ghost", n);
-            el.style.top = `${n * STEP_UP}px`;
-            return el;
-          }),
-        );
-        ghost.hidden = false;
-        // The cards stay where they were, dimmed, so the column does not
-        // re-flow under the pointer and the drop lands where it looked like it
-        // would.
-        for (const el of table.querySelectorAll<HTMLElement>(
-          `[data-pile="${held.from}"] .sol-card`,
-        )) {
-          if (Number(el.dataset.index) >= held.index) el.classList.add("is-held");
-        }
-      }
-
-      ghost.style.left = `${e.clientX - held.dx}px`;
-      ghost.style.top = `${e.clientY - held.dy}px`;
-    });
-
-    const endDrag = (e: PointerEvent) => {
-      if (!held) return;
-      const wasDragging = dragging;
-      const drop = wasDragging ? pileAt(e.clientX, e.clientY) : null;
-      const { from, index } = held;
-      held = null;
-      dragging = false;
-      ghost.hidden = true;
-      ghost.replaceChildren();
-
-      // A click that never became a drag repaints nothing, which is what lets
-      // the second half of a double click find the same element still there.
-      if (!wasDragging) return;
-      if (drop && drop !== from) move(game, from, index, drop);
-      paint();
-    };
-
-    table.addEventListener("pointerup", endDrag);
-    table.addEventListener("pointercancel", endDrag);
-
-    table.addEventListener("dblclick", (e) => {
-      const hit = locate(e.target);
-      if (!hit || hit.from === "stock") return;
-      autoMove(game, hit.from, hit.index);
-      paint();
-    });
-
-    // Enter on a focused card does what a double click does, which makes the
-    // whole game playable without a pointer.
-    table.addEventListener("keydown", (e) => {
-      if (e.key !== "Enter" && e.key !== " ") return;
-      const hit = locate(e.target);
-      if (!hit) return;
-      e.preventDefault();
-      if (hit.from === "stock") drawStock(game);
-      else autoMove(game, hit.from, hit.index);
-      paint();
-    });
+  if (root && stage && button) {
+    /* Every deal is a fresh load, so the URL has to be a different one each
+       time: assigning the same one back is not reliably a navigation, and a
+       fragment never is. GitHub Pages ignores the query. */
+    let deals = 0;
 
     const deal = () => {
-      game = newGame();
-      paint();
+      const frame =
+        stage.querySelector("iframe") ?? document.createElement("iframe");
+      frame.src = `${button.dataset.src}?deal=${++deals}`;
+      frame.title = "Solitaire";
+      frame.className = "sol-frame";
+      stage.replaceChildren(frame);
+      frame.focus();
     };
 
+    /**
+     * Throws the frame away and puts the button back.
+     *
+     * Not housekeeping: a cross-origin frame keeps RUNNING when it is merely
+     * hidden, and the only thing this side can do to a document it is not
+     * allowed to touch is stop it existing.
+     */
+    const unload = () => {
+      if (!stage.querySelector("iframe")) return;
+      // The button was taken out of the DOM by `deal`, not destroyed: it is the
+      // same element, listener and all, going back where it was.
+      stage.replaceChildren(button);
+    };
+
+    button.addEventListener("click", deal);
     root.addEventListener("xpmenu", (e) => {
       const cmd = (e as CustomEvent<string>).detail;
       if (cmd === "deal") deal();
@@ -329,164 +132,90 @@ const MENUS: Menu[] = [
       // "exit" is not handled here: the window this lives in owns it.
     });
 
-    // The menu prints F2 next to Deal, so F2 has to deal. Guarded on the panel
-    // being visible, or the key would reshuffle this from inside Minesweeper.
+    /* The menu prints F2, so F2 has to work. `offsetWidth` is the guard and it
+       is deliberately not "is my panel hidden": the game can also be off screen
+       because the Games window was closed or minimised, and an unrendered
+       element measures 0 in every one of those cases. */
     addEventListener("keydown", (e) => {
-      if (e.key !== "F2") return;
-      if (root.closest(".games-panel")?.hasAttribute("hidden")) return;
+      if (e.key !== "F2" || !stage.offsetWidth) return;
       e.preventDefault();
       deal();
     });
 
-    paint();
-    // The table is as big as it is; the window follows it. Whoever owns the
-    // window listens for this — nothing here knows there is one.
+    /* The one hook that catches every way this game can leave the screen: Game
+       → Exit, opening a different game, closing the window, minimising it. All
+       four end in `display: none` somewhere up the tree, and the only thing
+       they have in common is that the stage stops having a box. */
+    new ResizeObserver(([entry]) => {
+      const box = entry?.contentRect;
+      if (box && box.width === 0 && box.height === 0) unload();
+    }).observe(stage);
+
+    // Whoever owns the window listens for this and fits the window to the game.
     root.dispatchEvent(new CustomEvent("xp:fit", { bubbles: true }));
   }
 </script>
 
 <style>
+  /* Menu bar on top, frame under it: the two parts of the window. */
   .sol {
-    /* A column: menu bar, baize, status bar — the three parts of a Windows
-       application window, in that order. */
     display: flex;
     flex-direction: column;
-    --card-w: 62px;
-    --card-h: 88px;
-    /* How far a card in a column is offset from the one above it. Read by the
-       script out of the computed style, so these are the only two copies. */
-    --step-up: 18px;
-    --step-down: 8px;
-  }
 
-  /* The baize, edge to edge: it is the client area of the window, and Windows
-     put no margin around it. #008000 is the green it dealt on. */
-  .sol-table {
-    flex: 1 1 auto;
-    padding: 10px;
-    background: #008000;
+    /* How big the window opens. The game inside is responsive and lays itself
+       out to whatever it is given, so this is a choice rather than a
+       constraint; it is roughly the size XP opened Solitaire at. */
+    --sol-w: 690;
+    --sol-h: 480;
   }
-
-  .sol-top,
-  .sol-cols {
-    display: grid;
-    grid-template-columns: repeat(7, var(--card-w));
-    gap: 8px;
-    min-width: max-content;
-  }
-  .sol-top {
-    margin-bottom: 12px;
-  }
-  /* The window is sized to the table at the moment it is dealt, and a column
-     grows as you play — six face-down cards plus a dozen face-up ones is
-     360px. Without this floor the window would be dealt short and the baize
-     would have to scroll the first time a column got long. */
-  .sol-cols {
-    min-height: 360px;
-  }
-  /* Stock and waste on the left, the four foundations on the right, with the
-     third column left empty between them — the layout Windows dealt. */
-  .sol-top [data-pile="f0"] {
-    grid-column: 4;
-  }
-
-  .sol-slot,
-  .sol-col {
+  /* The frame IS the client area: the window is sized to this, so no margin. A
+     fixed width rather than a percentage because the panel around it is sized
+     by its content, and a percentage of a max-content box has nothing to
+     resolve against. */
+  .sol-stage {
     position: relative;
-    width: var(--card-w);
-    min-height: var(--card-h);
-  }
-  /* A column grows past its row; without this the seven of them would all
-     stretch to the height of the longest. */
-  .sol-col {
-    align-self: start;
-  }
-  /* An empty pile is an outline, so you can see there is somewhere to drop. */
-  .sol-slot.is-empty,
-  .sol-col.is-empty {
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    border-radius: 4px;
+    width: calc(var(--sol-w) * 1px);
+    max-width: 100%;
+    aspect-ratio: var(--sol-w) / var(--sol-h);
+    background: #0a5c2e;
   }
 
-  .sol :global(.sol-card) {
-    position: absolute;
-    left: 0;
-    display: block;
-    width: var(--card-w);
-    height: var(--card-h);
-    padding: 3px 4px;
-    background: #ffffff;
-    border: 1px solid #000000;
-    border-radius: 4px;
-    color: #000000;
+  .sol-play {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    background: none;
+    border: 0;
+    color: #ffffff;
     font: inherit;
-    line-height: 1.05;
-    text-align: left;
     cursor: default;
   }
-  /* The stock, the waste and the foundations show one card, filling the slot. */
-  .sol-slot :global(.sol-card) {
-    top: 0;
-  }
-
-  .sol :global(.sol-corner) {
-    display: block;
-    font-size: 0.72rem;
-    font-weight: bold;
-  }
-  .sol :global(.sol-pip) {
-    position: absolute;
-    right: 5px;
-    bottom: 2px;
-    font-size: 1.5rem;
+  .sol-play-icon {
+    font-size: 2.4rem;
     line-height: 1;
   }
-  .sol :global(.sol-card.is-red) {
-    color: #cc0000;
+  .sol-play-note {
+    font-size: 0.75rem;
+    color: #b6d8c2;
+  }
+  .sol-play:hover .sol-play-icon {
+    color: #ffc83d;
+  }
+  .sol-play:focus-visible {
+    outline: 2px solid #ffc83d;
+    outline-offset: -4px;
   }
 
-  /* The back: the blue weave of the default XP deck, as two crossed gradients. */
-  .sol :global(.sol-card.is-down) {
-    background-color: #2a5fb0;
-    background-image: repeating-linear-gradient(
-        45deg,
-        rgba(255, 255, 255, 0.22) 0 2px,
-        transparent 2px 5px
-      ),
-      repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.22) 0 2px, transparent 2px 5px);
-    border-color: #10306b;
-  }
-
-  .sol :global(.sol-card.is-held) {
-    opacity: 0.3;
-  }
-  .sol :global(.sol-card:focus-visible) {
-    outline: 2px solid #ffff00;
-    outline-offset: 1px;
-    z-index: 1;
-  }
-
-  .sol-ghost {
-    position: fixed;
-    z-index: 20;
-    /* Pointer-transparent, or `elementFromPoint` on release would answer with
-       the card in your hand instead of the pile you dropped it on. */
-    pointer-events: none;
-  }
-  .sol-ghost :global(.sol-card) {
-    box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.4);
-  }
-
-  /* The status bar along the bottom: the sunken strip of a Windows window. */
-  .sol-status {
-    flex: none;
-    margin: 0;
-    padding: 2px 8px;
-    background: #ece9d8;
-    border-top: 1px solid #ffffff;
-    box-shadow: inset 0 1px 0 #aca899;
-    font-size: 11px;
-    line-height: 1.5;
-    color: #000000;
+  /* Created by the script, so it carries no scope attribute of its own. */
+  .sol-stage :global(.sol-frame) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
   }
 </style>

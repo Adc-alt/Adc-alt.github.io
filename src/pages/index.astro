@@ -89,7 +89,7 @@ const [nav, main, contact] = rowPositions(ROW_SIZES, { vw: 1440, vh: 900, barH: 
       In stacked mode `data-open="false"` is not honoured — that CSS lives
       inside the desktop media query — so a phone gets the whole folder in the
       column, which is the only place it can go there. */}
-  <Window id={GAMES_WINDOW_ID} title={GAMES_TITLE} width={660} height={580} order={3}>
+  <Window id={GAMES_WINDOW_ID} title={GAMES_TITLE} width={350} height={160} order={3}>
     <GamesFolder />
   </Window>
 
@@ -99,5 +99,5 @@ const [nav, main, contact] = rowPositions(ROW_SIZES, { vw: 1440, vh: 900, barH: 
   {/* Last, so they are the final children of the desktop; they draw under the
       windows anyway, on a lower z-index. Row 0 is the bottom shelf. */}
   <DesktopIcon target={GAMES_WINDOW_ID} label={GAMES_TITLE} />
-  <DesktopIcon target={MUSIC_HOST_ID} label="Music" icon="/xp/icons/media.svg" row={1} />
+  <DesktopIcon target={MUSIC_HOST_ID} label="Music" icon="/xp/icons/media.png" row={1} />
 </XP>

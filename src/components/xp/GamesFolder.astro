@@ -70,11 +70,6 @@ const iconSrc = (id: string) => `/xp/icons/${id}.png`;
         ))
       }
     </ul>
-
-    <p class="games-hint">
-      Double click to open. Two of them I wrote; 3D Pinball is somebody else's
-      build of the original, framed here rather than copied.
-    </p>
   </div>
 
   {
@@ -194,6 +189,23 @@ const iconSrc = (id: string) => `/xp/icons/${id}.png`;
       icons[0]?.focus({ preventScroll: true });
     });
 
+    /* The X on the title bar. Closing the window has to mean forgetting which
+       game was open: reopening the folder on the game you left is a window that
+       never really closed, and it hides the other two. The window says it is
+       closing; it does not know or care that there is a folder inside it. */
+    win?.addEventListener("xp:close", () => {
+      show(null);
+      select(null);
+    });
+
+    /* And it asks for its size again when it comes back. A window that is
+       closed has no box, so the resize above could not move it: without this
+       the folder reopens at the position — and off the centre — of whatever
+       600px-wide game was last open in it. The microtask is the ordering:
+       `xp:show` has other listeners, and one of them is the one that unhides
+       the window. */
+    win?.addEventListener("xp:show", () => queueMicrotask(fit));
+
     // A game that changed size — a new Minesweeper difficulty, say — asks for
     // the window to be re-fitted. It does not know which window, or that there
     // is one; it just says it changed.
@@ -297,13 +309,6 @@ const iconSrc = (id: string) => `/xp/icons/${id}.png`;
   .games-open:focus-visible {
     outline: 1px dotted #000000;
     outline-offset: -1px;
-  }
-
-  .games-hint {
-    margin: 1.6rem 0 0;
-    font-size: 0.8rem;
-    line-height: 1.5;
-    color: #6b675c;
   }
 
   /* Without JavaScript every panel is on the page one after another, and they

@@ -121,6 +121,7 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
     DESKTOP_MIN_WIDTH,
     cascadePosition,
     clampPosition,
+    initialPosition,
     rowPositions,
   } from "./windows.mjs";
 
@@ -190,6 +191,9 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
       // nothing else, and closing the Menu window under XP's rule would leave a
       // visitor with a site and no way to navigate it until they reloaded.
       task.classList.remove("xp-task-active");
+      // Said out loud because closing can mean something to what is inside: the
+      // Games folder listens for this and forgets which game was open.
+      win.dispatchEvent(new CustomEvent("xp:close"));
       task.focus();
     };
 
@@ -300,7 +304,19 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
         win.style.setProperty("--w", `${Math.ceil(size.w) + chromeW}px`);
         win.style.setProperty("--h", `${Math.ceil(size.h) + chromeH}px`);
       }
-      reclamp();
+      /* And it recentres. A game is not a document: it opens in the middle of
+         the screen, where a new window opens, rather than growing out of
+         whatever corner the folder happened to be dragged to — which for the
+         600px-wide games meant most of the game hanging off the right edge.
+
+         `offsetWidth` is the guard, and it is not "am I hidden": a window can
+         also have no box because it is closed or minimised, and centring
+         against 0x0 would move it somewhere arbitrary for the next time it
+         opens. Nothing needs clamping in that case either, so nothing happens. */
+      // Spelled out rather than `size()`: `size` is the event's detail in here,
+      // and the helper of that name is shadowed.
+      if (win.offsetWidth)
+        move(initialPosition({ w: win.offsetWidth, h: win.offsetHeight }, desk()));
     });
 
     // Pressing anywhere in the window brings it to the front, like in Windows.
