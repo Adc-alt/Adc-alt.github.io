@@ -194,7 +194,10 @@ import { SOCIAL } from "../../consts";
   }
   .xp-contact span {
     display: block;
-    font-size: 0.75rem;
+    /* ⚠️ No font-size. This span is inside `.xp-doc`, whose typeface is a pixel
+       font that is only crisp at 16px and 32px — the 0.75rem that used to be
+       here drew the address at 12px, which is 0.75 of a pixel per pixel and
+       comes out smeared. Grey is what makes it secondary now. */
     color: #6b675c;
     /* An address is one long unbreakable token in a 240px window. */
     overflow-wrap: anywhere;

@@ -272,6 +272,38 @@ phase 3 removed it. The `.woff2` was taken from the
 `_win` pack (the `Ac` ones are not in the web pack) by converting the TTF with
 `fonttools`.
 
+## The typeface of the documents
+
+The text inside the reading pane — Home, Projects, About, Blog, Contact — is
+**Pixel Operator**, by [Jayvee D. Enaguas](https://www.dafont.com/pixel-operator.font),
+CC0 1.0: a dedication to the public domain, so nothing is owed for it, not even
+the credit. Both TTFs and the full dedication are in `public/fonts/`. They are
+17KB each, which is why they are TTFs: converting them to WOFF2 would save a
+few KB and cost a build step.
+
+**The window itself does not change typeface.** Title bars, menus, the taskbar
+and the shortcut labels stay Tahoma, which is half of what makes the desktop
+read as Windows at all. Only the document changes, and the fallback is Tahoma
+too, so a browser that refuses the font lands on what the window is already
+using.
+
+⚠️ **It has one size.** Its em is 1600 units on a grid of 100, so a pixel of the
+drawing is a pixel of the screen at 16px and at its exact multiples — 32, 48 —
+and nowhere else. At the 14px the rest of the window uses, each of those pixels
+would be 0.875 of a real one and the browser would smear the remainder into the
+next. So every size in `xp-doc.css` is 16px or 32px, written in px and not in
+rem, and the hierarchy that used to come from six sizes now comes from weight,
+colour and the space above a heading.
+
+⚠️ **Deleting a heading's `font-size` does not make it inherit.** It falls back
+to the browser's own — `1.5em` for an `h2`, `0.67em` for an `h6` — and 24px is
+not a size this font can draw. That one shipped: nothing in the stylesheet shows
+it, because the wrong number is the one nobody wrote. It was found by reading
+computed sizes in a browser, and `xp-doc.test.mjs` now holds three of these
+shut: every declared size is a multiple of 16, every heading rule declares one,
+and no component that renders a `.xp-doc` sizes its own text — which is how the
+Contact window came to draw the email address at 12px.
+
 ## The taskbar
 
 Its colours **are measured** off XP screenshots, pixel by pixel, and the whole
