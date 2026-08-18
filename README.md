@@ -371,15 +371,23 @@ keys the game is already listening for, on the way in, `keyup` as well as
 game. `ArrowUp` is deliberately not in that table: it is the game's own bottom
 table bump.
 
-**The song behind the Music shortcut is not in this repository either.** It is
-the official YouTube embed, and like the pinball table it loads on a use and not
-before — an embed that started by itself would call Google on every visit to a
-site whose whole pitch is no analytics and no cookies. There is no player and no
-window: the shortcut plays the song, and plays it again to stop, because
-stopping means *destroying* the frame. A cross-origin frame carries on playing
-however well it is hidden, and there is no reaching in to pause it. Its host
-sits off the left edge of the screen rather than under `display: none`, which
-would stop the frame loading at all.
+**The song behind the Music shortcut used to be a YouTube embed, and the
+adverts are why it is not one any more.** YouTube puts advertising in front of
+an embed and no parameter turns it off — `nocookie` only drops the cookies —
+and the frame sat off the left edge of the screen, so the advert could be heard
+but its Skip button could not be reached. Pressing Music answered with half a
+minute of somebody else's advertising. Nothing on this side could fix that: a
+cross-origin frame is a room this page is not allowed to enter, the same wall
+the pinball table taught. So the song is now a file of ours,
+`public/media/music.mp3`, played by an `<audio>` element with `preload="none"`
+— not one byte of it is fetched until the shortcut is pressed, and the only
+hosts this desktop still reaches for are the two framed games, which also load
+on a use and not before. ⚠️ The recording is copyrighted and this repository is
+public; it is here as a deliberate choice, and undoing it is one file and one
+component.
+There is still no player and no window: the shortcut plays the song, and plays
+it again to stop it — stop and rewind, not pause, because nothing on screen
+shows a position for a resume to make sense of.
 
 Of the bar itself, on the other hand, not one file has been copied: only
 measurements and colours, which are facts and not work.

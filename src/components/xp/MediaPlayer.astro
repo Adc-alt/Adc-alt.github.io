@@ -3,67 +3,56 @@
  * The song behind the Music shortcut. No window, no player: the shortcut plays
  * it and plays it again to stop.
  *
- * WHY THERE IS NOTHING TO SEE. The owner asked for a shortcut that plays, not
- * for a player. So this renders an empty host that lives off the left edge of
- * the screen, and the frame that actually plays is built inside it on the first
- * double click and destroyed on the second.
+ * ⚠️ IT USED TO BE A YOUTUBE EMBED, AND THE ADVERTS ARE WHY IT IS NOT ONE ANY
+ * MORE. YouTube puts advertising in front of an embed and there is no parameter
+ * that turns that off — `nocookie` only drops the cookies. Worse here than
+ * anywhere: the frame sat off the left edge of the screen, so the advert could
+ * not be seen and its Skip button could not be pressed. Pressing Music answered
+ * with half a minute of somebody else's advertising and no way out of it, and
+ * nothing on this side could help, because a cross-origin frame is a room this
+ * page is not allowed to enter. The fix was to stop framing anyone.
  *
- * ⚠️ Off-screen, NOT `display: none` and NOT `hidden`. A frame that is not
- * displayed is not loaded, so nothing would play at all; a frame that is merely
- * somewhere else plays fine. The other half of that same fact is why stopping
- * has to mean destroying it: there is no reaching into a cross-origin frame to
- * pause it, which is the lesson the pinball table taught.
+ * ⚠️ THE RECORDING IS COPYRIGHTED AND THIS REPOSITORY IS PUBLIC. It is here as
+ * the owner's own decision, taken knowing that. Should a takedown ever arrive,
+ * the whole of the answer is: delete `public/media/music.mp3`, delete this
+ * component and the shortcut in `index.astro`.
  *
- * The song is not in this repository — the recording is copyrighted — so it
- * comes from YouTube's own embed, and nothing is asked of Google until the
- * shortcut is used. On a site whose pitch is no analytics and no cookies, an
- * embed that loaded by itself would be a contradiction.
+ * `preload="none"` is what keeps the promise the embed used to keep: not one
+ * byte of the song is fetched until the shortcut is pressed, so a visitor who
+ * never presses it never pays for it. What it no longer needs is anyone else's
+ * server: the only hosts this desktop still reaches for are the two framed
+ * games, and those it reaches for only when they are asked for.
  */
 import { MUSIC_HOST_ID } from "./sections.mjs";
-
-const VIDEO = "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1&rel=0";
 ---
 
-<div id={MUSIC_HOST_ID} class="music-host" data-src={VIDEO} aria-hidden="true"></div>
+{/* No `controls` and no CSS: an <audio> with no controls draws nothing, and
+    unlike a frame it plays perfectly well while it is not displayed. The old
+    host had to be parked off screen for exactly that reason. */}
+<audio id={MUSIC_HOST_ID} src="/media/music.mp3" preload="none"></audio>
 
 <script>
   import { MUSIC_HOST_ID } from "./sections.mjs";
 
-  const host = document.getElementById(MUSIC_HOST_ID);
+  const audio = document.getElementById(MUSIC_HOST_ID) as HTMLAudioElement | null;
 
   /* `xp:show` is what a desktop shortcut dispatches at whatever it opens. There
      is no window here to open, so the same event is the play switch — and,
      pressed again, the stop switch. Without the second half the song could not
-     be stopped at all: nothing else on the desktop would show it exists. */
-  host?.addEventListener("xp:show", () => {
-    if (host.firstChild) {
-      host.replaceChildren();
+     be stopped at all: nothing else on the desktop would show it exists.
+
+     Stop, not pause: there is no player and nothing that shows a position, so a
+     second press that resumed from the middle of a song nobody could see would
+     read as a bug rather than as a feature. */
+  audio?.addEventListener("xp:show", () => {
+    if (!audio.paused) {
+      audio.pause();
+      audio.currentTime = 0;
       return;
     }
-    const frame = document.createElement("iframe");
-    frame.src = host.dataset.src ?? "";
-    frame.title = "Never Gonna Give You Up";
-    frame.allow = "autoplay; encrypted-media";
-    // ⚠️ No `referrerPolicy = "no-referrer"`, however tempting on a page that
-    // takes privacy seriously. YouTube checks who is embedding it and answers
-    // "Error 153" to a frame that will not say: the song never starts.
-    host.append(frame);
+    // A rejected play() is a browser refusing to start audio unasked. It should
+    // not happen — this only ever runs off a double click, which is the gesture
+    // browsers want — but an unhandled rejection in the console is noise.
+    audio.play().catch(() => {});
   });
 </script>
-
-<style>
-  .music-host {
-    position: fixed;
-    left: -10000px;
-    top: 0;
-    width: 320px;
-    height: 180px;
-    /* Nothing here is for looking at, and it must never catch a click. */
-    pointer-events: none;
-  }
-  .music-host :global(iframe) {
-    width: 100%;
-    height: 100%;
-    border: 0;
-  }
-</style>

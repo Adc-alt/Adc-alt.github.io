@@ -1,44 +1,39 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { MUSIC_HOST_ID, resolveSection } from "./sections.mjs";
 
 const src = readFileSync(new URL("./MediaPlayer.astro", import.meta.url), "utf8");
 const markup = src.slice(src.indexOf("---", 3));
+// The file EXPLAINS the YouTube embed at length, so the prose has to be taken
+// out before asking whether the embed is still here.
+const code = markup.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, "").replace(/\/\/[^\n]*/g, "");
 
-test("nothing is fetched from YouTube until the shortcut is used", () => {
-  // The site's pitch is no analytics and no cookies. An embed sitting in the
-  // markup would call Google on every visit, whether or not anyone wanted the
-  // song — so the URL waits on the host and becomes an iframe on demand.
-  assert.match(src, /data-src=\{VIDEO\}/);
-  assert.equal(/<iframe/.test(markup), false);
-  assert.equal(/src="https:\/\/www\.youtube/.test(markup), false);
+test("the song is served from this site and nothing is framed", () => {
+  // ⚠️ The bug this replaced: a YouTube embed answers a double click with an
+  // advert, and there is no parameter that turns adverts off. Going back to an
+  // iframe brings the adverts back with it — and off screen, where the Skip
+  // button cannot be pressed, which is what made it unbearable rather than
+  // merely rude.
+  assert.match(code, /<audio[^>]*\ssrc="\/media\/music\.mp3"/);
+  assert.equal(/<iframe|youtube/i.test(code), false, "the embed is back");
 });
 
-test("the host is moved off screen, never undisplayed", () => {
-  // ⚠️ The one that breaks silently. A frame inside `display: none` — or inside
-  // an element carrying `hidden` — is not loaded, so the song simply never
-  // plays and the shortcut looks broken. Off screen it plays.
-  const css = src.slice(src.indexOf("<style>"));
-  assert.match(css, /position: fixed/);
-  assert.match(css, /left: -\d{4,}px/);
-  assert.equal(/display:\s*none/.test(css), false);
-  assert.equal(/<div id=\{MUSIC_HOST_ID\}[^>]*\shidden/.test(markup), false);
+test("not one byte of the song is fetched until it is asked for", () => {
+  // The pitch is a page that talks to nobody and costs nothing to look at. The
+  // file is 2.5MB; without this attribute every visitor downloads it, whether
+  // or not they ever press the shortcut.
+  assert.match(code, /preload="none"/);
+  const size = statSync(new URL("../../../public/media/music.mp3", import.meta.url)).size;
+  assert.ok(size > 1e6, `the song is ${size} bytes — that is not the song`);
 });
 
-test("pressing the shortcut again stops the song", () => {
-  // There is no window and no player, so this is the only way to stop it. Drop
-  // the branch and the song runs until the tab is closed.
-  assert.match(src, /host\.firstChild/);
-  assert.match(src, /host\.replaceChildren\(\)/);
-});
-
-test("the frame still sends a referrer", () => {
-  // YouTube checks who is embedding it and answers "Error 153 — video player
-  // configuration error" to a frame that will not say. Verified in a browser:
-  // with `referrerPolicy = "no-referrer"` the song never plays.
-  const code = src.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
-  assert.equal(/no-referrer/.test(code), false);
+test("pressing the shortcut again stops the song and rewinds it", () => {
+  // There is no player and no position indicator, so a second press that
+  // resumed from the middle would look broken. Drop the branch entirely and the
+  // song cannot be stopped at all.
+  assert.match(code, /audio\.pause\(\)/);
+  assert.match(code, /audio\.currentTime = 0/);
 });
 
 test("the host's id is not a section id", () => {
