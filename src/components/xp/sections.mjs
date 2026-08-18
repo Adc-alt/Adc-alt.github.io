@@ -49,8 +49,12 @@ export const GAMES_WINDOW_ID = "window-games";
 /** What the Games window is called when no game is open. */
 export const GAMES_TITLE = "Games";
 
-/** The media player's window. Same deal: minted by `index.astro`, opened by its icon. */
-export const MUSIC_WINDOW_ID = "window-music";
+/**
+ * Where the song lives. Not a window — the Music shortcut plays it outright —
+ * but it still needs an id, because that is how a desktop shortcut finds what
+ * it opens.
+ */
+export const MUSIC_HOST_ID = "music-host";
 
 /**
  * A game panel's element id.

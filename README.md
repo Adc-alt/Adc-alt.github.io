@@ -312,12 +312,15 @@ before that. The music is the two MIDI files in that package and nothing else,
 so the loader hands the game an empty file where each one should be: it comes up
 with no music to play and every sound effect intact.
 
-**The song in Media Player is not in this repository either.** It is the
-official YouTube embed, and like the pinball table it loads on a click and not
+**The song behind the Music shortcut is not in this repository either.** It is
+the official YouTube embed, and like the pinball table it loads on a use and not
 before — an embed that started by itself would call Google on every visit to a
-site whose whole pitch is no analytics and no cookies. Both frames are
-*destroyed* when their window closes rather than hidden: a hidden cross-origin
-frame carries on playing and there is no way to reach in and stop it.
+site whose whole pitch is no analytics and no cookies. There is no player and no
+window: the shortcut plays the song, and plays it again to stop, because
+stopping means *destroying* the frame. A cross-origin frame carries on playing
+however well it is hidden, and there is no reaching in to pause it. Its host
+sits off the left edge of the screen rather than under `display: none`, which
+would stop the frame loading at all.
 
 Of the bar itself, on the other hand, not one file has been copied: only
 measurements and colours, which are facts and not work.

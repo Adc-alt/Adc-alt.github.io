@@ -18,7 +18,7 @@ import Contact from "../components/xp/Contact.astro";
 import DesktopIcon from "../components/xp/DesktopIcon.astro";
 import GamesFolder from "../components/xp/GamesFolder.astro";
 import MediaPlayer from "../components/xp/MediaPlayer.astro";
-import { GAMES_TITLE, GAMES_WINDOW_ID, MUSIC_WINDOW_ID, PANE_ID } from "../components/xp/sections.mjs";
+import { GAMES_TITLE, GAMES_WINDOW_ID, MUSIC_HOST_ID, PANE_ID } from "../components/xp/sections.mjs";
 import { ROW_SIZES, rowPositions } from "../components/xp/windows.mjs";
 import { HEIGHT as BAR_H } from "../components/xp/taskbar-colors.mjs";
 
@@ -93,12 +93,11 @@ const [nav, main, contact] = rowPositions(ROW_SIZES, { vw: 1440, vh: 900, barH: 
     <GamesFolder />
   </Window>
 
-  <Window id={MUSIC_WINDOW_ID} title="Media Player" width={480} height={330} order={4} tight>
-    <MediaPlayer />
-  </Window>
+  {/* No window: the Music shortcut plays the song where it stands. */}
+  <MediaPlayer />
 
   {/* Last, so they are the final children of the desktop; they draw under the
       windows anyway, on a lower z-index. Row 0 is the bottom shelf. */}
   <DesktopIcon target={GAMES_WINDOW_ID} label={GAMES_TITLE} />
-  <DesktopIcon target={MUSIC_WINDOW_ID} label="Music" icon="/xp/icons/media.svg" row={1} />
+  <DesktopIcon target={MUSIC_HOST_ID} label="Music" icon="/xp/icons/media.svg" row={1} />
 </XP>

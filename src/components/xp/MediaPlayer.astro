@@ -1,115 +1,67 @@
 ---
 /**
- * A media player with exactly one thing in it.
+ * The song behind the Music shortcut. No window, no player: the shortcut plays
+ * it and plays it again to stop.
  *
- * WHY THERE IS A BUTTON AND NOT JUST THE VIDEO. Two reasons, and the second is
- * the one that matters. The song is not ours to host — the recording is
- * copyrighted, so it is played from YouTube's own embed rather than copied into
- * this repository. And an embed that loads by itself would fetch from Google on
- * every single visit, on a site whose whole pitch is that it has no analytics
- * and no cookies. Nothing leaves this page until the play button is pressed.
+ * WHY THERE IS NOTHING TO SEE. The owner asked for a shortcut that plays, not
+ * for a player. So this renders an empty host that lives off the left edge of
+ * the screen, and the frame that actually plays is built inside it on the first
+ * double click and destroyed on the second.
  *
- * ⚠️ The frame is DESTROYED when the window closes, not hidden. A hidden
- * cross-origin iframe keeps playing and there is no way to reach in and stop
- * it — the same lesson the pinball table taught. `display: none` is what all
- * four ways out of a window come down to (close, minimise, the taskbar button,
- * opening something else over it), and a `ResizeObserver` sees every one of
- * them as a 0x0 box.
+ * ⚠️ Off-screen, NOT `display: none` and NOT `hidden`. A frame that is not
+ * displayed is not loaded, so nothing would play at all; a frame that is merely
+ * somewhere else plays fine. The other half of that same fact is why stopping
+ * has to mean destroying it: there is no reaching into a cross-origin frame to
+ * pause it, which is the lesson the pinball table taught.
+ *
+ * The song is not in this repository — the recording is copyrighted — so it
+ * comes from YouTube's own embed, and nothing is asked of Google until the
+ * shortcut is used. On a site whose pitch is no analytics and no cookies, an
+ * embed that loaded by itself would be a contradiction.
  */
+import { MUSIC_HOST_ID } from "./sections.mjs";
+
 const VIDEO = "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1&rel=0";
-const TITLE = "Rick Astley — Never Gonna Give You Up";
 ---
 
-<div class="wmp">
-  <div class="wmp-stage">
-    {/* The URL rides on the button so nothing in the script has to know it. */}
-    <button type="button" class="wmp-play" data-src={VIDEO}>
-      <span class="wmp-play-icon" aria-hidden="true">▶</span>
-      <span class="wmp-play-title">{TITLE}</span>
-      <span class="wmp-play-note">Plays from YouTube. Nothing is fetched until you press this.</span>
-    </button>
-  </div>
-</div>
+<div id={MUSIC_HOST_ID} class="music-host" data-src={VIDEO} aria-hidden="true"></div>
 
 <script>
-  const stage = document.querySelector<HTMLElement>(".wmp-stage");
-  const button = stage?.querySelector<HTMLButtonElement>(".wmp-play");
+  import { MUSIC_HOST_ID } from "./sections.mjs";
 
-  if (stage && button) {
-    button.addEventListener("click", () => {
-      const frame = document.createElement("iframe");
-      frame.src = button.dataset.src ?? "";
-      frame.className = "wmp-frame";
-      frame.title = "Never Gonna Give You Up";
-      frame.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
-      // ⚠️ No `referrerPolicy = "no-referrer"` here, however tempting. YouTube
-      // checks which site is embedding it and refuses to play for one that
-      // will not say: the player comes up "Error 153" instead of the song.
-      // `replaceChildren` and not `innerHTML`: the button is put back later,
-      // listener and all, so it must survive being taken out.
-      stage.replaceChildren(frame);
-    });
+  const host = document.getElementById(MUSIC_HOST_ID);
 
-    new ResizeObserver(([entry]) => {
-      const box = entry?.contentRect;
-      if (box && box.width === 0 && box.height === 0 && stage.querySelector("iframe")) {
-        stage.replaceChildren(button);
-      }
-    }).observe(stage);
-  }
+  /* `xp:show` is what a desktop shortcut dispatches at whatever it opens. There
+     is no window here to open, so the same event is the play switch — and,
+     pressed again, the stop switch. Without the second half the song could not
+     be stopped at all: nothing else on the desktop would show it exists. */
+  host?.addEventListener("xp:show", () => {
+    if (host.firstChild) {
+      host.replaceChildren();
+      return;
+    }
+    const frame = document.createElement("iframe");
+    frame.src = host.dataset.src ?? "";
+    frame.title = "Never Gonna Give You Up";
+    frame.allow = "autoplay; encrypted-media";
+    // ⚠️ No `referrerPolicy = "no-referrer"`, however tempting on a page that
+    // takes privacy seriously. YouTube checks who is embedding it and answers
+    // "Error 153" to a frame that will not say: the song never starts.
+    host.append(frame);
+  });
 </script>
 
 <style>
-  .wmp {
-    /* The player chrome of the era: a dark surround around the picture. */
-    background: #1b2733;
-    padding: 6px;
+  .music-host {
+    position: fixed;
+    left: -10000px;
+    top: 0;
+    width: 320px;
+    height: 180px;
+    /* Nothing here is for looking at, and it must never catch a click. */
+    pointer-events: none;
   }
-  /* ⚠️ `aspect-ratio` and not `height: 100%`. The window body is auto-height,
-     so a percentage height resolves against nothing: the button would still
-     size itself by its text, and the iframe that replaces it would come out
-     zero pixels tall. */
-  .wmp-stage {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    background: #000000;
-  }
-  .wmp-play {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    width: 100%;
-    height: 100%;
-    padding: 12px;
-    background: none;
-    border: 0;
-    color: #d8e6f8;
-    font: 12px Tahoma, "DejaVu Sans", Verdana, sans-serif;
-    text-align: center;
-    cursor: pointer;
-  }
-  .wmp-play-icon {
-    font-size: 34px;
-    line-height: 1;
-    color: #ffffff;
-  }
-  .wmp-play:hover .wmp-play-icon {
-    color: #f79429;
-  }
-  .wmp-play-title {
-    font-weight: bold;
-  }
-  .wmp-play-note {
-    color: #8fa6bd;
-  }
-  .wmp-play:focus-visible {
-    outline: 1px dotted #ffffff;
-    outline-offset: -4px;
-  }
-  .wmp-stage :global(.wmp-frame) {
-    display: block;
+  .music-host :global(iframe) {
     width: 100%;
     height: 100%;
     border: 0;
