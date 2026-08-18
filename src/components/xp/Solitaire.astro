@@ -7,12 +7,18 @@
  * to come from somewhere else, the way the pinball table does, so all of that
  * is gone and what is left is the frame around somebody else's game.
  *
- * It is jhatzimalis' single-file Solitaire, MIT, on GitHub Pages. Chosen over
- * the better-known solitaire sites for one reason: they open with a consent
- * dialog listing a couple of hundred advertising partners, and framing one
- * would hand every one of them a visitor who came to a site whose colophon
- * promises no analytics and no cookies. This one has no ads and no trackers,
- * and GitHub Pages sends no `x-frame-options`, so it can be framed at all.
+ * It is Cyanoxide's react-solitaire: XP's Solitaire rebuilt, down to the Bliss
+ * card back, the card faces and the cascade of bouncing cards when you win. The
+ * first choice here was a clean modern-looking Klondike, and the owner sent it
+ * back — the point of this desktop is that it is XP's, not that it is a card
+ * game. The better-known solitaire sites lose on a different count: they open
+ * with a consent dialog listing a couple of hundred advertising partners, and
+ * framing one would hand every one of them a visitor who came to a site whose
+ * colophon promises no analytics and no cookies.
+ *
+ * ⚠️ The card artwork in there is Microsoft's, the same as this site's icons and
+ * wallpaper — and, like the pinball table's data, none of it is in this
+ * repository. It is fetched from their host, and only once you ask for it.
  *
  * It does NOT load on its own, for the same reason the table does not: a frame
  * built on page load would call their server for everybody who so much as
@@ -25,7 +31,7 @@
 import MenuBar, { type Menu } from "./MenuBar.astro";
 import AboutBox from "./AboutBox.astro";
 
-const SRC = "https://jhatzimalis.github.io/solitaire/";
+const SRC = "https://react-solitaire.jamiepates.com/";
 
 /* XP's Game menu. Undo, Deck and Options are drawn disabled rather than
    dropped, the same way Minesweeper's are: an item you cannot use still tells
@@ -64,7 +70,7 @@ const MENUS: Menu[] = [
     <button type="button" class="sol-play" data-src={SRC}>
       <span class="sol-play-icon" aria-hidden="true">▶</span>
       <span>Deal</span>
-      <span class="sol-play-note">Loads the game from GitHub Pages</span>
+      <span class="sol-play-note">Loads the game from react-solitaire.jamiepates.com</span>
     </button>
   </div>
 
@@ -76,10 +82,11 @@ const MENUS: Menu[] = [
     </p>
     <p>
       <strong>The game is not mine.</strong> It is <a
-        href="https://github.com/jhatzimalis/solitaire" rel="noopener">jhatzimalis'
-      Solitaire</a>, MIT, loaded from their GitHub Pages site. There is no copy
-      of it in this repository, and nothing is asked of them until you press
-      Deal.
+        href="https://github.com/Cyanoxide/react-solitaire" rel="noopener">Cyanoxide's
+      react-solitaire</a> — XP's Solitaire rebuilt, cards and all — loaded from
+      their site. There is no copy of it in this repository, and nothing is
+      asked of them until you press Deal. The cards are Microsoft's artwork,
+      like the wallpaper and the icons here.
     </p>
     <p>
       <em>Game → Deal</em> loads it again from the start, because a new deal is
@@ -167,6 +174,8 @@ const MENUS: Menu[] = [
        constraint; it is roughly the size XP opened Solitaire at. */
     --sol-w: 690;
     --sol-h: 480;
+    /* The height of the game's own menu bar, which this window crops off. */
+    --sol-bar: 22;
   }
   /* The frame IS the client area: the window is sized to this, so no margin. A
      fixed width rather than a percentage because the panel around it is sized
@@ -174,10 +183,13 @@ const MENUS: Menu[] = [
      resolve against. */
   .sol-stage {
     position: relative;
+    /* ⚠️ The frame is pulled up by `--sol-bar` and this is what hides the part
+       that goes off the top. See the rule on the frame below. */
+    overflow: hidden;
     width: calc(var(--sol-w) * 1px);
     max-width: 100%;
     aspect-ratio: var(--sol-w) / var(--sol-h);
-    background: #0a5c2e;
+    background: #008000;
   }
 
   .sol-play {
@@ -211,11 +223,24 @@ const MENUS: Menu[] = [
     outline-offset: -4px;
   }
 
-  /* Created by the script, so it carries no scope attribute of its own. */
+  /* Created by the script, so it carries no scope attribute of its own.
+     Positioned rather than simply filling the stage, because it is taller than
+     the stage by exactly the height of the game's own menu bar and hangs off
+     the top by that much: the game draws a `Game | Help` bar of its own, and
+     without this the window would have two identical menu bars stacked. It is
+     the same problem the pinball table had, and the same answer — theirs goes,
+     ours stays, because ours is the one with the way back to the folder in it.
+
+     ⚠️ 22 is measured, not derived, and there is no way to measure it from
+     here: the frame is another origin. If they ever drop that bar this crop
+     eats 22px of felt off the top of the table instead. */
   .sol-stage :global(.sol-frame) {
+    position: absolute;
+    top: calc(var(--sol-bar) * -1px);
+    left: 0;
     display: block;
     width: 100%;
-    height: 100%;
+    height: calc(100% + var(--sol-bar) * 1px);
     border: 0;
   }
 </style>

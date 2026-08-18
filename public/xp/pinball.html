@@ -114,6 +114,43 @@
          loader copies every enumerable key of `Module` onto itself first, and
          copying a getter's result would feed the wrapper back through the
          setter and leave it calling itself. */
+      /* ── The flippers on the arrow keys ────────────────────────────────────
+         The game's own keys are Z and / — the original's, and the ones its
+         keymapper still lists — and the owner wanted the arrows. The keymapper
+         is drawn inside the canvas and its settings live in a file this page
+         never sees, so the rebinding does not happen there: the arrows are
+         translated into the keys the game is already listening for, here, on
+         the way in.
+
+         ⚠️ `keyup` matters as much as `keydown`. Miss it and the flipper is
+         held up for the rest of the game, which looks like the ball has broken
+         rather than like a missing line.
+
+         Dispatched on the canvas and left to bubble, because SDL's listener is
+         on the window: an event that does not bubble arrives nowhere. The
+         translated event carries `code` as well as `key`, because `code` — the
+         physical key — is what SDL reads first. No loop is possible: what comes
+         out is `KeyZ`, and nothing maps that.
+
+         The real arrow press is NOT stopped, only its default (the page
+         scrolling under the game). Left and right are unbound in the original,
+         so the game receives one it does nothing with; ArrowUp is the bottom
+         table bump and is deliberately not in this table. */
+      const FLIPPERS = {
+        ArrowLeft: { key: "z", code: "KeyZ", keyCode: 90 },
+        ArrowRight: { key: "/", code: "Slash", keyCode: 191 },
+      };
+      for (const type of ["keydown", "keyup"]) {
+        addEventListener(type, (e) => {
+          const to = FLIPPERS[e.key];
+          if (!to || e.ctrlKey || e.altKey || e.metaKey) return;
+          e.preventDefault();
+          canvas.dispatchEvent(
+            new KeyboardEvent(type, { ...to, which: to.keyCode, repeat: e.repeat, bubbles: true }),
+          );
+        });
+      }
+
       const MUSIC_FILE = /PINBALL2?\.MID$/i;
       let writeFile = null;
       Object.defineProperty(window.Module, "FS_createDataFile", {

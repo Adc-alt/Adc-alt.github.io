@@ -336,16 +336,34 @@ with no music to play and every sound effect intact.
 be a game written for this site — a pack of cards and every rule of Klondike in
 `solitaire.mjs` — and the owner asked for it to come from somewhere else, so all
 of that is deleted. `Solitaire.astro` frames
-[jhatzimalis' single-file Solitaire](https://github.com/jhatzimalis/solitaire),
-MIT, off their GitHub Pages site. It is framed straight and not wrapped in a
-page of ours the way the pinball is, because there is nothing in there that
-needs reaching into: no music, and it lays itself out to whatever size it is
-given. The better-known solitaire sites were rejected for one reason — they open
-with a consent dialog listing a couple of hundred advertising partners, and
-framing one would hand every one of them a visitor who came to a site that
-promises no analytics and no cookies. Nothing is fetched from GitHub Pages until
-you press Deal, and `Game -> Deal` is a fresh load with a counter in the query:
-assigning a frame the URL it already has is not reliably a navigation.
+[Cyanoxide's react-solitaire](https://github.com/Cyanoxide/react-solitaire): XP's
+Solitaire rebuilt, down to the Bliss card back and the cascade of bouncing cards
+when you win. The first pick was a clean modern-looking Klondike and it was sent
+back, which is the rule this desktop runs on — the point is that it is XP's, not
+that it is a card game. The better-known solitaire sites lose on a different
+count: they open with a consent dialog listing a couple of hundred advertising
+partners, and framing one would hand every one of them a visitor who came to a
+site that promises no analytics and no cookies. Nothing is fetched from their
+host until you press Deal, and `Game -> Deal` is a fresh load with a counter in
+the query: assigning a frame the URL it already has is not reliably a
+navigation. **The cards are Microsoft's artwork**, same caveat as the wallpaper
+— and, like the pinball table's data, no copy of them is in this repository.
+
+⚠️ **That frame is cropped by 22px and the number is measured, not derived.** The
+game draws a `Game | Help` menu bar of its own and this window already has one,
+so the frame is pulled up by exactly the height of theirs and the stage clips it
+— the same problem the pinball had with its window chrome, and the same answer.
+The frame is another origin, so there is no measuring it from here: if they ever
+drop that bar, the crop starts eating the top of the table instead.
+
+**The pinball flippers answer to the arrow keys, and that is ours.** The game's
+own keys are `Z` and `/` — the original's — and its keymapper is drawn inside
+the canvas, in settings this page never sees. So the rebinding does not happen
+there: `public/xp/pinball.html` translates `ArrowLeft` and `ArrowRight` into the
+keys the game is already listening for, on the way in, `keyup` as well as
+`keydown`. Miss the `keyup` half and the flipper stays up for the rest of the
+game. `ArrowUp` is deliberately not in that table: it is the game's own bottom
+table bump.
 
 **The song behind the Music shortcut is not in this repository either.** It is
 the official YouTube embed, and like the pinball table it loads on a use and not

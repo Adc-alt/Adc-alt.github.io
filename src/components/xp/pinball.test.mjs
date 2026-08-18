@@ -72,6 +72,26 @@ test("our loader page carries no game data and does the muting", () => {
   assert.equal(/setTimeout\(\s*killMusic/.test(page), false);
 });
 
+test("the arrow keys are translated into the flippers, both ways", () => {
+  const page = readFileSync(new URL("../../../public/xp/pinball.html", import.meta.url), "utf8");
+  // The game's own keys are Z and /, and its keymapper is drawn inside a canvas
+  // this page cannot reach. The arrows work because they are rewritten on the
+  // way in, so this is the whole feature.
+  assert.match(page, /ArrowLeft: \{ key: "z", code: "KeyZ"/);
+  assert.match(page, /ArrowRight: \{ key: "\/", code: "Slash"/);
+  // ⚠️ The half that fails silently: without keyup the flipper is held up for
+  // the rest of the game and it reads as a broken table, not a missing line.
+  assert.match(page, /for \(const type of \["keydown", "keyup"\]\)/);
+  // Bubbling, because SDL listens on the window: an event dispatched on the
+  // canvas that does not bubble arrives nowhere at all.
+  assert.match(page, /bubbles: true/);
+  // ArrowUp is the game's bottom table bump and must NOT be remapped. Read out
+  // of the table itself, not the file: the comment above it says so too.
+  const table = page.match(/const FLIPPERS = \{[\s\S]*?\};/)?.[0];
+  assert.ok(table, "no FLIPPERS table in the loader page");
+  assert.equal(/ArrowUp/.test(table), false);
+});
+
 test("leaving the game destroys the frame rather than hiding it", () => {
   // The reason is audio: a hidden cross-origin frame keeps playing, and this
   // page has no way to reach in and stop it. Only removal stops it.

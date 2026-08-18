@@ -45,6 +45,19 @@ test("a deal is a new URL", () => {
   assert.match(SCRIPT, /\?deal=\$\{\+\+deals\}/);
 });
 
+test("the game's own menu bar is cropped off, by the same number twice", () => {
+  // The game draws a `Game | Help` bar of its own, and this window already has
+  // one: without the crop there are two identical menu bars stacked. The offset
+  // and the extra height have to be THE SAME number — change one and the table
+  // is either short of the bottom edge or scrolled by 22px behind it.
+  const css = SRC.slice(SRC.indexOf("<style>"));
+  assert.match(css, /--sol-bar: 22;/);
+  assert.match(css, /top: calc\(var\(--sol-bar\) \* -1px\)/);
+  assert.match(css, /height: calc\(100% \+ var\(--sol-bar\) \* 1px\)/);
+  // The crop only crops if the stage clips.
+  assert.match(css, /overflow: hidden/);
+});
+
 test("leaving the game destroys the frame rather than hiding it", () => {
   // A hidden cross-origin frame keeps running, and this page has no way to
   // reach in and stop it. Only removal stops it.
