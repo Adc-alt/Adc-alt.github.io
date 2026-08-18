@@ -6,7 +6,7 @@
  * DESKTOP ONLY, and not out of neatness. In stacked mode there are no windows
  * to open — every one of them is already on the page, one after another — so an
  * icon whose whole job is opening one would do nothing. Its CSS therefore lives
- * inside the same `@media (min-width: 1204px)` + `html.js` pair as the windows.
+ * inside the same `@media (min-width: 1270px)` + `html.js` pair as the windows.
  *
  * Opening goes through the `xp:show` event rather than by touching the window:
  * that event is `Window.astro`'s own front door and already does the four
@@ -95,11 +95,11 @@ const { target, label, icon = "/xp/icons/folder.png", row = 0 } = Astro.props;
     display: none;
   }
 
-  /* 1204 = DESKTOP_MIN_WIDTH in `windows.mjs`, spelled out because a media
+  /* 1270 = DESKTOP_MIN_WIDTH in `windows.mjs`, spelled out because a media
      query cannot read a JS constant — the same pair of conditions the windows
      themselves hang off, so the icon exists exactly when a window can be
      opened. `windows.test.mjs` pins the number against the constant. */
-  @media (min-width: 1204px) {
+  @media (min-width: 1270px) {
     :global(html.js) .xp-icon {
       position: absolute;
       /* Bottom left, clear of the taskbar, stacking upwards. `--bar-h` is set

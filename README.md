@@ -100,22 +100,28 @@ Files with `draft: true` show up in `pnpm dev` but are **not published**.
 
 ## Two modes, and the order matters
 
-**Desktop mode means "the three-window row fits".** Below **1204px** the windows
+**Desktop mode means "the three-window row fits".** Below **1270px** the windows
 stop being absolute, stack in a column with all of them open and the page
 scrolls; the three title bar buttons are hidden, and dragging is switched off.
 
-1204 is derived, not chosen: `200 + 700 + 240` for the windows, `2 × 16` for the
+1270 is derived, not chosen: `200 + 750 + 240` for the windows, `2 × 24` for the
 gaps between them and `2 × 16` for the margins at the ends — `DESKTOP_MIN_WIDTH`
 in `src/components/xp/windows.mjs`, pinned by a test that asserts the row fits at
 that width and does not one pixel below. A narrower desktop would have to cascade
 the three, and a cascade centres each window for its own width, which parks the
-200-wide Menu and the 240-wide Contact entirely inside the 700-wide reading pane
+200-wide Menu and the 240-wide Contact entirely inside the 750-wide reading pane
 — the site would load with its only navigation invisible. CSS cannot read a JS
-constant, so the number is written out in two media queries, each with the
+constant, so the number is written out in three media queries, each with the
 arithmetic in a comment beside it.
 
+⚠️ **That number has a ceiling of 1280.** It is what a very common laptop screen
+is, and one pixel over it every one of them loses the desktop and gets the
+stacked document instead. The reading pane is 750 wide today and the row spends
+1270 of the 1280: there are ten pixels left. Growing the pane again means taking
+them off the gaps or off the two small windows, not off that margin.
+
 **Stacked is the base and the desktop is the enhancement.** The desktop rules
-live inside `@media (min-width: 1204px)` and hang off `html.js`, a class set by
+live inside `@media (min-width: 1270px)` and hang off `html.js`, a class set by
 an inline script in the `<head>`. Intended consequence: **without JavaScript the
 whole site falls back to stacked mode**, on any screen, and it reads. Written the
 other way round it would take two copies of the same rules and a JS failure would

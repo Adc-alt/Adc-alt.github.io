@@ -13,6 +13,12 @@
 
 .xp-doc {
   max-width: 62ch;
+  /* Centred in the window, not pinned to its left edge. A line of text stops
+     being comfortable to read somewhere around here whatever the window is
+     doing, so the pane is wider than the column and the leftover has to go
+     somewhere: split in two it reads as a margin, all on one side it reads as
+     a column that failed to fill the window. */
+  margin-inline: auto;
 }
 
 .xp-doc h1 {
@@ -158,23 +164,32 @@
 }
 
 /* A clip. Filmed on a phone, so it is taller than it is wide and the limit that
-   matters is the HEIGHT: the reading pane's body is a fixed 567px whatever the
-   screen, 525px of it inside the padding, so a portrait video sized by width
+   matters is the HEIGHT: the reading pane's body is a fixed 607px whatever the
+   screen, 565px of it inside the padding, so a portrait video sized by width
    ends up taller than the window it plays in. So the number below is a height
-   in disguise: 264 is 470 × 540/960, the widest this 9:16 clip can be and still
-   leave the pane 55px of slack. It caps the figure rather than the video so the
-   caption wraps to the same width instead of running on past it.
+   in disguise: 315 is 565 × 540/960 — this 9:16 clip at the full height of the
+   pane, which is as large as it can be drawn and still be seen whole. Wider
+   than that and the bottom of it, controls and all, is behind the edge of the
+   window. Bigger than *that* is what the player's own full-screen button is
+   for. It caps the figure rather than the video so the caption wraps to the
+   same width instead of running on past it, and `auto` on the sides is what
+   centres both — which lands in the middle of the window because the column
+   the figure sits in is itself centred.
 
    `preload="none"` in the markup is the other half of this: 8 MB is not
    something to fetch for a visitor who only came to read. */
 .xp-doc .clip {
-  margin: 0 0 1.4rem;
-  max-width: 264px;
+  margin: 0 auto 1.4rem;
+  max-width: 315px;
 }
 .xp-doc .clip video {
   display: block;
   width: 100%;
   height: auto;
+  /* The border counts INSIDE the width, or the clip is 2px wider than the box
+     that is meant to be capping it — which on a phone, where the column is
+     narrower than the clip, is 2px of horizontal overflow. */
+  box-sizing: border-box;
   background: #000;
   border: 1px solid #7f9db9;
 }

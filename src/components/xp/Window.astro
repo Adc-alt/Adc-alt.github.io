@@ -18,8 +18,8 @@
  *     scrolls. It is what a phone gets and what anyone without JavaScript gets,
  *     on any screen.
  *   - **Desktop** is the ENHANCEMENT: absolute, draggable, they open and close.
- *     It lives inside `@media (min-width: 1204px)` and hangs off `html.js`,
- *     which an inline script in the layout sets. 1204 is not a taste: it is the
+ *     It lives inside `@media (min-width: 1270px)` and hangs off `html.js`,
+ *     which an inline script in the layout sets. 1270 is not a taste: it is the
  *     width the three-window row needs (`DESKTOP_MIN_WIDTH` in `windows.mjs`),
  *     and desktop mode means exactly "the row fits".
  *
@@ -126,7 +126,7 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
   } from "./windows.mjs";
 
   /* Desktop mode means "the three-window row fits". Below `DESKTOP_MIN_WIDTH`
-     (1204px, derived in windows.mjs from the row's own sizes) everything goes
+     (1270px, derived in windows.mjs from the row's own sizes) everything goes
      to stacked mode. The same number is in the CSS of this file, where a media
      query cannot read the constant. */
   const DESKTOP = matchMedia(`(min-width: ${DESKTOP_MIN_WIDTH}px)`);
@@ -616,14 +616,14 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
      `html.js` is set by an inline script in the layout. Without JavaScript this
      media query never applies, on any screen, and everything stays stacked.
 
-     1204 = 200 + 700 + 240 (the three windows) + 2×16 (ROW_GAP) + 2×16
+     1270 = 200 + 750 + 240 (the three windows) + 2×24 (ROW_GAP) + 2×16
      (ROW_MARGIN). It is `DESKTOP_MIN_WIDTH` in `windows.mjs`, written out here
      because a media query cannot read a JS constant; the script reads the
      constant, and `windows.test.mjs` pins the invariant so the two cannot
      drift. Desktop mode means "the row fits": narrower than this the three
      windows would have to cascade, which buries the Menu and Contact inside
      the reading pane. */
-  @media (min-width: 1204px) {
+  @media (min-width: 1270px) {
     :global(html.js) .xp-window {
       position: absolute;
       top: var(--y);

@@ -8,7 +8,7 @@
  * the visitor either has or falls back to the closest thing they do have.
  *
  * TWO MODES (phase 2 §4). Stacked is the base and desktop is the enhancement:
- * the desktop rules live inside `@media (min-width: 1204px)` — the width the
+ * the desktop rules live inside `@media (min-width: 1270px)` — the width the
  * three-window row needs, `DESKTOP_MIN_WIDTH` in `xp/windows.mjs` — and hang
  * off `html.js`. Without JavaScript they never apply and the site reads as a
  * column of windows, which is also what a phone and a narrow window get.
@@ -114,13 +114,13 @@ const fullTitle = title ? `${title} — ${SITE.name}` : `${SITE.name} — ${SITE
   }
 
   /* ── Desktop mode: a desktop has no scroll ──────────────────────────────
-     1204 = 200 + 700 + 240 (the three windows) + 2×16 (ROW_GAP) + 2×16
+     1270 = 200 + 750 + 240 (the three windows) + 2×24 (ROW_GAP) + 2×16
      (ROW_MARGIN) — `DESKTOP_MIN_WIDTH` in `components/xp/windows.mjs`, spelled
      out because a media query cannot read a JS constant. It has to be the same
      number as the one in `Window.astro`: below it the windows stay in the
      stacked column, and a page that hid its scrollbar without them being
      absolute would be a page you cannot scroll. */
-  @media (min-width: 1204px) {
+  @media (min-width: 1270px) {
     html.js,
     html.js body {
       height: 100%;

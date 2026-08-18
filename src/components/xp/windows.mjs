@@ -128,7 +128,7 @@ export const ENTER_STEP = 260;
 export const enterDelay = (order) => ENTER_BASE + ENTER_STEP * order;
 
 /** Gap between two windows of the row, in px. */
-export const ROW_GAP = 16;
+export const ROW_GAP = 24;
 
 /** The least space left at each end of the row, in px. */
 export const ROW_MARGIN = 16;
@@ -149,17 +149,21 @@ const rowWidth = (sizes) =>
  */
 export const ROW_SIZES = [
   { w: 200, h: 260 },
-  { w: 700, h: 600 },
+  { w: 750, h: 640 },
   { w: 240, h: 300 },
 ];
 
 /**
- * The narrowest desktop the row fits in: `200 + 700 + 240 + 2×ROW_GAP` for the
- * row itself, plus `2×ROW_MARGIN` for the ends. 1204px today.
+ * The narrowest desktop the row fits in: `200 + 750 + 240 + 2×ROW_GAP` for the
+ * row itself, plus `2×ROW_MARGIN` for the ends. 1270px today.
+ *
+ * ⚠️ It went up when the reading pane grew, and there is a ceiling on how far
+ * it can go: at 1281 the row stops fitting a 1280-wide laptop, which is a very
+ * common screen, and every one of them falls back to the stacked document.
  *
  * **Desktop mode means "the row fits".** Below this the three windows cannot be
  * laid out side by side, and the alternative — cascading them — puts the
- * 200-wide Menu and the 240-wide Contact geometrically *inside* the 700-wide
+ * 200-wide Menu and the 240-wide Contact geometrically *inside* the 750-wide
  * reading pane, which is in front. The site would load with its only navigation
  * invisible and unclickable, so the honest line is to fall back to the stacked
  * document instead.

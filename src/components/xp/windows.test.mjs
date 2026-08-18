@@ -155,9 +155,11 @@ test("the row sits above centre, like a window Windows just opened", () => {
   // This was previously checked only by the weak assertion below, which passes
   // for any coefficient under 0.5 — including the now-fixed 0.4 that was being
   // claimed as 0.35.
-  const solo = initialPosition({ w: 700, h: 600 }, DESK);
+  // Off ROW_SIZES and not a literal pair: the reading pane has been resized
+  // twice now, and a hardcoded 700x600 here fails for the wrong reason.
+  const solo = initialPosition({ w: ROW_SIZES[1].w, h: tallest }, DESK);
   assert.equal(p[0].y, solo.y, `row y should match a solo window of tallest height`);
-  assert.equal(p[0].y, 104, `at 1440x900 with barH 40 and tallest 600`);
+  assert.equal(p[0].y, 88, `at 1440x900 with barH 40 and tallest ${tallest}`);
   assert.ok(p[0].y < (DESK.vh - DESK.barH - tallest) / 2, `y=${p[0].y}`);
 });
 
