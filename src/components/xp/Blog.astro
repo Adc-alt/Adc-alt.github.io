@@ -44,6 +44,19 @@ const date = new Intl.DateTimeFormat("en-GB", {
       </article>
     ))
   }
+
+  {/* The moon at the bottom of the page, which is what a personal site had in
+      1999 and what this desktop is a homage to. Decorative and nothing else, so
+      the alt is empty: a screen reader should walk past it, not describe it.
+
+      ⚠️ `loading="lazy"` is not a nicety here. Every section of the reading pane
+      is in the DOM from the first byte and the ones you are not reading are
+      `hidden`, so an eager image in this one would be 474 KB fetched by every
+      visitor who never opens the Blog. Lazy images inside a box that is not
+      rendered are not fetched at all. */}
+  <p class="moon">
+    <img src="/media/moon.gif" width="300" height="341" alt="" loading="lazy" decoding="async" />
+  </p>
 </div>
 
 <style>
@@ -55,5 +68,15 @@ const date = new Intl.DateTimeFormat("en-GB", {
   }
   .entry:last-child {
     margin-bottom: 0;
+  }
+
+  .moon {
+    margin: 2.4rem 0 0;
+    text-align: center;
+  }
+  .moon img {
+    /* It is 300 wide and the column can be narrower than that on a phone. */
+    max-width: 100%;
+    height: auto;
   }
 </style>

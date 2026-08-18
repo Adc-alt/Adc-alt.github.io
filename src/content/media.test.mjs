@@ -8,13 +8,15 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
  * shows up as a black rectangle nobody clicks. This is the check.
  */
 const root = new URL("../../", import.meta.url);
-const dirs = ["src/content/projects/", "src/content/blog/"];
+// The components too, not just the prose: the moon at the foot of the Blog is a
+// `src` in an .astro file and it can rot in exactly the same way.
+const dirs = ["src/content/projects/", "src/content/blog/", "src/components/xp/"];
 
 test("every local file a page points at is in public/", () => {
   const refs = [];
   for (const dir of dirs) {
     for (const name of readdirSync(new URL(dir, root))) {
-      if (!name.endsWith(".md")) continue;
+      if (!/\.(md|astro)$/.test(name)) continue;
       const text = readFileSync(new URL(dir + name, root), "utf8");
       for (const m of text.matchAll(/(?:src|poster)="(\/[^"]+)"/g)) refs.push([dir + name, m[1]]);
     }
