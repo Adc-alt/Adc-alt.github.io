@@ -1,26 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
   <!--
-    The media player orb, drawn rather than lifted: unlike the wallpaper, the
-    Start flag and the game icons — which are Microsoft's artwork, here as a
-    homage at the owner's request — this one had no copy to borrow that was not
-    somebody's stock render. Same silhouette, our shapes.
+    The Windows Media play button: one triangle cut in four, painted in the
+    colours of the Windows flag. Drawn rather than lifted, like the account
+    picture — same shapes, ours.
+
+    The cut is a horizontal line through the middle and a vertical one a little
+    right of it. Where exactly is the whole job: the triangle narrows towards
+    the tip, so cutting down the geometric middle leaves two slivers on the
+    right, and cutting where the areas match leaves the left pair as thin
+    columns. x=14.5 is the compromise that looks like four pieces of one shape.
+    Each quarter is then nudged 0.6px away from the centre; the cross of
+    background showing through the gap is what separates them.
   -->
-  <defs>
-    <radialGradient id="mp-ring" cx="35%" cy="25%" r="85%">
-      <stop offset="0" stop-color="#9fd0ff" />
-      <stop offset="0.55" stop-color="#2f6fd8" />
-      <stop offset="1" stop-color="#123a86" />
-    </radialGradient>
-    <radialGradient id="mp-core" cx="35%" cy="25%" r="85%">
-      <stop offset="0" stop-color="#ffd88a" />
-      <stop offset="0.5" stop-color="#f79429" />
-      <stop offset="1" stop-color="#c8480d" />
-    </radialGradient>
-  </defs>
-  <circle cx="16" cy="16" r="15" fill="url(#mp-ring)" />
-  <circle cx="16" cy="16" r="15" fill="none" stroke="#0d2a5e" stroke-width="1" />
-  <circle cx="16" cy="16" r="10.5" fill="url(#mp-core)" stroke="#8f3a08" stroke-width="1" />
-  <path d="M13 10.5 23 16 13 21.5z" fill="#ffffff" />
-  <!-- The glare XP put on every glass thing it drew. -->
-  <ellipse cx="12.5" cy="8" rx="7.5" ry="4" fill="#ffffff" opacity="0.32" />
+  <polygon points="7.4,3.5 13.9,8.1 13.9,15.5 7.4,15.5" fill="#f65314" />
+  <polygon points="15.1,8.1 25.6,15.5 15.1,15.5" fill="#7cbb00" />
+  <polygon points="7.4,16.5 13.9,16.5 13.9,23.9 7.4,28.5" fill="#00a1f1" />
+  <polygon points="15.1,16.5 25.6,16.5 15.1,23.9" fill="#ffbb00" />
 </svg>
