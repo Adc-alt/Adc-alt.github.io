@@ -8,6 +8,18 @@ order: 1
 repo: "https://github.com/Adc-alt/elegoo-smartcar-firmware-atmega328p"
 ---
 
+<figure class="clip">
+  <video controls preload="none" playsinline width="540" height="960" poster="/media/smart-car.jpg">
+    <source src="/media/smart-car.mp4" type="video/mp4" />
+    <a href="/media/smart-car.mp4">The clip, as a file (8 MB)</a>
+  </video>
+  <figcaption>
+    A minute and a half of it running: the vision client on the laptop, the car
+    finding a green ball on the floor, and the phone driving it from the access
+    point the ESP32 serves. Filmed on a phone, which is why it is that shape.
+  </figcaption>
+</figure>
+
 ## The problem
 
 The kit works out of the box, which is exactly what is wrong with it. You get a

@@ -157,6 +157,33 @@
   font-size: 1.05rem;
 }
 
+/* A clip. Filmed on a phone, so it is taller than it is wide and the limit that
+   matters is the HEIGHT: the reading pane's body is a fixed 567px whatever the
+   screen, 525px of it inside the padding, so a portrait video sized by width
+   ends up taller than the window it plays in. So the number below is a height
+   in disguise: 264 is 470 × 540/960, the widest this 9:16 clip can be and still
+   leave the pane 55px of slack. It caps the figure rather than the video so the
+   caption wraps to the same width instead of running on past it.
+
+   `preload="none"` in the markup is the other half of this: 8 MB is not
+   something to fetch for a visitor who only came to read. */
+.xp-doc .clip {
+  margin: 0 0 1.4rem;
+  max-width: 264px;
+}
+.xp-doc .clip video {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #000;
+  border: 1px solid #7f9db9;
+}
+.xp-doc .clip figcaption {
+  margin: 0.45rem 0 0;
+  font-size: 0.8rem;
+  color: #6b675c;
+}
+
 /* ── The sections of the reading pane ──────────────────────────────────── */
 
 /* Belt and braces over the UA's `[hidden] { display: none }`: the rule is easy

@@ -60,7 +60,8 @@ src/
 │       ├── sections.mjs      the Menu and the section registry (with tests)
 │       ├── Nav.astro         the Menu window
 │       ├── Sections.astro    the reading pane and its switcher
-│       ├── Contact.astro     the Contact window, and the licence colophon
+│       ├── Contact.astro     the Contact window
+│       ├── MediaPlayer.astro the song behind the Music shortcut
 │       └── Home | Projects | Project | About | Blog
 └── pages/
     ├── index.astro           mounts the desktop and every window
@@ -76,6 +77,20 @@ own; the filename becomes its section id (`my-project.md` →
 
 **A blog entry:** a `.md` in `src/content/blog/`. They are ordered by date,
 newest at the top.
+
+**A video:** shrink it first. `ffmpeg -i in.mp4 -vf scale=-2:960 -crf 28 -preset
+slow -c:a aac -b:a 96k -movflags +faststart out.mp4` took the smart car's phone
+recording from 194 MB to 7.8 MB, which is the difference between a file that can
+live in a git repository and one that cannot. Put it in `public/media/` with a
+poster frame beside it (`ffmpeg -ss 0.5 -i out.mp4 -frames:v 1 -q:v 4
+poster.jpg`) and write it as a `<figure class="clip">` with **`preload="none"`**:
+the poster is then the only thing a visitor who came to read pays for, and the
+video is fetched on the first press. `src/content/media.test.mjs` fails the build
+if a `src` or a `poster` points at a file that is not in `public/`.
+
+Watch what is on screen in the footage. Seven seconds are cut out of the middle
+of the smart car clip because the phone's network settings were open, and a list
+of the SSIDs around a flat is an address in a wardriving database.
 
 Both frontmatters are validated with Zod in `src/content.config.ts`: if a field
 is missing or the `status` is not one of the three valid ones, **the build
