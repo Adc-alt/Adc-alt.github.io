@@ -1,5 +1,5 @@
 ---
-title: "A robot car, rebuilt one chip at a time"
+title: "Robot car firmware, rewritten from scratch"
 summary: "The vendor firmware of an Elegoo Smart Car V4 thrown away and rewritten: two microcontrollers with a contract between them, and the seeing done off the robot."
 year: 2025
 stack: ["C++", "ESP32-S3", "ATmega328P", "Python", "OpenCV", "PlatformIO"]
