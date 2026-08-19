@@ -18,7 +18,7 @@ The cause is a CSS rule that resembles nothing else in CSS. `--font-mono` was
 defined in the global stylesheet, and the desktop does not import it on purpose.
 A `var()` pointing at a variable that does not exist **and carrying no fallback
 value** does not get skipped: it makes the entire declaration *invalid at
-computed-value time*. It does not fall through to the next name in the list — it
+computed-value time*. It does not fall through to the next name in the list. It
 throws the whole list away and the property inherits from the parent.
 
 That is unlike almost everything else in CSS, where a value that is not

@@ -35,7 +35,7 @@ to compare it against. Forty-three files is a diff of my own understanding: what
 
 ## What is in there
 
-- **Faces, twice.** First a Haar cascade — fast, dumb, a rectangle. Then
+- **Faces, twice.** First a Haar cascade: fast, dumb, a rectangle. Then
   `face_recognition`, which turns a face into 128 numbers and compares them, so
   a photograph comes back with four boxes and two names on it, and *Unknown
   Person* on the two it has never been shown.
@@ -59,7 +59,7 @@ to compare it against. Forty-three files is a diff of my own understanding: what
 ## What it turned into
 
 Nothing shipped, and that was the deal. What it turned into is the vision half
-of [the robot car](#section-project-smart-car) two years later — the same
+of [the robot car](#section-project-smart-car) two years later: the same
 `VideoCapture` loop, the same habit of asking what the camera actually resolves
 before trusting the number it produces.
 

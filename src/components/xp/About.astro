@@ -4,14 +4,14 @@
  */
 import { SOCIAL } from "../../consts";
 
-// TODO(antonio): rewrite the bio in your own voice and cut the loadout down to
-// what you actually use. It is deliberately short: a portfolio gets skimmed.
+/* Short on purpose: a portfolio gets skimmed, and a list nobody finishes
+   reading says less than a list of six. What is here is what is on the CV and
+   in the projects below, which is the same thing. */
 const loadout = [
-  { group: "Languages", items: ["TypeScript", "JavaScript", "Python", "Kotlin", "SQL"] },
-  { group: "Frontend", items: ["Vue", "Nuxt", "Astro", "Jetpack Compose"] },
-  { group: "Backend and data", items: ["Node", "SQLite", "PostgreSQL", "Cloudflare Workers"] },
-  { group: "Native apps", items: ["Electron", "Android"] },
-  { group: "Tooling", items: ["Git", "GitHub Actions", "Vitest", "Playwright"] },
+  { group: "Embedded and firmware", items: ["Bare-metal C/C++", "ESP32", "ATmega328P", "RP2040", "FPGAs", "EEPROM microcode"] },
+  { group: "Hardware and lab", items: ["Altium Designer", "KiCad", "Board bring-up", "SPICE", "Oscilloscope", "Logic analyser", "Multimeter"] },
+  { group: "Software", items: ["Python", "NumPy", "OpenCV", "TypeScript", "Linux", "Git"] },
+  { group: "Automation", items: ["OMRON PLC", "Siemens TIA Portal", "HMI"] },
 ];
 ---
 
@@ -19,15 +19,26 @@ const loadout = [
   <h1>About me</h1>
 
   <p>
-    I'm a software engineer. I work on product end to end: desktop, mobile and
-    web, and all the boring parts in between — schema migrations, CI, and the
-    bugs that only show up at midnight.
+    I'm an electronics and embedded systems engineer in Málaga. At <a
+      href="https://dhvtechnology.com" rel="noopener">DHV Technology</a> I
+    design power-electronics boards for satellites: schematic and multilayer
+    layout in Altium, then bring-up, debugging and characterisation on the bench
+    until the hardware does what the simulation promised, through the
+    engineering, qualification and flight models.
   </p>
   <p>
-    I care more about software someone uses every day than about software that
-    gets shown once in a demo. That means caring about unphotogenic things: that
-    data does not get lost, that the build is reproducible, and that the error
-    message says what actually happened.
+    Before that, two years of industrial automation: an OMRON cell at Rovimatica
+    that came out about 20% faster, and a test rig at Adentech, a PCB of my own
+    with a Python link on top of it, that took 30% off the time a hardware test
+    used to need. The habit that came out of both is the one behind every
+    project here: get to the layer where you can measure what is happening
+    instead of arguing about it.
+  </p>
+  <p>
+    B.Sc. in Electronics, Robotics and Mechatronics Engineering from the
+    University of Málaga, with a thesis on the ICP technique for indoor motion
+    estimation. Cambridge C1 in English, CCNAv7, and Spanish as a native. German
+    only just started.
   </p>
 
   <hr />

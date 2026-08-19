@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const SRC = readFileSync(new URL("./StartMenu.astro", import.meta.url), "utf8");
 /* Everything below the frontmatter and above the styles: the part that becomes
@@ -31,4 +31,20 @@ test("the panel is hidden from a screen reader, and hidden to begin with", () =>
 
 test("the account is the administrator's", () => {
   assert.match(MARKUP, /Administrator/);
+});
+
+test("every icon the panel names is a file that exists", () => {
+  /* The icons stopped being drawn in this file and became paths built at
+     render time, `icon("panel")` and the like, which means a typo is no longer
+     a compile error: it is a broken image in a panel most visitors open once.
+     The frontmatter is where the names live, so that is what is read. */
+  const frontmatter = SRC.split("---")[1] ?? "";
+  const names = [...frontmatter.matchAll(/icon: "([a-z]+)"/g)].map((m) => m[1]);
+  // The footer names its two directly, outside any table.
+  names.push(...[...SRC.matchAll(/icon\("([a-z]+)"\)/g)].map((m) => m[1]));
+  assert.ok(names.length >= 15, `only found ${names.length} icons, the pattern is wrong`);
+  for (const name of new Set(names)) {
+    const file = new URL(`../../../public/xp/icons/start/${name}.png`, import.meta.url);
+    assert.ok(existsSync(file), `the panel asks for ${name}.png, which is not in public/`);
+  }
 });

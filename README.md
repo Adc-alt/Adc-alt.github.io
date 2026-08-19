@@ -24,7 +24,7 @@ The site is **a single page**.
 
 The redirects are the previous version's routes. They are not a courtesy:
 `/work/` is the URL printed on the CV. On a static build Astro generates a `meta
-refresh` page for each one — GitHub Pages cannot do a 301.
+refresh` page for each one, because GitHub Pages cannot do a 301.
 
 ## Getting started
 
@@ -92,20 +92,20 @@ A clip filmed on a phone is portrait and `class="clip"` caps it by the height of
 the pane. A screen recording is landscape and gets `class="clip wide"`, which
 caps it by the column instead. ⚠️ Set `width` and `height` on the `<video>` to
 the **display** size, not the stored one: the computer vision recording came out
-1920×1080 with a sample aspect ratio of 169:160 — pixels that are not square —
-and 16:9 in the markup letterboxed it inside its own frame. `ffprobe` prints
+1920×1080 with a sample aspect ratio of 169:160, meaning pixels that are not
+square, and 16:9 in the markup letterboxed it inside its own frame. `ffprobe` prints
 `display_aspect_ratio`; re-encode with `scale=W:H,setsar=1` and the question goes
 away.
 
 **A clip stops when it leaves the screen.** There are three ways out of a
-project — another section, the minimise button, the ✕ — and a `<video>` taken
+project (another section, the minimise button, the ✕) and a `<video>` taken
 off the screen by any of them keeps playing and keeps its sound, with no
 controls left on screen to stop it. One `MutationObserver` in `Sections.astro`
 watches `hidden`, `class` and `data-open` inside the pane and pauses anything
 that is no longer drawn.
 
 **A cover** is the picture beside the title in the index: `cover:` in the
-frontmatter, `/media/cover-<id>.jpg` (or `.png`), and **4:3** — the box does no
+frontmatter, `/media/cover-<id>.jpg` (or `.png`), and **4:3**: the box does no
 cropping, so a cover that is not 4:3 is a cover drawn the wrong shape. It is
 optional; a project without one lists as text. ⚠️ Beware a stock photo sold as
 "transparent": the Elegoo one is a *preview* with the checkerboard painted into
@@ -132,12 +132,12 @@ stop being absolute, stack in a column with all of them open and the page
 scrolls; the three title bar buttons are hidden, and dragging is switched off.
 
 1270 is derived, not chosen: `200 + 750 + 240` for the windows, `2 × 24` for the
-gaps between them and `2 × 16` for the margins at the ends — `DESKTOP_MIN_WIDTH`
+gaps between them and `2 × 16` for the margins at the ends. `DESKTOP_MIN_WIDTH`
 in `src/components/xp/windows.mjs`, pinned by a test that asserts the row fits at
 that width and does not one pixel below. A narrower desktop would have to cascade
 the three, and a cascade centres each window for its own width, which parks the
 200-wide Menu and the 240-wide Contact entirely inside the 750-wide reading pane
-— the site would load with its only navigation invisible. CSS cannot read a JS
+and the site would load with its only navigation invisible. CSS cannot read a JS
 constant, so the number is written out in three media queries, each with the
 arithmetic in a comment beside it.
 
@@ -176,14 +176,14 @@ Four things that break by themselves if left unattended:
   three. The row's sizes live in `windows.mjs` and not in `index.astro` because
   the desktop breakpoint is derived from them; `rowPositions` returns `null`
   rather than squeezing the windows, which below `DESKTOP_MIN_WIDTH` is
-  unreachable — the media query has already sent the page to stacked mode.
+  unreachable: the media query has already sent the page to stacked mode.
 - **Closing keeps the taskbar button**, deliberately unlike XP. XP can afford to
   drop it because it has desktop icons and a Start menu; here the taskbar is the
   only way back, and the navigation lives inside a window.
 - **The arrival is a CSS animation, not a transition**, gated on
   `html.js:not([data-boot]):not(.xp-arrived)`. An animation starts the moment
   its element first matches the rule, so it fires when `Boot.astro` removes
-  `data-boot` on a first visit, and at first paint on a repeat one — the
+  `data-boot` on a first visit, and at first paint on a repeat one, so the
   sequence plays every visit, not only the first. Taking an element out of
   `display: none` restarts its animations, so a script adds `.xp-arrived` once
   every arriving window's `animationend` has fired; without that marker every
@@ -236,8 +236,8 @@ requires the text to be genuinely large (≥24px, or ≥18.66px bold):
 - **The clock does not.** 14px non-bold is body text, and 3.39:1 is a long way
   from 4.5:1.
 
-It is a decision taken knowingly — dragging the colours down until they comply
-stops it looking like XP — and for the clock the mitigation is different: the
+It is a decision taken knowingly, because dragging the colours down until they
+comply stops it looking like XP. For the clock the mitigation is different: the
 time reaches a screen reader intact through the `<time datetime>` whatever
 happens to the contrast. The test pins the 3:1 floor so it cannot get worse
 without anyone noticing.
@@ -256,7 +256,7 @@ their files is copied: the drawings are our own SVG.
 The measurements, with captures and the reason behind every number, are in
 `docs/superpowers/specs/2026-08-14-boot-screen-senna-parity.md`.
 
-To change the text or the timings, `boot-data.mjs` — but
+To change the text or the timings, `boot-data.mjs`, but
 **`boot-data.test.mjs` will stop you**, because it checks the values against the
 reference's table. That is on purpose: if you change a number, change it knowing
 you have stopped copying it.
@@ -293,7 +293,7 @@ To see it again: delete `boot_seen` from `localStorage`.
 The **AcPlus IBM VGA 8x16** typeface is by
 [VileR](https://int10h.org/oldschool-pc-fonts/), CC BY-SA 4.0, in `public/fonts/`
 with its licence next to it. **The credit the licence requires is in the Contact
-window**, the one pane whose content never changes — it lived in the site
+window**, the one pane whose content never changes. It lived in the site
 footer before the arcade look went away, then in the welcome window before
 phase 3 removed it. The `.woff2` was taken from the
 `_win` pack (the `Ac` ones are not in the web pack) by converting the TTF with
@@ -301,7 +301,7 @@ phase 3 removed it. The `.woff2` was taken from the
 
 ## The typeface of the documents
 
-The text inside the reading pane — Home, Projects, About, Blog, Contact — is
+The text inside the reading pane (Home, Projects, About, Blog, Contact) is
 **Space Grotesk**, by [Florian Karsten](https://github.com/floriankarsten/space-grotesk),
 SIL Open Font License 1.1. The licence and the font are both in `public/fonts/`,
 because the one thing the OFL asks is that they travel together.
@@ -309,7 +309,7 @@ because the one thing the OFL asks is that they travel together.
 It is **one file for every weight**: a variable font, so the 300-to-700 axis
 lives inside those 22KB and the browser interpolates the bold instead of
 downloading a second face. Which is why the `@font-face` declares
-`font-weight: 300 700` and not `normal` — written as `normal`, a browser asked
+`font-weight: 300 700` and not `normal`: written as `normal`, a browser asked
 for bold refuses to reach for the axis and slants a fake one out of the regular
 instead. WOFF2, latin subset, taken from Google's CDN and then hosted here:
 22KB against the 137KB of the full variable TTF, and no third party in the
@@ -322,13 +322,24 @@ too, so a browser that refuses the font lands on what the window is already
 using.
 
 ⚠️ **Deleting a heading's `font-size` does not make it inherit.** It falls back
-to the browser's own — `1.5em` for an `h2`, `0.67em` for an `h6`, which puts an
+to the browser's own, `1.5em` for an `h2` and `0.67em` for an `h6`, which puts an
 `h5` under the body text. That one shipped: nothing in the stylesheet shows it,
 because the wrong number is the one nobody wrote, and it was found by reading
 computed sizes in a browser. `xp-doc.test.mjs` now holds three things shut:
 every heading rule declares its own size, nothing is declared under 13px, and
-no component that renders a `.xp-doc` sizes its own text — which is how the
+no component that renders a `.xp-doc` sizes its own text, which is how the
 Contact window came to draw the email address at 12px.
+
+### No em dashes
+
+Nothing a visitor can read may contain an em dash or an en dash (U+2014 and
+U+2013, not written out here for the obvious reason). It is not a character the
+owner types; it is one a language model reaches for, and a page full of them
+reads as machine-written whatever it says. A comma, a colon, a pair of brackets
+or a full stop covers every case. `src/prose.test.mjs` fails the build over one,
+in any `.md`, in the markup or frontmatter of any `.astro`, and in this README.
+Comments and `<style>`/`<script>` blocks are cut out before the search, so the
+source still has a couple of hundred of them.
 
 ## The taskbar
 
@@ -359,13 +370,32 @@ Microsoft). `public/xp/bliss.webp` comes from the `bg.jpg` of
 [winbows.neocities.org](https://winbows.neocities.org/), rescaled to 2560x1440
 and re-encoded to WebP: 1008 KB → 225 KB. **It is not a free image**: it is used
 here as a homage, the way half the internet does, and if it ever becomes a
-problem it is replaced by deleting that file — the fallback gradient in
+problem it is replaced by deleting that file: the fallback gradient in
 `Wallpaper.astro` keeps the page standing without it.
 
 **The Start button logo is Microsoft's too.** `public/xp/win-flag.png` comes from
 winbows' `win-min.png`, reduced to 52x48 (painted at 26px tall, at double size so
 it is not blurry on retina). Same caveat as the wallpaper: it is a registered
 trademark and not a free image.
+
+**The Start menu is XP's own artwork, all of it.** The account picture is
+`chess.bmp` at its native 48x48 (`public/xp/chess.png`), and the twenty-four
+icons in `public/xp/icons/start/` come from
+[XPIcons](https://github.com/softwarehistorysociety/XPIcons), downscaled to 64px
+and served at 24 or 32. All of it was drawn by hand as inline SVG first,
+precisely to avoid copying it, and the owner asked for the real thing twice.
+Same caveat as the wallpaper, plus one of its own: `chess.bmp` is a photograph
+licensed from Corbis (Mark Karrass), so it is not even Microsoft's to give away.
+The frequently-used list is the one a freshly installed XP came with, in its
+order, which is why it says MSN Explorer and Tour Windows XP and not Notepad.
+
+⚠️ The colours of that panel are no longer approximations. Header, footer, the
+two separators, the two-tone orange line and both column blues come off Luna's
+own resource bitmaps, read out of
+[xfce-winxp-tc](https://github.com/rozniak/xfce-winxp-tc) (`themes/luna/blue/`).
+The header runs DARK at the top and light at the bottom, which is the opposite
+of what it looks like from memory, and the orange line really is two colours:
+`#ff9e44` over the white column and `#e9b587` over the blue one.
 
 **The click and the five icons are Microsoft's as well.** `public/xp/click.wav`
 is `Windows Navigation Start.wav`, downmixed to mono 22 kHz. The five PNGs in
@@ -375,7 +405,7 @@ extracted set at
 [lelegofrog.github.io/winicogames.html](https://lelegofrog.github.io/winicogames.html),
 the folder from winbows' `folder.png`, rescaled from 800x800, and `media.png` is
 the Windows Media Player orb, supplied by the owner. That last one arrived as a
-JPEG of a transparent PNG — the checkerboard baked into the picture — so it is
+JPEG of a transparent PNG, with the checkerboard baked into the picture, so it is
 cut out rather than converted: the circle is the only saturated thing in the
 frame, which is what locates it, and the 32x32 is sampled out of it behind a
 circular alpha, three pixels in from the rim so none of the checkerboard the
@@ -385,7 +415,7 @@ hatch: they are five files, and deleting them breaks nothing but the picture.
 
 **3D Pinball is somebody else's build, running in a page of ours.**
 `public/xp/pinball.html` loads the engine from
-[pinball.alula.me](https://pinball.alula.me/) — k4zmu2a's decompilation of the
+[pinball.alula.me](https://pinball.alula.me/): k4zmu2a's decompilation of the
 original, ported to WebAssembly by alula, MIT, and served with
 `access-control-allow-origin: *`. It used to be framed from their page instead;
 it is loaded here so the page can turn the game's music off, which cannot be
@@ -401,19 +431,19 @@ screen.** Those used to be one press, and the first thing a visitor got was the
 whole display taken over by a game they had not seen a window for. The maximise
 button of the window it lives in is the second press: `Window.astro` says
 `xp:maximise` from inside its own click handler, and that matters as much as
-the ergonomics — `requestFullscreen()` is refused outside a user gesture, so
+the ergonomics, because `requestFullscreen()` is refused outside a user gesture, so
 the request has to happen inside that click. Leaving full screen by any route
 puts the window back down: otherwise Escape would leave a window maximised over
 the whole desktop with a 600px game in the corner of it.
 
 **Solitaire is somebody else's too, and framed rather than loaded.** It used to
-be a game written for this site — a pack of cards and every rule of Klondike in
-`solitaire.mjs` — and the owner asked for it to come from somewhere else, so all
+be a game written for this site, a pack of cards and every rule of Klondike in
+`solitaire.mjs`, and the owner asked for it to come from somewhere else, so all
 of that is deleted. `Solitaire.astro` frames
 [Cyanoxide's react-solitaire](https://github.com/Cyanoxide/react-solitaire): XP's
 Solitaire rebuilt, down to the Bliss card back and the cascade of bouncing cards
 when you win. The first pick was a clean modern-looking Klondike and it was sent
-back, which is the rule this desktop runs on — the point is that it is XP's, not
+back, which is the rule this desktop runs on: the point is that it is XP's, not
 that it is a card game. The better-known solitaire sites lose on a different
 count: they open with a consent dialog listing a couple of hundred advertising
 partners, and framing one would hand every one of them a visitor who came to a
@@ -421,17 +451,17 @@ site that promises no analytics and no cookies. Nothing is fetched from their
 host until you press Deal, and `Game -> Deal` is a fresh load with a counter in
 the query: assigning a frame the URL it already has is not reliably a
 navigation. **The cards are Microsoft's artwork**, same caveat as the wallpaper
-— and, like the pinball table's data, no copy of them is in this repository.
+and, like the pinball table's data, no copy of them is in this repository.
 
 ⚠️ **That frame is cropped by 22px and the number is measured, not derived.** The
 game draws a `Game | Help` menu bar of its own and this window already has one,
 so the frame is pulled up by exactly the height of theirs and the stage clips it
-— the same problem the pinball had with its window chrome, and the same answer.
+away, the same problem the pinball had with its window chrome, and the same answer.
 The frame is another origin, so there is no measuring it from here: if they ever
 drop that bar, the crop starts eating the top of the table instead.
 
 **The pinball flippers answer to the arrow keys, and that is ours.** The game's
-own keys are `Z` and `/` — the original's — and its keymapper is drawn inside
+own keys are `Z` and `/`, the original's, and its keymapper is drawn inside
 the canvas, in settings this page never sees. So the rebinding does not happen
 there: `public/xp/pinball.html` translates `ArrowLeft` and `ArrowRight` into the
 keys the game is already listening for, on the way in, `keyup` as well as
@@ -441,20 +471,20 @@ table bump.
 
 **The song behind the Music shortcut used to be a YouTube embed, and the
 adverts are why it is not one any more.** YouTube puts advertising in front of
-an embed and no parameter turns it off — `nocookie` only drops the cookies —
+an embed and no parameter turns it off (`nocookie` only drops the cookies),
 and the frame sat off the left edge of the screen, so the advert could be heard
 but its Skip button could not be reached. Pressing Music answered with half a
 minute of somebody else's advertising. Nothing on this side could fix that: a
 cross-origin frame is a room this page is not allowed to enter, the same wall
 the pinball table taught. So the song is now a file of ours,
 `public/media/music.mp3`, played by an `<audio>` element with `preload="none"`
-— not one byte of it is fetched until the shortcut is pressed, and the only
+and not one byte of it is fetched until the shortcut is pressed. The only
 hosts this desktop still reaches for are the two framed games, which also load
 on a use and not before. ⚠️ The recording is copyrighted and this repository is
 public; it is here as a deliberate choice, and undoing it is one file and one
 component.
 There is still no player and no window: the shortcut plays the song, and plays
-it again to stop it — stop and rewind, not pause, because nothing on screen
+it again to stop it: stop and rewind, not pause, because nothing on screen
 shows a position for a resume to make sense of.
 
 Of the bar itself, on the other hand, not one file has been copied: only
@@ -462,12 +492,12 @@ measurements and colours, which are facts and not work.
 
 ## What is still in Spanish
 
-The four design specs under `docs/superpowers/specs/` — the boot screen and the
-three desktop phases — are translated, because code comments point at them.
+The four design specs under `docs/superpowers/specs/`, the boot screen and the
+three desktop phases, are translated, because code comments point at them.
 
 Two things stay in Spanish on purpose:
 
-- `docs/01`–`docs/04`, the owner's own learning notes on static web, git and
+- `docs/01` to `docs/04`, the owner's own learning notes on static web, git and
   HTML. They are a notebook, not documentation of this site.
 - `docs/superpowers/plans/`, the execution checklists for work that has already
   shipped. Nothing points at them and nothing will read them again.
