@@ -88,6 +88,15 @@ the poster is then the only thing a visitor who came to read pays for, and the
 video is fetched on the first press. `src/content/media.test.mjs` fails the build
 if a `src` or a `poster` points at a file that is not in `public/`.
 
+A clip filmed on a phone is portrait and `class="clip"` caps it by the height of
+the pane. A screen recording is landscape and gets `class="clip wide"`, which
+caps it by the column instead. ⚠️ Set `width` and `height` on the `<video>` to
+the **display** size, not the stored one: the computer vision recording came out
+1920×1080 with a sample aspect ratio of 169:160 — pixels that are not square —
+and 16:9 in the markup letterboxed it inside its own frame. `ffprobe` prints
+`display_aspect_ratio`; re-encode with `scale=W:H,setsar=1` and the question goes
+away.
+
 Watch what is on screen in the footage. Seven seconds are cut out of the middle
 of the smart car clip because the phone's network settings were open, and a list
 of the SSIDs around a flat is an address in a wardriving database.

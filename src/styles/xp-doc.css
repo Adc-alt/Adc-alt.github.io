@@ -226,6 +226,20 @@
   margin: 0 auto 1.4rem;
   max-width: 315px;
 }
+/* A clip that was recorded off a screen rather than filmed on a phone. The cap
+   above is a portrait height in disguise and would draw a 16:9 recording at
+   315px wide, which is 168px tall — a screen inside a screen, unreadable. Here
+   the limit is the column: 615px at 169:90 is 328px tall, inside the 565px the
+   pane has.
+
+   ⚠️ The `width` and `height` on the <video> are the DISPLAY size and not the
+   stored one. This recording came out of the phone with a sample aspect ratio
+   of 169:160 — 1920×1080 pixels that are not square — so 16:9 in the markup
+   letterboxed it inside its own box. The file is now re-encoded to square
+   pixels at 1352×720 and the markup says so. */
+.xp-doc .clip.wide {
+  max-width: 100%;
+}
 .xp-doc .clip video {
   display: block;
   width: 100%;
