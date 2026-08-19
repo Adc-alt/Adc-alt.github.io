@@ -3,10 +3,24 @@ title: "An 8-bit computer on breadboards"
 summary: "A CPU built out of 74-series logic, one module at a time: clock, registers, ALU, RAM and EEPROM microcode, debugged with an oscilloscope."
 year: 2025
 stack: ["74LS TTL", "EEPROM microcode", "Breadboards", "Oscilloscope"]
+cover: "/media/cover-8bit-cpu.jpg"
 status: "archived"
 order: 3
 repo: "https://github.com/Adc-alt/8bit-cpu"
 ---
+
+<figure class="clip">
+  <video controls preload="none" playsinline width="540" height="960" poster="/media/8bit-cpu.jpg">
+    <source src="/media/8bit-cpu.mp4" type="video/mp4" />
+    <a href="/media/8bit-cpu.mp4">The clip, as a file (8 MB)</a>
+  </video>
+  <figcaption>
+    A minute and three quarters of the machine running: the clock stepping, the
+    registers and the bus lighting up, the seven-segment output counting, and
+    the bench supply reading the 5 V and the 775 mA it draws. Filmed on a phone,
+    which is why it is that shape.
+  </figcaption>
+</figure>
 
 ## The problem
 

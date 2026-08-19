@@ -100,5 +100,8 @@ export const navFor = (id) =>
 export const STATUS = {
   live: "In use",
   wip: "In progress",
+  /* Finished is not Archived: one says the work is done, the other says it is
+     parked. A project can be both, and the index only has room for one word. */
+  done: "Finished",
   archived: "Archived",
 };

@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
+  STATUS,
   GAMES,
   GAMES_TITLE,
   GAMES_WINDOW_ID,
@@ -109,3 +111,30 @@ test("the Games window has an id of its own and a title", () => {
   assert.equal(resolveSection(IDS, `#${GAMES_WINDOW_ID}`), "section-home");
   assert.equal(NAV.some((n) => sectionId(n.id) === GAMES_WINDOW_ID), false);
 });
+
+test("every status the schema allows has something to read out", () => {
+  // `STATUS[p.data.status]` is an object lookup with no fallback: a status added
+  // to the Zod enum and not to the map renders the word `undefined` into the
+  // index, and the build stays green because both halves are valid on their own.
+  const config = readFileSync(new URL("../../content.config.ts", import.meta.url), "utf8");
+  const enumerated = config.match(/status: z\.enum\(\[([^\]]+)\]\)/)[1].match(/"([^"]+)"/g);
+  assert.ok(enumerated.length >= 3, "found no status enum — the pattern is wrong");
+  for (const quoted of enumerated) {
+    const key = quoted.replaceAll('"', "");
+    assert.ok(STATUS[key], `status "${key}" is in the schema and has no label`);
+  }
+  assert.deepEqual(Object.keys(STATUS).sort(), enumerated.map((q) => q.replaceAll('"', "")).sort());
+});
+
+test("nothing keeps playing where it cannot be seen", () => {
+  // A <video> off the screen keeps its sound, and the pane has no controls left
+  // on screen to stop it with. The three ways out of a section are three
+  // different attributes — the switcher writes `hidden`, the ✕ writes
+  // `data-open`, minimise adds a class — so all three have to be watched.
+  const src = readFileSync(new URL("./Sections.astro", import.meta.url), "utf8");
+  assert.match(src, /v\.pause\(\)/, "the switcher pauses no video");
+  for (const attr of ["hidden", "class", "data-open"]) {
+    assert.match(src, new RegExp(`"${attr}"`), `nothing watches ${attr}`);
+  }
+});
+

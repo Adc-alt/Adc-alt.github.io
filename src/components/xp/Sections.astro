@@ -70,6 +70,38 @@ const projects = (
 
   const pane = document.getElementById(PANE_ID);
   const sections = [...document.querySelectorAll<HTMLElement>(`#${PANE_ID} .xp-section`)];
+
+  /**
+   * Nothing plays where it cannot be seen.
+   *
+   * A <video> taken off the screen keeps playing and keeps its sound: leave the
+   * project for another section, minimise the window or close it, and the clip
+   * carries on talking from somewhere the visitor can no longer point at — and
+   * with no controls on screen, cannot stop.
+   *
+   * One observer rather than a listener per exit. There are three ways out and
+   * they are three different mechanisms — the switcher writes `hidden` on a
+   * section, the ✕ writes `data-open`, minimise adds a class — but every one of
+   * them ends as an attribute change inside this window, and all three mean the
+   * same thing to a video. Asking the box whether it still has one is what
+   * makes that true for the fourth way out, whenever somebody adds it.
+   */
+  const offScreen = (el: HTMLElement) =>
+    !el.offsetWidth && !el.offsetHeight && !el.getClientRects().length;
+
+  const pauseUnseen = () => {
+    for (const v of pane?.querySelectorAll("video") ?? []) {
+      if (!v.paused && offScreen(v)) v.pause();
+    }
+  };
+
+  if (pane) {
+    new MutationObserver(pauseUnseen).observe(pane, {
+      attributes: true,
+      attributeFilter: ["hidden", "class", "data-open"],
+      subtree: true,
+    });
+  }
   const links = [...document.querySelectorAll<HTMLAnchorElement>(".xp-navlink")];
   const ids = sections.map((s) => s.id);
 

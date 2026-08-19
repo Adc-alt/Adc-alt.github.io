@@ -30,13 +30,31 @@ const projects = (
     {
       projects.map((p) => (
         <li>
-          <h2>
-            <a href={`#${projectSectionId(p.id)}`}>{p.data.title}</a>
-          </h2>
-          <p class="note">
-            {p.data.year} · {STATUS[p.data.status]} · {p.data.stack.join(" · ")}
-          </p>
-          <p>{p.data.summary}</p>
+          {p.data.cover && (
+            /* aria-hidden and out of the tab order on purpose: it goes to the
+               same place as the title two lines down, and a second link to the
+               same section is a second stop for a screen reader and for the
+               keyboard with nothing new at the end of it. The picture is worth
+               having for the eye and worth skipping for everyone else, which
+               is also why its alt is empty. */
+            <a
+              class="cover"
+              href={`#${projectSectionId(p.id)}`}
+              aria-hidden="true"
+              tabindex="-1"
+            >
+              <img src={p.data.cover} alt="" width="480" height="360" loading="lazy" decoding="async" />
+            </a>
+          )}
+          <div class="entry">
+            <h2>
+              <a href={`#${projectSectionId(p.id)}`}>{p.data.title}</a>
+            </h2>
+            <p class="note">
+              {p.data.year} · {STATUS[p.data.status]} · {p.data.stack.join(" · ")}
+            </p>
+            <p>{p.data.summary}</p>
+          </div>
         </li>
       ))
     }

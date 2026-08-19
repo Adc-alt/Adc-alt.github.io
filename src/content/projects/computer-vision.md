@@ -3,6 +3,7 @@ title: "Forty-three scripts learning to see"
 summary: "Two months of 2023 spent teaching myself computer vision the slow way: one numbered Python script per idea, from a face in a box to gestures that switch on real LEDs."
 year: 2023
 stack: ["Python", "OpenCV", "MediaPipe", "YOLOv5", "face_recognition", "Arduino"]
+cover: "/media/cover-computer-vision.jpg"
 status: "archived"
 order: 5
 ---

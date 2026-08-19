@@ -97,12 +97,30 @@ and 16:9 in the markup letterboxed it inside its own frame. `ffprobe` prints
 `display_aspect_ratio`; re-encode with `scale=W:H,setsar=1` and the question goes
 away.
 
+**A clip stops when it leaves the screen.** There are three ways out of a
+project — another section, the minimise button, the ✕ — and a `<video>` taken
+off the screen by any of them keeps playing and keeps its sound, with no
+controls left on screen to stop it. One `MutationObserver` in `Sections.astro`
+watches `hidden`, `class` and `data-open` inside the pane and pauses anything
+that is no longer drawn.
+
+**A cover** is the picture beside the title in the index: `cover:` in the
+frontmatter, `/media/cover-<id>.jpg` (or `.png`), and **4:3** — the box does no
+cropping, so a cover that is not 4:3 is a cover drawn the wrong shape. It is
+optional; a project without one lists as text. ⚠️ Beware a stock photo sold as
+"transparent": the Elegoo one is a *preview* with the checkerboard painted into
+the pixels and no alpha channel at all (`ffprobe` says `rgb24`). Its background
+was exactly two greys, 200 and 235, and nothing else, so the cut-out is those
+two values replaced with white. A flood fill will not do it: Pillow measures its
+threshold against the seed colour, and 200 to 235 is a distance of 105, so every
+square of the other grey survives.
+
 Watch what is on screen in the footage. Seven seconds are cut out of the middle
 of the smart car clip because the phone's network settings were open, and a list
 of the SSIDs around a flat is an address in a wardriving database.
 
 Both frontmatters are validated with Zod in `src/content.config.ts`: if a field
-is missing or the `status` is not one of the three valid ones, **the build
+is missing or the `status` is not one of the four valid ones, **the build
 fails**.
 
 Files with `draft: true` show up in `pnpm dev` but are **not published**.

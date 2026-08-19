@@ -201,7 +201,31 @@
   list-style: none;
 }
 .xp-doc .index > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
   margin: 0 0 1.4rem;
+}
+/* `clamp` rather than a breakpoint: the pane is 744px on a desktop and 358px on
+   a phone, and between those the picture should give way before the words do.
+   24% of the column, never under 96px and never over 150px. */
+.xp-doc .index .cover {
+  flex: 0 0 clamp(96px, 24%, 150px);
+}
+.xp-doc .index .cover img {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* The border counts inside the width, or the picture is 2px wider than the
+     box that is capping it. Same reason as the clip. */
+  box-sizing: border-box;
+  background: #ffffff;
+  border: 1px solid #7f9db9;
+}
+/* The words take what is left. Without it a long unbroken word in a summary
+   pushes the row wider than the column instead of wrapping. */
+.xp-doc .index .entry {
+  min-width: 0;
 }
 .xp-doc .index h2 {
   margin: 0 0 0.15rem;

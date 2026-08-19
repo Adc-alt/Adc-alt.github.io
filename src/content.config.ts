@@ -18,7 +18,15 @@ const projects = defineCollection({
     summary: z.string().max(180),
     year: z.number().int().min(2000).max(2100),
     stack: z.array(z.string()).min(1),
-    status: z.enum(["live", "wip", "archived"]),
+    status: z.enum(["live", "wip", "done", "archived"]),
+    /**
+     * The picture in the index, beside the title. `/media/cover-<id>.jpg|png`,
+     * and 4:3 — the index box does no cropping, so a cover that is not 4:3 is
+     * a cover drawn the wrong shape. Optional: a project with no photograph
+     * worth showing lists as text, which is what every one of them did until
+     * there were pictures.
+     */
+    cover: z.string().startsWith("/media/").optional(),
     /** Order in the index. Lower = earlier. */
     order: z.number().default(99),
     /** Drafts are not published in production. */

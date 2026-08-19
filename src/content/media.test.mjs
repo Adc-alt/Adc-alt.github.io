@@ -19,6 +19,10 @@ test("every local file a page points at is in public/", () => {
       if (!/\.(md|astro)$/.test(name)) continue;
       const text = readFileSync(new URL(dir + name, root), "utf8");
       for (const m of text.matchAll(/(?:src|poster)="(\/[^"]+)"/g)) refs.push([dir + name, m[1]]);
+      // A cover is a path in the frontmatter rather than an attribute in the
+      // markup, so the pattern above never sees it. Zod checks that it starts
+      // with `/media/`; nothing until now checked that the file is there.
+      for (const m of text.matchAll(/^cover: "(\/[^"]+)"$/gm)) refs.push([dir + name, m[1]]);
     }
   }
   // Guards the guard: a pattern that stopped matching would pass for ever.
