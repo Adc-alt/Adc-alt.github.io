@@ -275,11 +275,18 @@ phase 3 removed it. The `.woff2` was taken from the
 ## The typeface of the documents
 
 The text inside the reading pane — Home, Projects, About, Blog, Contact — is
-**Pixel Operator**, by [Jayvee D. Enaguas](https://www.dafont.com/pixel-operator.font),
-CC0 1.0: a dedication to the public domain, so nothing is owed for it, not even
-the credit. Both TTFs and the full dedication are in `public/fonts/`. They are
-17KB each, which is why they are TTFs: converting them to WOFF2 would save a
-few KB and cost a build step.
+**Space Grotesk**, by [Florian Karsten](https://github.com/floriankarsten/space-grotesk),
+SIL Open Font License 1.1. The licence and the font are both in `public/fonts/`,
+because the one thing the OFL asks is that they travel together.
+
+It is **one file for every weight**: a variable font, so the 300-to-700 axis
+lives inside those 22KB and the browser interpolates the bold instead of
+downloading a second face. Which is why the `@font-face` declares
+`font-weight: 300 700` and not `normal` — written as `normal`, a browser asked
+for bold refuses to reach for the axis and slants a fake one out of the regular
+instead. WOFF2, latin subset, taken from Google's CDN and then hosted here:
+22KB against the 137KB of the full variable TTF, and no third party in the
+request.
 
 **The window itself does not change typeface.** Title bars, menus, the taskbar
 and the shortcut labels stay Tahoma, which is half of what makes the desktop
@@ -287,21 +294,13 @@ read as Windows at all. Only the document changes, and the fallback is Tahoma
 too, so a browser that refuses the font lands on what the window is already
 using.
 
-⚠️ **It has one size.** Its em is 1600 units on a grid of 100, so a pixel of the
-drawing is a pixel of the screen at 16px and at its exact multiples — 32, 48 —
-and nowhere else. At the 14px the rest of the window uses, each of those pixels
-would be 0.875 of a real one and the browser would smear the remainder into the
-next. So every size in `xp-doc.css` is 16px or 32px, written in px and not in
-rem, and the hierarchy that used to come from six sizes now comes from weight,
-colour and the space above a heading.
-
 ⚠️ **Deleting a heading's `font-size` does not make it inherit.** It falls back
-to the browser's own — `1.5em` for an `h2`, `0.67em` for an `h6` — and 24px is
-not a size this font can draw. That one shipped: nothing in the stylesheet shows
-it, because the wrong number is the one nobody wrote. It was found by reading
-computed sizes in a browser, and `xp-doc.test.mjs` now holds three of these
-shut: every declared size is a multiple of 16, every heading rule declares one,
-and no component that renders a `.xp-doc` sizes its own text — which is how the
+to the browser's own — `1.5em` for an `h2`, `0.67em` for an `h6`, which puts an
+`h5` under the body text. That one shipped: nothing in the stylesheet shows it,
+because the wrong number is the one nobody wrote, and it was found by reading
+computed sizes in a browser. `xp-doc.test.mjs` now holds three things shut:
+every heading rule declares its own size, nothing is declared under 13px, and
+no component that renders a `.xp-doc` sizes its own text — which is how the
 Contact window came to draw the email address at 12px.
 
 ## The taskbar

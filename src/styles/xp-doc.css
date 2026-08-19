@@ -7,41 +7,34 @@
  * attribute. With scoped styles this would need a copy per component with
  * `:global()` inside.
  *
- * The typeface is set by `.xp-winbody` (Tahoma, 14px): what lives here is only
- * what tells a document apart from the interface.
+ * The typeface is the one thing it does set — the interface stays in the
+ * Tahoma of `.xp-winbody` — and the rest of it is what tells a document apart
+ * from the window around it.
  */
 
 /**
- * Pixel Operator, by Jayvee D. Enaguas (HarvettFox96), taken from the author's
- * own release. CC0 1.0: a dedication to the public domain, so nothing is owed —
- * not even the credit above. The full text travels with the files at
- * `/fonts/LICENSE-pixel-operator.txt` because a font with no licence beside it
- * is a font the next person has to go and research.
+ * Space Grotesk, by Florian Karsten. SIL Open Font License 1.1, whose one
+ * condition is that the licence travels with the font: it is at
+ * `/fonts/LICENSE-space-grotesk.txt`.
  *
- * ⚠️ THIS FONT HAS ONE SIZE, and every rule below obeys it. The em is 1600
- * units laid on a grid of 100, so one pixel of the drawing is one pixel of the
- * screen only at 16px — and at its exact multiples, 32 and 48. At the 14px the
- * rest of the window uses, each of those pixels would be 0.875 of a real one
- * and the browser would smear the remainder across the next: a pixel font,
- * blurred, which is the one thing it cannot survive. So the sizes here are
- * 16px and 32px, written in px and not in rem, and they are not a preference.
+ * One file for every weight the documents use. It is a variable font, so the
+ * 300-to-700 axis lives inside those 22KB and the browser interpolates the
+ * bold rather than downloading a second face — which is also why the
+ * `font-weight` below is a range and not a value: written as `normal`, a
+ * browser asked for bold would refuse to reach for the axis and would slant
+ * and smear the regular into a fake one instead.
  *
- * TTF and not WOFF2 on purpose: 17KB each. Compressing them would save a few
- * KB and cost a build step and a converter in the toolchain.
+ * WOFF2 and the latin subset, straight from Google's own CDN and then hosted
+ * here: 22KB against the 137KB of the full variable TTF. What the subset drops
+ * is Vietnamese and latin-ext, and the fallbacks below cover a stray glyph
+ * from either.
  */
 @font-face {
-  font-family: "Pixel Operator";
-  src: url("/fonts/PixelOperator.ttf") format("truetype");
-  font-weight: normal;
+  font-family: "Space Grotesk";
+  src: url("/fonts/SpaceGrotesk.woff2") format("woff2");
+  font-weight: 300 700;
   font-style: normal;
-  /* Tahoma reads the text while 17KB arrive, rather than nothing reading it. */
-  font-display: swap;
-}
-@font-face {
-  font-family: "Pixel Operator";
-  src: url("/fonts/PixelOperator-Bold.ttf") format("truetype");
-  font-weight: bold;
-  font-style: normal;
+  /* Tahoma reads the text while 22KB arrive, rather than nothing reading it. */
   font-display: swap;
 }
 
@@ -51,11 +44,10 @@
      the desktop read as Windows at all. Tahoma is also the fallback here, so a
      browser that refuses the font falls back to what the rest of the window is
      already using rather than to something new. */
-  font-family: "Pixel Operator", Tahoma, "DejaVu Sans", Verdana, sans-serif;
+  font-family: "Space Grotesk", Tahoma, "DejaVu Sans", Verdana, sans-serif;
   font-size: 16px;
-  /* 24px, a whole number of them. */
-  line-height: 1.5;
-  max-width: 62ch;
+  line-height: 1.55;
+  max-width: 60ch;
   /* Centred in the window, not pinned to its left edge. A line of text stops
      being comfortable to read somewhere around here whatever the window is
      doing, so the pane is wider than the column and the leftover has to go
@@ -65,26 +57,25 @@
 }
 
 .xp-doc h1 {
-  margin: 0 0 0.35rem;
-  /* The one other crisp size. 1.7rem was 27.2px, which this font cannot draw. */
-  font-size: 32px;
-  line-height: 1.25;
+  margin: 0 0 0.4rem;
+  font-size: 30px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
   color: #0a246a;
 }
 .xp-doc h2 {
-  margin: 1.8rem 0 0.5rem;
-  /* ⚠️ Spelled out, and it has to be. Deleting a heading's font-size does not
-     make it inherit: it falls back to the browser's own, which is 1.5em for an
-     h2 and 1.17em for an h3 — 24px and 18.7px, neither of them a size this font
-     can draw. The rest of the hierarchy is carried by the colour and the space
-     above, which is all a 16px grid leaves to carry it with. */
-  font-size: 16px;
-  line-height: 1.3;
+  margin: 1.7rem 0 0.5rem;
+  /* ⚠️ Spelled out, and every heading below is too. Deleting a heading's
+     font-size does not make it inherit the document's 16px: it falls back to
+     the browser's own scale, 1.5em for an h2 and 0.67em for an h6, which is a
+     hierarchy nobody in this file chose. */
+  font-size: 20px;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
   color: #0a246a;
 }
-/* h4 and below are in here for the same reason and never come out: the browser
-   sizes an h5 at 0.83em and an h6 at 0.67em. Markdown may emit them at any
-   time, and there is no depth of heading at which a blurred one is acceptable. */
+/* h4 and below are in here for the same reason: Markdown may emit them at any
+   time and the browser's own sizes for them run under the body text. */
 .xp-doc h3,
 .xp-doc h4,
 .xp-doc h5,
@@ -99,6 +90,8 @@
 
 .xp-doc .lede {
   margin: 0 0 1rem;
+  font-size: 18px;
+  line-height: 1.45;
   color: #3a3a32;
 }
 
@@ -174,6 +167,7 @@
 }
 .xp-doc .card dt {
   margin: 0;
+  font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #6b675c;
@@ -188,6 +182,7 @@
 /* The date of a blog entry, or any other secondary note. */
 .xp-doc .note {
   margin: 0 0 0.9rem;
+  font-size: 14px;
   color: #6b675c;
 }
 
@@ -244,6 +239,7 @@
 }
 .xp-doc .clip figcaption {
   margin: 0.45rem 0 0;
+  font-size: 14px;
   color: #6b675c;
 }
 

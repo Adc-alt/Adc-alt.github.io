@@ -194,10 +194,10 @@ import { SOCIAL } from "../../consts";
   }
   .xp-contact span {
     display: block;
-    /* ⚠️ No font-size. This span is inside `.xp-doc`, whose typeface is a pixel
-       font that is only crisp at 16px and 32px — the 0.75rem that used to be
-       here drew the address at 12px, which is 0.75 of a pixel per pixel and
-       comes out smeared. Grey is what makes it secondary now. */
+    /* ⚠️ No font-size, and a test in `xp-doc.test.mjs` keeps it that way. The
+       type scale of a document lives in `xp-doc.css`; the 0.75rem that used to
+       be here drew the address at 12px, small enough to be a bug. Grey is what
+       makes it secondary. */
     color: #6b675c;
     /* An address is one long unbreakable token in a 240px window. */
     overflow-wrap: anywhere;
