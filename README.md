@@ -396,6 +396,16 @@ before that. The music is the two MIDI files in that package and nothing else,
 so the loader hands the game an empty file where each one should be: it comes up
 with no music to play and every sound effect intact.
 
+**Load opens the game; the window's maximise button is what makes it full
+screen.** Those used to be one press, and the first thing a visitor got was the
+whole display taken over by a game they had not seen a window for. The maximise
+button of the window it lives in is the second press: `Window.astro` says
+`xp:maximise` from inside its own click handler, and that matters as much as
+the ergonomics — `requestFullscreen()` is refused outside a user gesture, so
+the request has to happen inside that click. Leaving full screen by any route
+puts the window back down: otherwise Escape would leave a window maximised over
+the whole desktop with a 600px game in the corner of it.
+
 **Solitaire is somebody else's too, and framed rather than loaded.** It used to
 be a game written for this site — a pack of cards and every rule of Klondike in
 `solitaire.mjs` — and the owner asked for it to come from somewhere else, so all

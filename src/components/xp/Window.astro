@@ -237,6 +237,11 @@ const pos = { x: x ?? fallback.x, y: y ?? fallback.y };
       // On restore, the stored position may have fallen outside if the screen
       // changed while the window was maximised.
       if (!on) reclamp();
+      // Said out loud for the same reason as `xp:close`: what is inside may
+      // want more than a bigger box. Pinball takes this as the cue to go full
+      // screen, and it can only do that because this runs inside the click —
+      // `requestFullscreen()` is refused outside a gesture.
+      win.dispatchEvent(new CustomEvent("xp:maximise", { detail: on }));
     });
 
     // The only way to retitle a window from outside. It has to go through here

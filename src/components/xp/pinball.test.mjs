@@ -98,3 +98,17 @@ test("leaving the game destroys the frame rather than hiding it", () => {
   assert.match(SCRIPT, /ResizeObserver/);
   assert.match(SCRIPT, /replaceChildren\(button\)/);
 });
+
+test("Load opens the game in its window, and the window's button is full screen", () => {
+  // Load used to request full screen in the same gesture, so the first press
+  // swallowed the display before the visitor had seen the window it came out
+  // of. Growing it is a second press now, and the press is the window's own
+  // maximise button — which is also what makes it legal: `requestFullscreen()`
+  // is refused outside a user gesture, and the window says `xp:maximise` from
+  // inside its click handler.
+  assert.match(SCRIPT, /button\.addEventListener\("click", load\)/);
+  assert.match(SCRIPT, /"xp:maximise"/);
+  const window_ = readFileSync(new URL("./Window.astro", import.meta.url), "utf8");
+  assert.match(window_, /new CustomEvent\("xp:maximise"/, "the window never says it was maximised");
+});
+

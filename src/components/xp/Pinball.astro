@@ -77,7 +77,7 @@ const MENUS: Menu[] = [
     <button type="button" class="pin-play" data-src={SRC}>
       <span class="pin-play-icon" aria-hidden="true">▶</span>
       <span>Load the game</span>
-      <span class="pin-play-note">Full screen, no music. Esc to come back</span>
+      <span class="pin-play-note">No music. Maximise the window for full screen</span>
     </button>
   </div>
 
@@ -165,9 +165,24 @@ const MENUS: Menu[] = [
       else stage.requestFullscreen().catch(() => {});
     };
 
-    // Loading and going full screen are one gesture: the game pops out centred
-    // on the whole screen, which is what the real one did off F4.
-    button.addEventListener("click", full);
+    // Load opens the game and nothing else. It used to go straight to full
+    // screen in the same gesture, which is what the original did off F4 — but
+    // a game that swallows the whole display before you have seen the window
+    // it came out of is a surprise, and the way back out is a key nobody was
+    // told about. It opens at the size the original opened at; growing it is a
+    // second, deliberate press.
+    button.addEventListener("click", load);
+
+    /* And that press is the window's own maximise button. The window says
+       `xp:maximise` from inside its click handler, so the browser still counts
+       this as the gesture that full screen requires. Only while a game is
+       actually loaded: maximising an empty window is just a bigger window. */
+    const win = root.closest<HTMLElement>(".xp-window");
+    win?.addEventListener("xp:maximise", (e) => {
+      if (!stage.querySelector("iframe")) return;
+      if ((e as CustomEvent<boolean>).detail) stage.requestFullscreen().catch(() => {});
+      else if (document.fullscreenElement === stage) document.exitFullscreen();
+    });
     root.addEventListener("xpmenu", (e) => {
       const cmd = (e as CustomEvent<string>).detail;
       if (cmd === "load") load();
@@ -183,7 +198,14 @@ const MENUS: Menu[] = [
     // The tick on Options -> Full Screen is only true while it is true, and the
     // browser can end full screen on its own (Esc, another tab).
     document.addEventListener("fullscreenchange", () => {
-      item("full")?.setAttribute("aria-pressed", String(document.fullscreenElement === stage));
+      const on = document.fullscreenElement === stage;
+      item("full")?.setAttribute("aria-pressed", String(on));
+      /* Esc ends full screen without telling the window, which would leave a
+         window maximised over the whole desktop with a 600px game in the
+         corner of it. Pressing its button is how the two are put back in step,
+         and it cannot loop: the window sets `aria-pressed` to false before it
+         says `xp:maximise`, so this finds nothing to press the second time. */
+      if (!on) win?.querySelector<HTMLButtonElement>(".xp-max[aria-pressed='true']")?.click();
     });
 
     /* The menu prints F4, so F4 has to work. `offsetWidth` is the guard and it
