@@ -56,3 +56,17 @@ export const SOCIAL = [
   { href: 'https://github.com/Adc-alt', label: 'GitHub', icon: 'github' },
   { href: 'https://www.linkedin.com/in/antonio-delgado--/', label: 'LinkedIn', icon: 'linkedin' },
 ] as const;
+
+/**
+ * One sentence, present tense, about what is on the bench right now. It is the
+ * only thing on the page that says the work did not stop, and the index reads
+ * "Archived, Archived, Finished" without it.
+ *
+ * It goes stale, and nothing here can tell that it has: no test, no build step
+ * and no schema knows what month it is. Treat it the way you treat a status
+ * light, and if there is nothing true to put in it, delete the block in
+ * `Home.astro` rather than leave last spring's sentence up.
+ */
+export const NOW = {
+  text: 'Right now I am designing power supplies for small satellites at DHV, and building a quadcopter from the flight controller up in what is left of the week.',
+} as const;
