@@ -11,14 +11,20 @@ export const SITE = {
 } as const;
 
 /**
- * Contact, in the order the Contact window shows it. `value` is what is printed
- * under the label — a label alone makes someone click to find out the address.
+ * Contact, in the order the Contact window shows it. `icon` names the mark
+ * drawn beside each link; the marks themselves are in `Contact.astro`, because
+ * a path is a drawing and this file is a list.
+ *
+ * The addresses used to be printed under the labels and are not any more
+ * (owner's decision, 2026-08-21). Worth knowing what that costs: the email
+ * address is now only reachable by following the `mailto:`, which is a dead
+ * end for anyone whose browser has no mail client wired up.
  *
  * The phone number on the CV is deliberately NOT here. This page is indexed and
  * scraped; an address can be filtered, a number that leaks gets called.
  */
 export const SOCIAL = [
-  { href: 'mailto:adelgadocriado@gmail.com', label: 'Email', value: 'adelgadocriado@gmail.com' },
-  { href: 'https://github.com/Adc-alt', label: 'GitHub', value: 'Adc-alt' },
-  { href: 'https://www.linkedin.com/in/antonio-delgado--/', label: 'LinkedIn', value: 'antonio-delgado--' },
+  { href: 'mailto:adelgadocriado@gmail.com', label: 'Email', icon: 'mail' },
+  { href: 'https://github.com/Adc-alt', label: 'GitHub', icon: 'github' },
+  { href: 'https://www.linkedin.com/in/antonio-delgado--/', label: 'LinkedIn', icon: 'linkedin' },
 ] as const;
