@@ -18,6 +18,9 @@ import { fileURLToPath } from "node:url";
  *
  * The README is in scope too. It is not on the site, but it is the first thing
  * anyone reads on the GitHub page, which is the other half of a portfolio.
+ * `consts.ts` is in scope for the opposite reason: it is not a page at all,
+ * but strings inside it, `NOW.text` among them, get rendered straight onto the
+ * site, so it carries visible prose without being one.
  * Comments inside components are NOT in scope and still have plenty.
  */
 const ROOT = new URL("./", import.meta.url);
@@ -44,6 +47,7 @@ const visible = (src, isAstro) =>
 test("no em dash reaches the screen", () => {
   const files = walk(ROOT).filter((u) => /\.(astro|md)$/.test(u.pathname));
   files.push(new URL("../README.md", import.meta.url));
+  files.push(new URL("consts.ts", ROOT));
   // Guards the guard: a walk that stopped finding files would pass for ever.
   assert.ok(files.length > 15, `only found ${files.length} pages, the walk is wrong`);
 
