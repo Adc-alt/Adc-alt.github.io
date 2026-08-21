@@ -495,9 +495,10 @@ measurements and colours, which are facts and not work.
 The four design specs under `docs/superpowers/specs/`, the boot screen and the
 three desktop phases, are translated, because code comments point at them.
 
-Two things stay in Spanish on purpose:
+One thing stays in Spanish on purpose: `docs/01` to `docs/04`, the owner's own
+learning notes on static web, git and HTML. They are a notebook, not
+documentation of this site.
 
-- `docs/01` to `docs/04`, the owner's own learning notes on static web, git and
-  HTML. They are a notebook, not documentation of this site.
-- `docs/superpowers/plans/`, the execution checklists for work that has already
-  shipped. Nothing points at them and nothing will read them again.
+The execution checklists that went with each spec are not in the repository.
+They are working notes, they are kept locally, and `.gitignore` keeps them out.
+What they were for is in the specs, which is the half worth reading.

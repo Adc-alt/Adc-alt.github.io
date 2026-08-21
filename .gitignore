@@ -15,3 +15,7 @@ node_modules/
 
 # Scratch del ejecutor de planes (superpowers). Nunca se commitea.
 .superpowers/
+
+# Checklists de ejecucion de planes. Se quedan en local: son instrucciones
+# de trabajo, no documentacion del sitio.
+docs/superpowers/plans/
