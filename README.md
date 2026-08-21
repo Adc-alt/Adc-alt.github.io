@@ -215,6 +215,35 @@ publishes. About 40-60 seconds. Nothing needs doing by hand.
 The Pages source is **GitHub Actions**, not "deploy from a branch". `dist/` is
 not committed.
 
+## The preview card
+
+Pasted into LinkedIn, a chat or the box on an application form, the address
+draws a card. The tags that build it are in `src/layouts/XP.astro` and the text
+they use is in `CARD` and `SITE`, in `src/consts.ts`.
+
+The picture is `public/og.jpg`, and it is not a drawing of the site: it is a
+screenshot of the built desktop. That is the point. A hand-made card goes stale
+the first time the desktop changes and nobody notices, because nothing on the
+page reads it.
+
+To make it again:
+
+1. `pnpm build && pnpm preview`
+2. Open `http://127.0.0.1:4321/` in a browser at **1400x735**, with
+   `localStorage.setItem("boot_seen", "1")` so the boot screen stays out of the
+   way, and wait for the windows to finish arriving.
+3. Freeze the envelope somewhere it can be seen, or half the attempts catch it
+   inside a machine: `document.querySelector(".envelope").style.animation = "none"`
+   and give it `transform: translateX(24px)`.
+4. Screenshot the viewport, scale to **1200x630**, save as `public/og.jpg`.
+
+1400x735 is 1200x630 times 7/6, which is why the scaling loses nothing. It has
+to be at least 1270 wide or the site answers with the stacked column and the
+card shows a phone layout on a page nobody opens on a phone.
+
+Changing the size of a window means making this again. Nothing here can tell
+that the picture no longer matches.
+
 ## Accessibility
 
 - Every animation is behind `prefers-reduced-motion`.

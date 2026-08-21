@@ -18,7 +18,7 @@
 import "../styles/xp-doc.css";
 import Wallpaper from "../components/xp/Wallpaper.astro";
 import Taskbar from "../components/xp/Taskbar.astro";
-import { SITE } from "../consts";
+import { CARD, SITE } from "../consts";
 
 interface Props {
   title?: string;
@@ -28,6 +28,12 @@ interface Props {
 
 const { title, description = SITE.tagline, noindex = false } = Astro.props;
 const fullTitle = title ? `${title} · ${SITE.name}` : `${SITE.name} · ${SITE.role}`;
+
+/* Absolute, both of them. `canonical` was already written out by hand below and
+   now has a second reader, and `og:image` is read by a machine that is not on
+   this origin and will not resolve a path that starts with a slash. */
+const canonical = `${SITE.url}/`;
+const cardImage = `${SITE.url}${CARD.image}`;
 ---
 
 <!doctype html>
@@ -38,8 +44,30 @@ const fullTitle = title ? `${title} · ${SITE.name}` : `${SITE.name} · ${SITE.r
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex, follow" />}
-    <link rel="canonical" href={SITE.url + "/"} />
+    <link rel="canonical" href={canonical} />
     <meta name="generator" content={Astro.generator} />
+
+    {/* The preview card. Not decoration: the address gets pasted into LinkedIn,
+        into a chat and into the box on an application form, and without these
+        every one of those draws a grey line of text for a site whose entire
+        argument is what it looks like.
+
+        `og:` and not `twitter:`: X reads the Open Graph tags when its own are
+        missing, and so does everything else worth naming. One `twitter:card` is
+        the exception, because that one has no `og:` equivalent and it is what
+        asks for the big image instead of the little square one. */}
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE.name} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content={CARD.locale} />
+    <meta property="og:image" content={cardImage} />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content={String(CARD.width)} />
+    <meta property="og:image:height" content={String(CARD.height)} />
+    <meta property="og:image:alt" content={CARD.alt} />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#245edc" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
