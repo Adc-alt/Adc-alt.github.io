@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
-  HEAD, LOADING, SPECS, COUNT, DEVICES, TAIL, PROMPT, T, AUTO_MS,
+  HEAD, LOADING, SPECS, COUNT, DEVICES, TAIL, PROMPT, T, AUTO_MS, AUTO_MS_REDUCED,
 } from "./boot-data.mjs";
 
 /**
@@ -55,8 +55,28 @@ test("the prompt is the last thing to appear", () => {
   assert.equal(Math.max(...all, T.prompt), T.prompt);
 });
 
-test("it does not enter by itself", () => {
-  assert.equal(AUTO_MS, 0);
+test("it enters by itself, and not before the last line is legible", () => {
+  // The screen used to wait for ever, like the reference. It is the one place
+  // parity was dropped on purpose: a visitor who does not recognise a boot
+  // screen has no way of knowing it wants a keypress, and stares at a black
+  // page until they leave.
+  assert.ok(AUTO_MS > 0, "the boot screen waits for ever again");
+
+  // `T.prompt` is when the prompt is TOLD to appear. It reaches the screen
+  // 500ms after that, because of the `transition: visibility 0s .5s` in the
+  // CSS. Entering any earlier throws away the end of the sequence, and the
+  // regression would look like a shorter boot rather than a broken one.
+  assert.ok(
+    AUTO_MS >= T.prompt + 500,
+    `enters at ${AUTO_MS}ms, and the prompt is not on screen until ${T.prompt + 500}ms`,
+  );
+});
+
+test("less motion means it enters sooner, not that it waits the same", () => {
+  // With `reduce` every line is painted at once, so the wait exists to let a
+  // sequence finish that is not running.
+  assert.ok(AUTO_MS_REDUCED > 0, "reduced motion is back to waiting for ever");
+  assert.ok(AUTO_MS_REDUCED < AUTO_MS);
 });
 
 test("the counter's ladder ends on the value that is shown", () => {

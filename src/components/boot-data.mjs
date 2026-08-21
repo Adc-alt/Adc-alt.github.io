@@ -80,7 +80,31 @@ export const T = {
 
 /**
  * Milliseconds before it enters the portfolio on its own. **0 = it does not,
- * it waits.** The reference is still on the boot screen after 25s if you touch
- * nothing. Verified.
+ * it waits.**
+ *
+ * The reference waits for ever: it is still on the boot screen after 25s if you
+ * touch nothing, verified. This site does not copy that, and it is the one
+ * place it deliberately breaks parity. A boot screen you have to know to click
+ * is a door, and everybody arriving here for the first time is somebody with
+ * eight tabs open who did not come for a joke about a BIOS.
+ *
+ * 5200 and not less: `T.prompt` is 4000, what is on screen lands 500ms after
+ * its timing, so the last line is legible at 4500. Entering any earlier cuts
+ * the sequence with the ONLINE checks, the CD-ROM line or the prompt itself
+ * still invisible, which trades one bad first impression for another. 700ms of
+ * blinking prompt is the beat that makes it read as an ending.
+ *
+ * It only costs that once: script 1 writes `boot_seen` and every visit after
+ * this one goes straight to the desktop.
  */
-export const AUTO_MS = 0;
+export const AUTO_MS = 5200;
+
+/**
+ * The same thing for anyone who asked for less motion.
+ *
+ * With `reduce` every line is painted at once instead of arriving on its
+ * timing, so there is no sequence left to finish and 5.2s of waiting is 5.2s
+ * of looking at a page that already stopped changing. Long enough to read the
+ * screen and notice it is a joke, and then in.
+ */
+export const AUTO_MS_REDUCED = 1600;
