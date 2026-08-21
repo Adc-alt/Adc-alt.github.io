@@ -16,22 +16,23 @@ import {
 
 const IDS = [
   "section-home",
+  "section-experience",
   "section-projects",
   "section-about",
   "section-blog",
   "section-project-smart-car",
 ];
 
-test("the Menu is the four entries the spec names, in order", () => {
+test("the Menu is the five entries the spec names, in order", () => {
   // Games is NOT one of them: it lives behind the desktop icon, in a window of
   // its own, so the Menu is the portfolio and nothing else.
   assert.deepEqual(
     NAV.map((n) => n.id),
-    ["home", "projects", "about", "blog"],
+    ["home", "experience", "projects", "about", "blog"],
   );
   assert.deepEqual(
     NAV.map((n) => n.label),
-    ["Home", "Projects", "About me", "Blog"],
+    ["Home", "Experience", "Projects", "About me", "Blog"],
   );
 });
 

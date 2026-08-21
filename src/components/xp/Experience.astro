@@ -1,0 +1,115 @@
+---
+/**
+ * Experience: the work somebody pays for.
+ *
+ * This is content that used to be two paragraphs at the top of About, where it
+ * was outweighed by three personal projects with a video each. What changed is
+ * not the facts, it is how much room they get and what they are allowed to say.
+ *
+ * Everything here is method, never design. No topology, no part number, no
+ * measured figure off a real board, no customer. What is left is the craft, and
+ * the craft is the part that is hard to fake and safe to publish.
+ *
+ * The three roles are a plain array rather than a content collection: nothing
+ * else in the site reads them, and a collection would be a schema, a loader and
+ * a test to hold three objects that only this file has ever wanted.
+ */
+
+/* Annotated because only the DHV entry carries an `href`. Without this type,
+   TypeScript infers a union of two object shapes from the array literal, and
+   under `astro/tsconfigs/strict` `role.href` in the markup below becomes an
+   access on a property that does not exist on every union member, which fails
+   `astro check`. */
+type Role = {
+  org: string;
+  href?: string;
+  title: string;
+  where: string;
+  when: string;
+  lede: string;
+  body: string[];
+};
+
+const roles: Role[] = [
+  {
+    org: "DHV Technology",
+    href: "https://dhvtechnology.com",
+    title: "Hardware Engineer",
+    where: "Málaga",
+    when: "June 2025 to now",
+    lede: "Power electronics for satellites, from the schematic to the board that flies.",
+    body: [
+      "I take a power supply for a small satellite from a blank Altium schematic to hardware that has been measured and signed off: the schematic, the multilayer layout, the SPICE simulation that says what it should do, and then the bench, which is where you find out. On one of them I ran the whole loop end to end.",
+      "The bench half is the half nobody puts on a CV. A board arrives, and before it gets any voltage at all it gets an ohmmeter, because a short between a rail and ground costs one minute to find now and a component later. Then it comes up on a current-limited supply, one rail at a time, and every reading gets compared against a number I predicted beforehand. A board that draws what I expected is a board I understand. A board that draws less is usually more worrying than one that draws more.",
+      "Everything goes through a qualification chain: an engineering model to learn on, a qualification model to prove it survives, and a flight model that is allowed to surprise nobody. What that really changes is not the circuit, it is what you are still permitted to do to it.",
+    ],
+  },
+  {
+    org: "Rovimatica",
+    title: "Automation Developer",
+    where: "Córdoba",
+    when: "December 2024 to May 2025",
+    lede: "An old production cell taught to run about 20% faster.",
+    body: [
+      "The cell already worked. The job was to find out where its time actually went, which meant measuring the cycle instead of asking people about it, and then rewriting the OMRON program around what the measurement said. About a fifth of the cycle came back. I built the Siemens HMI on top of it and stayed through integration, because a change that is only correct on the bench is not finished.",
+    ],
+  },
+  {
+    org: "Adentech",
+    title: "Automation Developer",
+    where: "Málaga",
+    when: "February to October 2024",
+    lede: "A test rig, PCB and all, that cut a hardware test by 30%.",
+    body: [
+      "A test that took too long, done by hand. I designed the board that talks to the unit under test and the Python on the other end of the link, so the measurement runs itself and writes down what it saw. Thirty per cent off the time it used to take, and the results stopped depending on who was holding the probe. I also led about 70% of the lifecycle of a €20,000 PLC and HMI project.",
+    ],
+  },
+];
+---
+
+<div class="xp-doc">
+  <h1>Experience</h1>
+
+  <p class="lede">
+    What the job actually involves, told as method. The designs themselves are
+    covered by an NDA and are not here; how the work gets done is not, and it is
+    the more useful half anyway.
+  </p>
+
+  <hr />
+
+  {
+    roles.map((role) => (
+      <article class="role">
+        <h2>
+          {role.href ? (
+            <a href={role.href} rel="noopener">
+              {role.org}
+            </a>
+          ) : (
+            role.org
+          )}
+        </h2>
+        <p class="note">
+          {role.title} · {role.where} · {role.when}
+        </p>
+        <p class="lede">{role.lede}</p>
+        {role.body.map((para) => (
+          <p>{para}</p>
+        ))}
+      </article>
+    ))
+  }
+</div>
+
+<style>
+  .role {
+    margin: 0 0 2.4rem;
+  }
+  .role h2 {
+    margin-bottom: 0.2rem;
+  }
+  .role:last-child {
+    margin-bottom: 0;
+  }
+</style>

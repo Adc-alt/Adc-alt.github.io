@@ -7,13 +7,14 @@
  * section is on the page, one after another, which is the whole no-JavaScript
  * story (phase 3 §6).
  *
- * The four fixed sections are rendered FROM `NAV`, not written out by hand, so a
+ * The five fixed sections are rendered FROM `NAV`, not written out by hand, so a
  * Menu entry cannot end up pointing at a section that does not exist.
  *
  * Spec: docs/superpowers/specs/2026-08-16-xp-desktop-phase3-design.md
  */
 import { getCollection } from "astro:content";
 import Home from "./Home.astro";
+import Experience from "./Experience.astro";
 import Projects from "./Projects.astro";
 import About from "./About.astro";
 import Blog from "./Blog.astro";
@@ -22,10 +23,11 @@ import { NAV, projectSectionId, sectionId } from "./sections.mjs";
 
 /* Annotated because `FIXED[entry.id]` indexes with a `string`, and under
    `astro/tsconfigs/strict` an un-annotated object literal makes that an
-   implicit-any index error that fails `astro check`. All four are Astro
+   implicit-any index error that fails `astro check`. All five are Astro
    component factories with no required props, so they share one type. */
 const FIXED: Record<string, typeof Home> = {
   home: Home,
+  experience: Experience,
   projects: Projects,
   about: About,
   blog: Blog,

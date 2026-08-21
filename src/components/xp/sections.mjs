@@ -12,9 +12,15 @@
  * renders the fixed sections from this list and `Nav.astro` renders the links
  * from it, so a typo cannot put a Menu entry in front of a section that does
  * not exist.
+ *
+ * Experience sits second, above Projects, on purpose. The paid work used to be
+ * two paragraphs inside About while three personal projects each had a section
+ * of their own with a video in it, and a visitor who skimmed never found out
+ * what the job actually is.
  */
 export const NAV = [
   { id: "home", label: "Home" },
+  { id: "experience", label: "Experience" },
   { id: "projects", label: "Projects" },
   { id: "about", label: "About me" },
   { id: "blog", label: "Blog" },
