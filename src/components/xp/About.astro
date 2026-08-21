@@ -60,6 +60,22 @@ const loadout = [
       ))
     }
   </p>
+
+  {/* The moon that used to sit at the foot of the Blog, which is what a
+      personal site had in 1999 and what this desktop is a homage to. The Blog
+      went and the moon did not: About is the section about the person rather
+      than the engineer, so this is where it belonged all along. Decorative and
+      nothing else, so the alt is empty: a screen reader should walk past it,
+      not describe it.
+
+      ⚠️ `loading="lazy"` is not a nicety here. Every section of the reading
+      pane is in the DOM from the first byte and the ones you are not reading
+      are `hidden`, so an eager image in this one would be 474 KB fetched by
+      every visitor who never opens About. Lazy images inside a box that is not
+      rendered are not fetched at all. */}
+  <p class="moon">
+    <img src="/media/moon.gif" width="300" height="341" alt="" loading="lazy" decoding="async" />
+  </p>
 </div>
 
 <style>
@@ -74,5 +90,15 @@ const loadout = [
   }
   .xp-doc .tools > div {
     margin-bottom: 0.7rem;
+  }
+
+  .moon {
+    margin: 2.4rem 0 0;
+    text-align: center;
+  }
+  .moon img {
+    /* It is 300 wide and the column can be narrower than that on a phone. */
+    max-width: 100%;
+    height: auto;
   }
 </style>

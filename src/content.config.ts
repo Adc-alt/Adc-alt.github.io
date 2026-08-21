@@ -36,23 +36,8 @@ const projects = defineCollection({
   }),
 });
 
-/**
- * Each blog entry is a .md in src/content/blog/.
- *
- * There is no per-entry URL for now: they all render one after another inside
- * the desktop window, which is a feed. The day there are enough of them, the
- * file `id` already works as a slug without touching anything here.
- */
-const blog = defineCollection({
-  loader: glob({ base: "./src/content/blog", pattern: "**/*.md" }),
-  schema: z.object({
-    title: z.string(),
-    /** Publication date. It orders the feed: newest at the top. */
-    date: z.date(),
-    /** A one-sentence standfirst. Should fit in the window without scrolling. */
-    summary: z.string().max(200),
-    draft: z.boolean().default(false),
-  }),
-});
-
-export const collections = { projects, blog };
+/* There was a `blog` collection here and it was deleted with its section
+   (owner's decision, 2026-08-21). Nothing else referred to it, so the schema
+   went with the entries rather than sitting here describing a folder that no
+   longer exists. */
+export const collections = { projects };

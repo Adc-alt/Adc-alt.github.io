@@ -19,20 +19,20 @@ const IDS = [
   "section-experience",
   "section-projects",
   "section-about",
-  "section-blog",
   "section-project-smart-car",
 ];
 
-test("the Menu is the five entries the spec names, in order", () => {
+test("the Menu is the four entries, in order", () => {
   // Games is NOT one of them: it lives behind the desktop icon, in a window of
-  // its own, so the Menu is the portfolio and nothing else.
+  // its own, so the Menu is the portfolio and nothing else. Blog is not one of
+  // them either any more; `sections.mjs` says why it went.
   assert.deepEqual(
     NAV.map((n) => n.id),
-    ["home", "experience", "projects", "about", "blog"],
+    ["home", "experience", "projects", "about"],
   );
   assert.deepEqual(
     NAV.map((n) => n.label),
-    ["Home", "Experience", "Projects", "About me", "Blog"],
+    ["Home", "Experience", "Projects", "About me"],
   );
 });
 

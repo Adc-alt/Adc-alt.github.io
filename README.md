@@ -20,7 +20,7 @@ The site is **a single page**.
 | `/` | The desktop, with every window inside it. **With the boot screen** on a first visit |
 | `/404` | XP error window |
 | `/work/`, `/xp/`, `/proyectos/`, `/perfil/` | Redirects to `/` |
-| `/#section-<name>` | A section of the reading pane. `home`, `projects`, `about`, `blog`, or `project-<filename>`. Shareable and back-button friendly; not a separate URL, so not in the sitemap |
+| `/#section-<name>` | A section of the reading pane. `home`, `experience`, `projects`, `about`, or `project-<filename>`. Shareable and back-button friendly; not a separate URL, so not in the sitemap |
 
 The redirects are the previous version's routes. They are not a courtesy:
 `/work/` is the URL printed on the CV. On a static build Astro generates a `meta
@@ -45,9 +45,8 @@ pnpm dev          # http://localhost:4321
 ```
 src/
 ├── consts.ts                 name, URL and social links
-├── content.config.ts         Zod schemas for projects and blog
+├── content.config.ts         Zod schema for projects
 ├── content/projects/*.md     one file = one project = one section
-├── content/blog/*.md         one file = one entry
 ├── styles/xp-doc.css         the document inside a window
 ├── layouts/XP.astro          <head>, wallpaper and taskbar
 ├── components/
@@ -62,7 +61,7 @@ src/
 │       ├── Sections.astro    the reading pane and its switcher
 │       ├── Contact.astro     the Contact window
 │       ├── MediaPlayer.astro the song behind the Music shortcut
-│       └── Home | Projects | Project | About | Blog
+│       └── Home | Experience | Projects | Project | About
 └── pages/
     ├── index.astro           mounts the desktop and every window
     └── 404.astro
@@ -75,8 +74,10 @@ src/
 own; the filename becomes its section id (`my-project.md` →
 `#section-project-my-project`).
 
-**A blog entry:** a `.md` in `src/content/blog/`. They are ordered by date,
-newest at the top.
+**A job:** the `roles` array at the top of `src/components/xp/Experience.astro`.
+It is a plain array and not a content collection on purpose; the file says why.
+Everything in it is method and never design: no topology, no part number, no
+measured figure off a real board, no customer.
 
 **A video:** shrink it first. `ffmpeg -i in.mp4 -vf scale=-2:960 -crf 28 -preset
 slow -c:a aac -b:a 96k -movflags +faststart out.mp4` took the smart car's phone
@@ -203,9 +204,10 @@ the hash and the switcher runs off `hashchange`, which is where the back button
 and shareable section links come from. `resolveSection` falls back to Home for a
 hash nobody recognises, so a stale link never leaves the pane blank.
 
-The blog has no per-entry URL: they all render one after another inside their
-section. With two entries that would be two pages of one paragraph; the
-filename already works as a slug the day it is needed.
+There was a Blog section and it is gone (owner's decision, 2026-08-21). Its two
+entries were both about how this website was built, which is the site talking
+about itself rather than about the engineering. `sections.mjs` records what it
+would take to bring it back: one entry in `NAV`, one component, one collection.
 
 ## Deploy
 
@@ -330,7 +332,7 @@ phase 3 removed it. The `.woff2` was taken from the
 
 ## The typeface of the documents
 
-The text inside the reading pane (Home, Projects, About, Blog, Contact) is
+The text inside the reading pane (Home, Experience, Projects, About, Contact) is
 **Space Grotesk**, by [Florian Karsten](https://github.com/floriankarsten/space-grotesk),
 SIL Open Font License 1.1. The licence and the font are both in `public/fonts/`,
 because the one thing the OFL asks is that they travel together.

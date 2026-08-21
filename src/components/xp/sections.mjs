@@ -17,13 +17,19 @@
  * two paragraphs inside About while three personal projects each had a section
  * of their own with a video in it, and a visitor who skimmed never found out
  * what the job actually is.
+ *
+ * There was a fifth entry, Blog, and it was deleted rather than emptied
+ * (owner's decision, 2026-08-21). It held two posts, both about how this
+ * website was built, which told a visitor nothing about the engineering. A
+ * menu entry is a promise; one that opens onto the site talking about itself
+ * costs more than it returns. Putting it back is this array plus a component,
+ * and it is worth doing the day there is something on the bench to write about.
  */
 export const NAV = [
   { id: "home", label: "Home" },
   { id: "experience", label: "Experience" },
   { id: "projects", label: "Projects" },
   { id: "about", label: "About me" },
-  { id: "blog", label: "Blog" },
 ];
 
 /** A section's element id, which is also its hash. */

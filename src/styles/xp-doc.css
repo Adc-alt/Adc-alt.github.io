@@ -179,7 +179,7 @@
   min-width: 0;
 }
 
-/* The date of a blog entry, or any other secondary note. */
+/* The dates under a job, the stack under a project, or any other secondary note. */
 .xp-doc .note {
   margin: 0 0 0.9rem;
   font-size: 14px;

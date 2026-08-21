@@ -8,9 +8,9 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
  * shows up as a black rectangle nobody clicks. This is the check.
  */
 const root = new URL("../../", import.meta.url);
-// The components too, not just the prose: the moon at the foot of the Blog is a
+// The components too, not just the prose: the moon at the foot of About is a
 // `src` in an .astro file and it can rot in exactly the same way.
-const dirs = ["src/content/projects/", "src/content/blog/", "src/components/xp/"];
+const dirs = ["src/content/projects/", "src/components/xp/"];
 
 test("every local file a page points at is in public/", () => {
   const refs = [];
