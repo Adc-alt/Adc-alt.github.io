@@ -15,11 +15,13 @@
  * a test to hold three objects that only this file has ever wanted.
  */
 
-/* Annotated because not every entry carries an `href`. Without this type,
-   TypeScript infers a union of two object shapes from the array literal, and
-   under `astro/tsconfigs/strict` `role.href` in the markup below becomes an
-   access on a property that does not exist on every union member, which fails
-   `astro check`. */
+/* All three carry an `href` today, so the annotation is not load-bearing this
+   minute. It stays because it was, and will be again: when one entry lacked a
+   website, TypeScript inferred a union of two object shapes from the array
+   literal, and under `astro/tsconfigs/strict` `role.href` in the markup below
+   became an access on a property that does not exist on every union member,
+   which fails `astro check`. Declaring `href` optional here is what lets the
+   next role join without a link and without that failure. */
 type Role = {
   org: string;
   href?: string;
@@ -57,6 +59,7 @@ const roles: Role[] = [
   },
   {
     org: "Adentech",
+    href: "https://adentech.es",
     title: "Automation Developer",
     where: "Málaga",
     when: "February to October 2024",
