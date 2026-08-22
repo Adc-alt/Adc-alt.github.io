@@ -68,5 +68,5 @@ export const SOCIAL = [
  * `Home.astro` rather than leave last spring's sentence up.
  */
 export const NOW = {
-  text: 'Right now I am designing power supplies for small satellites at DHV, and building a quadcopter from the flight controller up in what is left of the week.',
+  text: 'Right now I am designing power supplies for small satellites at DHV, and spending what is left of the week on a quadcopter: the control loop in simulation first, my own flight controller board at the end of it.',
 } as const;

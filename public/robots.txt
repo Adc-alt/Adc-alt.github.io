@@ -1,0 +1,5 @@
+# Everything here is meant to be found: the whole site is one public page.
+User-agent: *
+Allow: /
+
+Sitemap: https://adc-alt.github.io/sitemap-index.xml
