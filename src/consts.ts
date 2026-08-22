@@ -60,7 +60,13 @@ export const SOCIAL = [
 /**
  * One sentence, present tense, about what is on the bench right now. It is the
  * only thing on the page that says the work did not stop, and the index reads
- * "Archived, Archived, Finished" without it.
+ * "Finished, Archived, Archived" without it.
+ *
+ * It is currently doing half its job. It said something about a side project as
+ * well, and that came out because the project had not really started (owner's
+ * decision, 2026-08-22). What is left is true and it is thin: it repeats the
+ * first line of Experience. The sentence earns its place again when there is a
+ * second clause in it that Experience does not already say.
  *
  * It goes stale, and nothing here can tell that it has: no test, no build step
  * and no schema knows what month it is. Treat it the way you treat a status
@@ -68,5 +74,5 @@ export const SOCIAL = [
  * `Home.astro` rather than leave last spring's sentence up.
  */
 export const NOW = {
-  text: 'Right now I am designing power supplies for small satellites at DHV, and spending what is left of the week on a quadcopter: the control loop in simulation first, my own flight controller board at the end of it.',
+  text: 'Right now I am designing power supplies for small satellites at DHV.',
 } as const;

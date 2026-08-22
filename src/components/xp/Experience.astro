@@ -15,7 +15,7 @@
  * a test to hold three objects that only this file has ever wanted.
  */
 
-/* Annotated because only the DHV entry carries an `href`. Without this type,
+/* Annotated because not every entry carries an `href`. Without this type,
    TypeScript infers a union of two object shapes from the array literal, and
    under `astro/tsconfigs/strict` `role.href` in the markup below becomes an
    access on a property that does not exist on every union member, which fails
@@ -46,6 +46,7 @@ const roles: Role[] = [
   },
   {
     org: "Rovimatica",
+    href: "https://www.rovimatica.com",
     title: "Automation Developer",
     where: "Córdoba",
     when: "December 2024 to May 2025",
